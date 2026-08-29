@@ -58,24 +58,36 @@ function respStooq(rows) {
     .join("\n");
 }
 
-function fakeFetch({ yahooOk = true, stooqOk = true } = {}) {
+function fakeFetch({ yahooOk = true, stooqOk = true, series = porTf } = {}) {
   const chamadas = [];
   const f = async (url) => {
     chamadas.push(url);
     if (url.includes("yahoo")) {
       const iv = url.match(/interval=([^&]+)/)[1];
       return yahooOk
-        ? { ok: true, text: async () => respYahoo(porTf[iv]) }
+        ? { ok: true, text: async () => respYahoo(series[iv]) }
         : { ok: false, status: 502, text: async () => "" };
     }
     const iv = url.match(/[?&]i=([^&]+)/)[1];
     return stooqOk
-      ? { ok: true, text: async () => respStooq(porTf[iv]) }
+      ? { ok: true, text: async () => respStooq(series[iv]) }
       : { ok: false, status: 403, text: async () => "" };
   };
   f.chamadas = chamadas;
   return f;
 }
+
+// Fora do pregao o Yahoo acrescenta uma vela carimbada AGORA com o
+// ultimo preco repetido nas quatro pontas. Reproduz esse caso: serie que
+// termina alguns pregoes atras, mais o fantasma de hoje.
+function comFantasma(rows, recuar) {
+  const reais = rows.slice(0, -recuar);
+  const ult = reais[reais.length - 1];
+  return reais.concat([
+    { t: ancorarDia(Math.floor(Date.now() / 1000)), o: ult.c, h: ult.c, l: ult.c, c: ult.c },
+  ]);
+}
+const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 
 let falhas = 0;
 const ok = (cond, msg) => { console.log((cond ? "  ok   " : "  FALHA") + "  " + msg); if (!cond) falhas++; };
@@ -112,6 +124,22 @@ await cenario("as duas fontes fora do ar", { yahooOk: false, stooqOk: false }, (
   ok(/FALHA:/.test(r.texto), "bloco marcado como FALHA");
   ok(/yahoo: HTTP 502/.test(r.texto) && /stooq: HTTP 403/.test(r.texto), "erro cita as duas fontes");
   ok(/fonte: OHLC de cambio \(diario=indisponivel/.test(r.texto), "cabecalho registra indisponibilidade");
+});
+
+await cenario("vela-fantasma de fim de semana", {
+  series: { "1d": comFantasma(diario, 3), "1wk": comFantasma(semanal, 2) },
+}, (r) => {
+  const ultimoRealDiario = diario[diario.length - 4];
+  ok(!/FALHA:/.test(r.texto), "relatorio sai inteiro");
+  ok(
+    new RegExp(`candle_atual_data: ${dia(ultimoRealDiario.t)}`).test(r.texto),
+    "vela atual e' o ultimo pregao real, nao o fantasma de hoje"
+  );
+  ok(!new RegExp(`candle_atual_data: ${dia(ancorarDia(Math.floor(Date.now() / 1000)))}`).test(r.texto),
+    "o fantasma de hoje nao aparece como vela atual");
+  ok(/vela_atual_em_formacao: nao/.test(r.texto), "mercado fechado nao e' vela em formacao");
+  ok(!/candle_atual_var_pct_desde_abertura: 0\.00\b/.test(r.texto),
+    "preco atual nao e' o ultimo preco repetido nas quatro pontas");
 });
 
 console.log("\n== JSON ==");

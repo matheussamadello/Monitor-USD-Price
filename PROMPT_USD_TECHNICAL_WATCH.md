@@ -95,15 +95,15 @@ Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_m
 
 Não dependa eternamente de valores hardcoded neste prompt quando o JSON já trouxer a configuração atual.
 
-Na configuração inicial do projeto, as faixas publicadas são:
+Na configuração atual do projeto, calibrada em 2026-08-29, as faixas publicadas são:
 
-- R$ 5,80–6,00 — `faixa_5_80_6_00`;
-- R$ 5,50–5,65 — `faixa_5_50_5_65`;
-- R$ 5,20–5,35 — `regiao_suporte_5_20_5_35`.
+- R$ 5,25–5,36 — `faixa_5_25_5_36`;
+- R$ 5,13–5,21 — `faixa_5_13_5_21`;
+- R$ 5,05–5,12 — `regiao_suporte_5_05_5_12`.
 
-O monitor também usa R$ 6,00 como resistência pontual e R$ 5,20 como suporte pontual na máquina de estados.
+O monitor também usa R$ 5,30 como resistência pontual e R$ 5,13 como suporte pontual na máquina de estados. Os dois têm confluência: 5,30 é o centro da zona automática mais forte acima do preço e a EMA89 semanal; 5,13 é a EMA89 diária, a borda inferior da zona de maior score e o último fundo mais alto da estrutura.
 
-**Trate esses números com desconfiança até que o dono do repositório os revise.** Eles foram escolhidos como números redondos plausíveis, sem acesso à cotação no momento em que o monitor foi criado — não saíram de uma leitura de gráfico. Se o preço atual do relatório estiver muito distante deles, isso é sinal de que a revisão ainda não aconteceu, e não um sinal técnico.
+São uma leitura de uma data, não valores eternos. Se o JSON publicar outra configuração, prevalece o JSON.
 
 Se o JSON atualizado publicar outros níveis/faixas, **prevalece o JSON**. Para resistência/suporte pontual, leia o valor atual diretamente de `niveis_manuais` quando houver metadado suficiente para isso. Se o relatório ainda não publicar explicitamente o número pontual, use temporariamente o valor legado conhecido sem transformar essa ausência em alerta.
 
@@ -347,7 +347,7 @@ Explique que é um sinal intermediário: superior à janela agressiva e inferior
 
 ## Confirmação conservadora de entrada
 
-Use a resistência manual principal publicada em `niveis_manuais` como âncora enquanto ela continuar estruturalmente relevante. Na configuração inicial essa âncora é R$ 6,00, mas se o JSON publicar outra configuração, prevalece o JSON.
+Use a resistência manual principal publicada em `niveis_manuais` como âncora enquanto ela continuar estruturalmente relevante. Na configuração atual essa âncora é R$ 5,30, mas se o JSON publicar outra configuração, prevalece o JSON.
 
 Trate o nível como **âncora de uma região de decisão**, não como linha exata. Use também as faixas manuais e zonas automáticas próximas para definir a região efetivamente relevante.
 
@@ -513,7 +513,7 @@ quando uma falha/rejeição relevante vier acompanhada de **deterioração estru
 
 A perda da região de suporte manual principal também pode evoluir para esse alerta quando houver confirmação por fechamento e deterioração estrutural relevante.
 
-Na configuração inicial a âncora inferior pontual do monitor é R$ 5,20 e a faixa relacionada publicada é R$ 5,20–5,35, mas leia a configuração atual do JSON sempre que disponível.
+Na configuração atual a âncora inferior pontual do monitor é R$ 5,13 e a faixa relacionada publicada é R$ 5,05–5,12, mas leia a configuração atual do JSON sempre que disponível.
 
 Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.
 
@@ -574,7 +574,7 @@ Nunca use a EMA semanal isoladamente para recomendar compra ou realização.
 
 Enquanto o suporte pontual/manual principal publicado em `niveis_manuais` continuar estruturalmente relevante, trate-o como âncora de uma **REGIÃO de suporte**, não como linha exata.
 
-Na configuração inicial essa âncora é R$ 5,20, mas, se o JSON publicar outro valor como suporte principal, prevalece o JSON. Use as faixas manuais atuais e as zonas automáticas próximas para definir a região estrutural efetiva.
+Na configuração atual essa âncora é R$ 5,13, mas, se o JSON publicar outro valor como suporte principal, prevalece o JSON. Use as faixas manuais atuais e as zonas automáticas próximas para definir a região estrutural efetiva.
 
 Simples toque ou perfuração intradiária não basta.
 
@@ -715,6 +715,7 @@ Três consequências práticas:
 Diferente dos monitores de cripto, o câmbio não negocia todo dia.
 
 - Fora do pregão a "vela atual" já é uma vela fechada. Leia `vela_atual_em_formacao` antes de descrever o candle do dia: `nao` significa que não há vela em formação, e não que o dia foi parado.
+- Nesse caso o `preco_atual` repete o último fechamento real. Não descreva isso como "dia sem variação" nem como estabilidade: é mercado fechado.
 - Um `timestamp` novo com os mesmos dados é o comportamento normal de fim de semana. Não gere alerta por isso.
 - O cabeçalho publica qual fonte respondeu (`fonte: OHLC de cambio (...)`). Quando aparece `stooq`, a fonte é fim de dia e não há vela em formação mesmo em dia útil. Isso também não é alerta.
 - Se as duas fontes caírem, o bloco do par sai com `FALHA:`. Trate como indisponibilidade, sujeita à regra das 4 execuções consecutivas descrita acima.

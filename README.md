@@ -50,6 +50,14 @@ O câmbio à vista não negocia sábado e domingo, e os dois monitores anteriore
 - Fora do pregão, a "vela atual" já é uma vela fechada. A linha `vela_atual_em_formacao: nao` é o que separa os dois casos para quem lê só o JSON.
 - `retestMaxCandles` conta **dias corridos**, não pregões. Os 30 do diário valem cerca de 21 velas diárias reais.
 
+### A vela-fantasma
+
+Fora do pregão o Yahoo não simplesmente para de mandar velas: ele **acrescenta uma vela carimbada agora**, com o último preço repetido nas quatro pontas e amplitude zero. Não é uma sessão.
+
+Isso apareceu na primeira execução real, num sábado. Se a vela entra na série, ela vira a "vela em formação" do sábado, o relatório publica como `preco_atual` um número que não fechou em lugar nenhum, e `vela_atual_em_formacao` diz `sim` com o mercado fechado.
+
+O monitor descarta qualquer vela de **amplitude zero** (`high === low`). O critério é esse, e não o calendário, porque assim pega feriado, meio-pregão e a borda do Stooq do mesmo jeito, sem precisar saber o calendário de nenhum dos dois. Um dia inteiro de USD/BRL sem um pip de variação não existe, então nenhuma vela legítima é descartada.
+
 O **diário** é o timeframe principal para timing de pullbacks, rompimentos, retestes, perda/recuperação de níveis, candles e mudanças de momentum.
 
 O **semanal** funciona principalmente como contexto e filtro estrutural: ajuda a identificar se um sinal diário está alinhado, neutro ou em conflito com a estrutura maior. O relatório também calcula os mesmos indicadores principais no semanal e distingue os valores da vela semanal fechada dos valores provisórios da semana em formação.
@@ -170,18 +178,20 @@ Em integrações com bots ou LLMs, é recomendável que sinais de maior convicç
 
 Os níveis manuais ficam centralizados em `NIVEIS_USD` dentro de `monitor.mjs`.
 
-> **Atenção: os níveis atuais são um esqueleto, não uma leitura.**
-> Foram escolhidos como números redondos plausíveis para o USD/BRL, sem acesso à cotação no momento em que o arquivo foi gerado. Abra o gráfico, veja onde o preço está de fato e ajuste **antes** de ligar qualquer alerta em cima deles. Enquanto não ajustar, a máquina de estados e os gatilhos vão trabalhar sobre níveis arbitrários.
+Os valores atuais foram calibrados na primeira execução real, em 2026-08-29, com o USD/BRL fechando a 5,1611.
 
-Na versão atual do projeto, as faixas publicadas são:
+| Faixa | Label | De onde veio |
+| --- | --- | --- |
+| R$ 5,25–5,36 | `faixa_5_25_5_36` | zona automática de resistência acima do preço |
+| R$ 5,13–5,21 | `faixa_5_13_5_21` | campo de batalha atual (zona de maior score) |
+| R$ 5,05–5,12 | `regiao_suporte_5_05_5_12` | zona de suporte imediatamente abaixo |
 
-| Faixa | Label |
-| --- | --- |
-| R$ 5,80–6,00 | `faixa_5_80_6_00` |
-| R$ 5,50–5,65 | `faixa_5_50_5_65` |
-| R$ 5,20–5,35 | `regiao_suporte_5_20_5_35` |
+Além das faixas, o código mantém uma resistência pontual em **R$ 5,30** e um suporte pontual em **R$ 5,13** para a máquina de estados de rompimento/reteste. Nenhum dos dois é número redondo por acaso:
 
-Além das faixas, o código mantém uma resistência pontual em **R$ 6,00** e um suporte pontual em **R$ 5,20** para a máquina de estados de rompimento/reteste.
+- **5,30** é o centro da zona automática mais forte acima do preço (5,2255–5,3604, centro 5,2930) e coincide com a **EMA89 semanal** em 5,2926. Duas leituras independentes apontando o mesmo lugar.
+- **5,13** é tríplice confluência: **EMA89 diária** em 5,1321, borda inferior da zona de maior score (5,1306) e o último fundo mais alto da estrutura, o pivô de 2026-08-24 em 5,1308.
+
+São uma leitura de um dia, não uma verdade permanente. Reveja quando o preço sair dessas regiões — o próprio relatório sinaliza isso quando as faixas deixam de conter o preço.
 
 Os labels usam `_` no lugar da vírgula decimal (`5_60`, e não `5,60` nem `5.60`): eles entram em identificadores como `rompimento_confirmado_5_60` e em chaves de `docs/estado.json`, e um ponto ali atrapalha quem consome.
 
@@ -387,6 +397,7 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que o volume sai declarado como indisponível e os campos de volume ficam fora;
 - que o `relatorio.json` continua parseável e tipado;
 - que uma segunda execução lê o estado da anterior sem quebrar;
+- que a vela-fantasma de fim de semana não vira a vela em formação;
 - que a ancoragem de fuso não joga uma vela para o dia seguinte.
 
 Rode com:
@@ -507,14 +518,14 @@ Exemplo da estrutura atual:
 ```js
 const NIVEIS_USD = {
   faixas: [
-    [5.80, 6.00, "faixa_5_80_6_00"],
-    [5.50, 5.65, "faixa_5_50_5_65"],
-    [5.20, 5.35, "regiao_suporte_5_20_5_35"],
+    [5.25, 5.36, "faixa_5_25_5_36"],
+    [5.13, 5.21, "faixa_5_13_5_21"],
+    [5.05, 5.12, "regiao_suporte_5_05_5_12"],
   ],
-  resistencia: 6.00,
-  resistenciaLabel: "6_00",
-  suporte: 5.20,
-  suporteLabel: "5_20",
+  resistencia: 5.30,
+  resistenciaLabel: "5_30",
+  suporte: 5.13,
+  suporteLabel: "5_13",
 };
 ```
 

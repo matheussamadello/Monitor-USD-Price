@@ -62,23 +62,33 @@ const TIMEFRAMES = [
 // eles entram em identificadores como rompimento_confirmado_5_60 e em
 // chaves de docs/estado.json, e um ponto ali atrapalha quem consome.
 //
-// ATENCAO — OS VALORES ABAIXO SAO UM ESQUELETO, NAO UMA LEITURA.
-// Foram escolhidos como numeros redondos plausiveis para o USD/BRL, sem
-// acesso a cotacao no momento em que este arquivo foi gerado. Abra o
-// grafico, veja onde o preco esta de fato e ajuste ANTES de ligar
-// qualquer alerta em cima deles. Enquanto nao ajustar, a maquina de
-// estados e os gatilhos vao trabalhar sobre niveis arbitrarios.
+// De onde vieram os valores abaixo (primeira execucao real, 2026-08-29,
+// USD/BRL fechando a 5.1611):
+//
+//   resistencia 5.30 — centro da zona automatica mais forte acima do
+//     preco (5.2255-5.3604, centro 5.2930) coincidindo com a EMA89
+//     SEMANAL em 5.2926. Duas leituras independentes no mesmo lugar.
+//   suporte 5.13 — triplice confluencia: EMA89 diaria em 5.1321, borda
+//     inferior da zona de score mais alto (5.1306) e o ultimo fundo mais
+//     alto da estrutura, o pivo de 2026-08-24 em 5.1308.
+//   faixas — as tres regioes que as zonas automaticas ja marcavam:
+//     resistencia 5.25-5.36, campo de batalha atual 5.13-5.21 e o
+//     suporte de 5.05-5.12.
+//
+// Sao uma leitura de um dia, nao uma verdade permanente. Reveja quando o
+// preco sair dessas regioes — o proprio relatorio sugere isso quando as
+// faixas param de conter o preco.
 // ------------------------------------------------------------
 const NIVEIS_USD = {
   faixas: [
-    [5.80, 6.00, "faixa_5_80_6_00"],
-    [5.50, 5.65, "faixa_5_50_5_65"],
-    [5.20, 5.35, "regiao_suporte_5_20_5_35"],
+    [5.25, 5.36, "faixa_5_25_5_36"],
+    [5.13, 5.21, "faixa_5_13_5_21"],
+    [5.05, 5.12, "regiao_suporte_5_05_5_12"],
   ],
-  resistencia: 6.00,
-  resistenciaLabel: "6_00",
-  suporte: 5.20,
-  suporteLabel: "5_20",
+  resistencia: 5.30,
+  resistenciaLabel: "5_30",
+  suporte: 5.13,
+  suporteLabel: "5_13",
 };
 
 const PAIRS = [
@@ -256,6 +266,18 @@ function montarSerie(linhas) {
   const porTempo = new Map();
   for (const l of linhas) {
     if (![l.open, l.high, l.low, l.close].every((v) => Number.isFinite(v))) continue;
+    // VELA-FANTASMA. Fora do pregao — fim de semana, feriado — o Yahoo
+    // acrescenta uma vela carimbada AGORA com o ultimo preco repetido
+    // nas quatro pontas, amplitude zero. Nao e' sessao: entrando na
+    // serie, ela vira a "vela em formacao" de sabado, faz o relatorio
+    // publicar um preco que nao fechou em lugar nenhum e diz
+    // vela_atual_em_formacao: sim com o mercado fechado.
+    //
+    // Amplitude zero e' o criterio porque nao depende de calendario:
+    // pega feriado, meio-pregao e a borda do Stooq do mesmo jeito. Um
+    // dia inteiro de USD/BRL sem UM pip de variacao nao existe, entao
+    // nao ha vela legitima sendo descartada aqui.
+    if (l.high === l.low) continue;
     porTempo.set(l.time, l);
   }
   const rows = [...porTempo.values()]
