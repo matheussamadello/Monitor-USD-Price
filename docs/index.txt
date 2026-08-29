@@ -1,4 +1,4 @@
-timestamp: 2026-08-29 09:00 UTC
+timestamp: 2026-08-29 11:08 UTC
 fonte: OHLC de cambio (diario=yahoo, semanal=yahoo)
 fontes_em_cascata: yahoo -> stooq (vale a primeira que responder)
 indicadores: RSI(14) e DMI/ADX(14) por Wilder/RMA, EMA(89) exponencial
@@ -87,12 +87,12 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: faixa_5_13_5_21, divergencia_bullish_oculta_confirmada, novo_HH_apos_topo_mais_baixo
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=em_teste score=82 estrutural=5.130750-5.194600 operacional=5.148279-5.186853 centro=5.167566 toques=11 rejeicoes=8 role_reversal=sim dist_pct=-0.13 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=72 estrutural=5.208725-5.285800 operacional=5.259967-5.298541 centro=5.279254 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-2.24 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_3: id=usd|diario|z6 tipo=resistencia status=ativa estado=abaixo score=72 estrutural=5.281346-5.403800 operacional=5.351550-5.390124 centro=5.370837 toques=13 rejeicoes=7 role_reversal=sim dist_pct=-3.91 confluencia_manual=sim confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=acima score=78 estrutural=5.065085-5.130600 operacional=5.067816-5.106390 centro=5.087103 toques=8 rejeicoes=5 role_reversal=sim dist_pct=1.45 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_5: id=usd|diario|z19 tipo=suporte status=ativa estado=acima score=77 estrutural=4.999000-5.064000 operacional=5.008468-5.047042 centro=5.027755 toques=7 rejeicoes=4 role_reversal=sim dist_pct=2.65 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
-zona_auto_6: id=usd|diario|z2 tipo=suporte status=ativa estado=acima score=86 estrutural=4.948557-4.998600 operacional=4.959926-4.998500 centro=4.979213 toques=4 rejeicoes=3 role_reversal=sim dist_pct=3.65 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=em_teste score=82 estrutural=5.130750-5.194600 operacional=5.146812-5.185386 centro=5.166099 toques=10 rejeicoes=7 role_reversal=sim dist_pct=-0.10 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=75 estrutural=5.208725-5.285800 operacional=5.250370-5.288944 centro=5.269657 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-2.06 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_3: id=usd|diario|z6 tipo=resistencia status=ativa estado=abaixo score=71 estrutural=5.281346-5.403800 operacional=5.343071-5.381645 centro=5.362358 toques=15 rejeicoes=9 role_reversal=sim dist_pct=-3.75 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=acima score=78 estrutural=5.065085-5.130600 operacional=5.071038-5.109612 centro=5.090325 toques=8 rejeicoes=5 role_reversal=sim dist_pct=1.39 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_5: id=usd|diario|z19 tipo=suporte status=ativa estado=acima score=77 estrutural=4.999000-5.064000 operacional=5.009592-5.048166 centro=5.028879 toques=7 rejeicoes=4 role_reversal=sim dist_pct=2.63 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usd|diario|z2 tipo=suporte status=ativa estado=acima score=86 estrutural=4.948557-4.998600 operacional=4.958236-4.996810 centro=4.977523 toques=5 rejeicoes=4 role_reversal=sim dist_pct=3.69 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 
 confluencia_entrada: estrutura_de_alta_preservada, di_plus_dominante
 confluencia_pullback: tendencia_hh_hl_preservada, di_plus_ainda_dominante, divergencia_bullish_confirmada
@@ -140,7 +140,7 @@ nivel_5_13_estado: sem_registro
 nivel_5_13_historico: nenhum
 niveis_mudancas_nesta_vela: nenhuma
 
-fracao_periodo_decorrida: 0.768
+fracao_periodo_decorrida: 0.781
 vela_atual_em_formacao: sim
 volume_disponivel: nao
 
