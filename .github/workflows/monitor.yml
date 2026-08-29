@@ -1,0 +1,71 @@
+name: Monitor USD
+
+on:
+  schedule:
+    # Minuto 40 para nao coincidir com os outros dois monitores (o de BTC
+    # roda no minuto 20). As chamadas as fontes ficam espalhadas, e da'
+    # para saber qual execucao e' qual so pelo horario no log.
+    - cron: "40 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monitor-usd
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Historico completo. Push a partir de clone raso funciona, mas
+          # o fetch/reset do loop de retry fica mais previsivel com o
+          # historico inteiro — e e' o que os outros monitores ja usam.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Teste de fumaca
+        # Roda com series sinteticas, sem tocar na rede: se um refactor
+        # quebrou o parse de alguma das fontes, o job para aqui em vez de
+        # publicar um relatorio pela metade.
+        run: node teste-fumaca.mjs
+
+      - name: Gerar e publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          for tentativa in 1 2 3 4 5; do
+            # O reset vem ANTES do script de proposito: docs/estado.json e'
+            # a memoria entre execucoes (zonas, contadores, estado dos
+            # niveis). Se o script rodasse antes, leria uma copia que o
+            # reset jogaria fora, e o estado se perderia em silencio.
+            git fetch origin main
+            git reset --hard origin/main
+
+            node monitor.mjs
+
+            git add docs
+            if git diff --cached --quiet; then
+              echo "nada mudou"
+              exit 0
+            fi
+
+            git commit -m "monitor: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            if git push origin main; then
+              echo "publicado na tentativa $tentativa"
+              exit 0
+            fi
+
+            echo "push falhou (alguem empurrou antes), tentando de novo"
+            sleep $((tentativa * 5))
+          done
+
+          echo "nao consegui publicar depois de 5 tentativas"
+          exit 1
