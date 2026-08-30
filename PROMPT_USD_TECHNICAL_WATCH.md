@@ -54,6 +54,7 @@ Como tratá-los:
 2. **Quando os dois apontarem a mesma coisa, isso é confluência** e merece uma mensagem só, citando ambos — não duas.
 3. **Quando divergirem, o USD/BRL manda na leitura macro** e o USDT/BRL manda no preço de execução. Divergência persistente entre eles é, em si, informação: significa que o prêmio está se mexendo.
 4. **Só o USDT/BRL tem volume.** Nunca cobre campos de volume do USD/BRL, nem interprete a ausência deles como fraqueza.
+5. **O volume classificado é o da última vela FECHADA** (`volume_referencia: ultima_vela_fechada`). `volume_atual` é a vela em formação e é parcial — nunca a compare com `volume_media20` por conta própria, porque volume é acumulado e o número vai parecer catastrófico até o dia fechar.
 
 A referência analítica é **USD/BRL**: quantos reais custa um dólar. O ativo monitorado é o dólar; o real é a moeda de cotação.
 

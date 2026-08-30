@@ -229,6 +229,20 @@ Então, **para o USD/BRL apenas**, o volume está desligado e não zerado. Na pr
 
 Continua publicada a `fracao_periodo_decorrida`, que agora serve para o que sempre serviu de fato: dizer o quanto do período já passou.
 
+### A classificação olha a vela fechada, não a em formação
+
+Vale para o USDT/BRL, que é quem tem volume.
+
+Volume é **acumulado**. Às 6h da manhã, uma vela diária tem só as horas já decorridas. Compará-la com a média de dias completos dá sempre um número catastrófico — a primeira versão publicou `volume_vs_media_pct: -96,72` e `contracao_forte` num dia que tinha 25% andado. Não havia contração nenhuma.
+
+Num par 24/7 isso não é um caso raro: aconteceria **toda madrugada**, das 00h às ~06h UTC. E o efeito prático seria pior que um número feio — um rompimento real nessa janela sairia carimbado como `rompimento_com_volume_fraco`.
+
+A correção óbvia seria escalar a média pela fração decorrida (`média × 0,25`), mas isso supõe que o giro se espalha por igual ao longo do dia, o que não acontece em cripto. A saída sem suposição nenhuma é comparar **dia inteiro contra dia inteiro**: `volume_vs_media_pct` e `volume_classificacao` passaram a olhar a última vela **fechada**, e o relatório declara isso em `volume_referencia: ultima_vela_fechada`.
+
+O volume da vela em formação continua publicado, cru, em `volume_atual`, com `volume_parcial: sim` ao lado.
+
+Isso também resolveu uma incoerência anterior: `rompimento_confirmado` é avaliado sobre a vela **fechada**, mas buscava a confirmação de volume na vela **viva** — duas velas diferentes na mesma frase. Como efeito colateral, o estado `inconclusivo_periodo_inicial` deixou de existir: não há mais período inicial a desconfiar.
+
 ### Pivôs e estrutura de mercado
 
 O monitor usa pivôs fractais confirmados para classificar estrutura de preço e publica campos como:

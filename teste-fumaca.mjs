@@ -1,6 +1,8 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
-import { build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho } from "./monitor.mjs";
+import {
+  build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
+} from "./monitor.mjs";
 
 const DIA = 86400;
 let seed = 42;
@@ -188,6 +190,8 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
     "so o par de cambio declara volume indisponivel");
   ok(/volume_vs_media_pct: -?\d/.test(usdtDia), "USDT/BRL: volume comparado com a media");
   ok(/volume_classificacao: \w/.test(usdtDia), "USDT/BRL: volume classificado");
+  ok(/volume_referencia: ultima_vela_fechada/.test(usdtDia),
+    "USDT/BRL: a classificacao declara que compara vela fechada");
   ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
   ok(/rsi14_fechado: \d/.test(usdtDia) && /adx14_fechado: \d/.test(usdtDia),
     "USDT/BRL: RSI e ADX calculados");
@@ -269,6 +273,24 @@ await cenario("trilho fora do ar nao derruba o relatorio", {
   ok(/rsi14_fechado: \d/.test(r.texto), "o par analisado continua saindo inteiro");
   ok(/GATILHOS ATIVOS:/.test(r.texto), "gatilhos continuam sendo avaliados");
 });
+
+console.log("\n== volume: vela parcial nao classifica ==");
+{
+  // 20 dias fechados com giro ~1000 e um dia em formacao com 30. Antes,
+  // os 30 eram comparados com a media de dias inteiros e davam -97%.
+  const fechadas = new Array(20).fill(1000);
+  const comParcial = analisarVolume(fechadas, 30);
+  ok(Math.abs(comParcial.vsMediaPct) < 1e-9,
+    `vela em formacao nao puxa a classificacao (vsMedia ${comParcial.vsMediaPct.toFixed(2)}%)`);
+  ok(comParcial.classificacao === "normal",
+    `20 dias iguais e' 'normal', nao 'contracao_forte' (deu ${comParcial.classificacao})`);
+  ok(comParcial.atual === 30, "o volume da vela viva continua publicado, cru");
+
+  // E uma seca DE VERDADE na ultima fechada continua sendo detectada.
+  const seca = analisarVolume(fechadas.slice(0, 19).concat([100]), 5000);
+  ok(seca.classificacao === "contracao_forte",
+    `queda real na vela fechada ainda vira contracao_forte (deu ${seca.classificacao})`);
+}
 
 console.log("\n== trilho: aritmetica ==");
 {

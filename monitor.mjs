@@ -1237,7 +1237,25 @@ export function analisarVolume(volumes, volumeVivo, media = VOL_MEDIA, disponive
   const janela = volumes.slice(n - usa);
   const med = janela.reduce((a, b) => a + b, 0) / usa;
   const ultima = volumes[n - 1];
-  const vsMedia = med === 0 ? null : ((volumeVivo - med) / med) * 100;
+
+  // DIA INTEIRO CONTRA DIA INTEIRO. A comparacao usa a ultima vela
+  // FECHADA, nunca a que esta em formacao.
+  //
+  // Volume e' acumulado: as 6h da manha uma vela diaria tem so as horas
+  // ja decorridas. Compara-la com a media de dias completos da sempre um
+  // numero catastrofico -- num par 24/7 isso publicava "contracao_forte"
+  // toda madrugada, e um rompimento real nessa janela sairia carimbado
+  // como "volume fraco".
+  //
+  // Corrigir escalando a media pela fracao decorrida seria supor que o
+  // giro se espalha por igual ao longo do dia, o que nao acontece. A
+  // vela fechada nao precisa de suposicao nenhuma.
+  //
+  // Isso tambem resolve uma incoerencia que ja existia: rompimento_
+  // confirmado e' avaliado sobre a vela FECHADA, mas buscava a
+  // confirmacao de volume na vela VIVA -- duas velas diferentes na
+  // mesma frase.
+  const vsMedia = med === 0 ? null : ((ultima - med) / med) * 100;
 
   let classificacao = "normal";
   if (vsMedia !== null) {
@@ -1257,7 +1275,7 @@ export function analisarVolume(volumes, volumeVivo, media = VOL_MEDIA, disponive
   }
 
   return {
-    atual: volumeVivo,
+    atual: volumeVivo, // continua publicado, cru, marcado como parcial
     ultimaFechada: ultima,
     media: med,
     periodoMedia: usa,
@@ -1332,9 +1350,10 @@ function alertasTecnicos(cfg, d, ind) {
   const vol = ind.volume;
   const houveRompimento = a.some((x) => x.startsWith("rompimento_"));
   const houvePerda = a.some((x) => x.startsWith("perda_suporte_") || x.startsWith("toque_suporte_"));
-  // Vela muito no inicio do periodo: volume ainda nao e' comparavel
-  // com a media de velas completas. Nada de forte/fraco aqui.
-  if (vol && vol.vsMediaPct !== null && !ind.volumeInconclusivo) {
+  // Nao ha mais o que suprimir por vela parcial: vol.vsMediaPct compara
+  // vela FECHADA com media de velas fechadas, entao vale a qualquer hora
+  // em que a execucao rode.
+  if (vol && vol.vsMediaPct !== null) {
     if (houveRompimento && vol.vsMediaPct >= 20) a.push("rompimento_com_volume_acima_da_media");
     if (houveRompimento && vol.vsMediaPct <= -20) a.push("rompimento_com_volume_fraco");
     if (houvePerda && vol.vsMediaPct >= 50) a.push("queda_com_expansao_de_volume");
@@ -1530,8 +1549,6 @@ function niveisDoPar(cfg) {
 // ------------------------------------------------------------
 // Volume parcial: fracao do periodo ja decorrida
 // ------------------------------------------------------------
-
-const FRACAO_INCONCLUSIVA = 0.25;
 
 function fracaoPeriodo(live, segundos, agora = Math.floor(Date.now() / 1000)) {
   const f = (agora - live.time) / segundos;
@@ -2862,7 +2879,6 @@ function readPair(cfg, d, tf, opts = {}) {
   // ---- volume parcial ----
   const fracao = fracaoPeriodo(live, tf.segundos);
   const parcial = fracao !== null && fracao < 0.98;
-  const inconclusivo = fracao !== null && fracao < FRACAO_INCONCLUSIVA;
   const volSemana =
     tf.key === "semanal" ? volumeSemanaEquivalente(d, opts.dadosDiario) : null;
 
@@ -2887,7 +2903,6 @@ function readPair(cfg, d, tf, opts = {}) {
     padroes,
     contextoTrio: ctxSoldados,
     mudancasNivel,
-    volumeInconclusivo: inconclusivo,
   });
 
   // ---- zonas automaticas (SO contexto: nao geram alerta) ----
@@ -2989,11 +3004,10 @@ function readPair(cfg, d, tf, opts = {}) {
     L.push(`volume_ultima_fechada: ${num(vol.ultimaFechada, 4)}`);
     L.push(`volume_media${vol.periodoMedia || VOL_MEDIA}: ${num(vol.media, 4)}`);
     L.push(`volume_vs_media_pct: ${num(vol.vsMediaPct, 2)}`);
-    L.push(
-      `volume_classificacao: ${
-        inconclusivo ? "inconclusivo_periodo_inicial" : vol.classificacao
-      }`
-    );
+    // A comparacao e' sempre entre velas FECHADAS, entao nao existe mais
+    // um estado "inconclusivo por inicio de periodo".
+    L.push(`volume_referencia: ultima_vela_fechada`);
+    L.push(`volume_classificacao: ${vol.classificacao}`);
     L.push(`volume_tendencia_3_fechadas: ${vol.tendencia}`);
     L.push(`trades_vela_atual: ${num(live.trades, 0)}`);
     if (volSemana) {
