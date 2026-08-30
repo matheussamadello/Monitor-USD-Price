@@ -717,8 +717,8 @@ Diferente dos monitores de cripto, o câmbio não negocia todo dia.
 - Fora do pregão a "vela atual" já é uma vela fechada. Leia `vela_atual_em_formacao` antes de descrever o candle do dia: `nao` significa que não há vela em formação, e não que o dia foi parado.
 - Nesse caso o `preco_atual` repete o último fechamento real. Não descreva isso como "dia sem variação" nem como estabilidade: é mercado fechado.
 - Um `timestamp` novo com os mesmos dados é o comportamento normal de fim de semana. Não gere alerta por isso.
-- O cabeçalho publica qual fonte respondeu (`fonte: OHLC de cambio (...)`). Quando aparece `stooq`, a fonte é fim de dia e não há vela em formação mesmo em dia útil. Isso também não é alerta.
-- Se as duas fontes caírem, o bloco do par sai com `FALHA:`. Trate como indisponibilidade, sujeita à regra das 4 execuções consecutivas descrita acima.
+- O cabeçalho publica qual elo da cascata respondeu (`fonte: OHLC de cambio (diario=yahoo/query1, ...)`). Uma troca de `query1` para `query2` é o espelho de host assumindo, com o mesmo dado. **Não é alerta.**
+- Se a cascata inteira cair, o bloco do par sai com `FALHA:`. Trate como indisponibilidade, sujeita à regra das 4 execuções consecutivas descrita acima.
 
 ---
 

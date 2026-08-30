@@ -1,6 +1,6 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
-import { build, relatorioParaJSON, parseYahoo, parseStooq, ancorarDia } from "./monitor.mjs";
+import { build, relatorioParaJSON, parseYahoo, ancorarDia } from "./monitor.mjs";
 
 const DIA = 86400;
 let seed = 42;
@@ -50,28 +50,17 @@ function respYahoo(rows) {
     },
   });
 }
-function respStooq(rows) {
-  return ["Date,Open,High,Low,Close"]
-    .concat(rows.map((r) =>
-      [new Date(r.t * 1000).toISOString().slice(0, 10),
-       r.o.toFixed(4), r.h.toFixed(4), r.l.toFixed(4), r.c.toFixed(4)].join(",")))
-    .join("\n");
-}
-
-function fakeFetch({ yahooOk = true, stooqOk = true, series = porTf } = {}) {
+// hostsFora: quais hosts do Yahoo estao derrubados nesta simulacao.
+function fakeFetch({ hostsFora = [], series = porTf } = {}) {
   const chamadas = [];
   const f = async (url) => {
     chamadas.push(url);
-    if (url.includes("yahoo")) {
-      const iv = url.match(/interval=([^&]+)/)[1];
-      return yahooOk
-        ? { ok: true, text: async () => respYahoo(series[iv]) }
-        : { ok: false, status: 502, text: async () => "" };
+    const host = url.match(/https:\/\/([^.]+)\./)[1];
+    if (hostsFora.includes(host)) {
+      return { ok: false, status: host === "query1" ? 429 : 502, text: async () => "" };
     }
-    const iv = url.match(/[?&]i=([^&]+)/)[1];
-    return stooqOk
-      ? { ok: true, text: async () => respStooq(series[iv]) }
-      : { ok: false, status: 403, text: async () => "" };
+    const iv = url.match(/interval=([^&]+)/)[1];
+    return { ok: true, text: async () => respYahoo(series[iv]) };
   };
   f.chamadas = chamadas;
   return f;
@@ -101,7 +90,8 @@ async function cenario(nome, opts, checa) {
 
 const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(!/FALHA:/.test(r.texto), "nenhum bloco em FALHA");
-  ok(/fonte: OHLC de cambio \(diario=yahoo, semanal=yahoo\)/.test(r.texto), "cabecalho aponta yahoo");
+  ok(/fonte: OHLC de cambio \(diario=yahoo\/query1, semanal=yahoo\/query1\)/.test(r.texto),
+    "cabecalho aponta o host primario");
   ok(!/NaN|undefined/.test(r.texto), "sem NaN/undefined no texto");
   ok(/^USD\/BRL$/m.test(r.texto), "bloco do par USD/BRL");
   ok(/volume_disponivel: nao/.test(r.texto), "volume declarado indisponivel");
@@ -114,15 +104,19 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/preco_atual: \d\.\d{4}/.test(r.texto), "preco com 4 casas");
 });
 
-await cenario("fallback: Yahoo fora do ar", { yahooOk: false }, (r) => {
-  ok(!/FALHA:/.test(r.texto), "Stooq assumiu, nenhum bloco em FALHA");
-  ok(/fonte: OHLC de cambio \(diario=stooq, semanal=stooq\)/.test(r.texto), "cabecalho aponta stooq");
+// O modo de falha que de fato acontece: um host da provedora limita ou
+// bloqueia o IP do runner, e o outro continua servindo.
+await cenario("host primario limitado (429)", { hostsFora: ["query1"] }, (r) => {
+  ok(!/FALHA:/.test(r.texto), "o espelho assumiu, nenhum bloco em FALHA");
+  ok(/fonte: OHLC de cambio \(diario=yahoo\/query2, semanal=yahoo\/query2\)/.test(r.texto),
+    "cabecalho aponta o espelho");
   ok(!/NaN|undefined/.test(r.texto), "sem NaN/undefined no texto");
 });
 
-await cenario("as duas fontes fora do ar", { yahooOk: false, stooqOk: false }, (r) => {
+await cenario("cascata inteira fora do ar", { hostsFora: ["query1", "query2"] }, (r) => {
   ok(/FALHA:/.test(r.texto), "bloco marcado como FALHA");
-  ok(/yahoo: HTTP 502/.test(r.texto) && /stooq: HTTP 403/.test(r.texto), "erro cita as duas fontes");
+  ok(/yahoo\/query1: HTTP 429/.test(r.texto) && /yahoo\/query2: HTTP 502/.test(r.texto),
+    "erro cita cada elo com seu proprio status");
   ok(/fonte: OHLC de cambio \(diario=indisponivel/.test(r.texto), "cabecalho registra indisponibilidade");
 });
 

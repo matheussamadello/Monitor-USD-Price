@@ -6,9 +6,10 @@
 // Mesma engenharia dos monitores de BTC e de XMR. Duas coisas mudam, e
 // as duas vem do mercado, nao de gosto:
 //
-//   1. A fonte nao e' uma corretora de cripto. Sao duas fontes de OHLC
-//      de cambio em cascata (Yahoo Finance e, se ela falhar, Stooq),
-//      porque nenhuma das duas publica SLA.
+//   1. A fonte nao e' uma corretora de cripto. E' OHLC de cambio do
+//      Yahoo Finance, buscado em cascata por dois hosts da provedora.
+//      Ver o comentario sobre FONTES para o que ja foi sondado e
+//      reprovado como segunda provedora.
 //   2. Cambio a vista e' balcao: nao existe volume consolidado publico.
 //      Tudo que dependia de volume esta DESLIGADO, e nao zerado — ver
 //      montarSerie() e pontuarZona().
@@ -30,7 +31,6 @@ const TIMEFRAMES = [
     titulo: "GRAFICO DIARIO",
     yahooInterval: "1d",
     yahooRange: "5y",
-    stooqInterval: "d",
     segundos: 86400,
     // Dias CORRIDOS, nao pregoes: o cambio nao negocia fim de semana,
     // entao estes 30 valem ~21 velas diarias reais.
@@ -44,7 +44,6 @@ const TIMEFRAMES = [
     titulo: "GRAFICO SEMANAL",
     yahooInterval: "1wk",
     yahooRange: "10y",
-    stooqInterval: "w",
     segundos: 604800,
     retestMaxCandles: 8,
     campoEventos: "eventos_semanal",
@@ -98,7 +97,6 @@ const PAIRS = [
     // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
     label: "USD/BRL",
     yahoo: "USDBRL=X",
-    stooq: "usdbrl",
     // 4 casas: o USD/BRL se move em milesimos, e 2 casas apagariam a
     // diferenca entre uma vela parada e uma vela de meio por cento.
     dec: 4,
@@ -222,31 +220,41 @@ export function emaSeries(values, period = EMA_PERIOD) {
 // ------------------------------------------------------------
 // Fontes de OHLC de cambio
 //
-// Duas, em cascata, e nao uma so: nenhuma das duas publica SLA, e uma
-// execucao sem dado apagaria a leitura do dia. A ordem importa. O Yahoo
-// e' a unica que devolve a vela EM FORMACAO do dia corrente; o Stooq e'
-// fim-de-dia, entao quando ele assume, a "vela atual" e' o ultimo
-// pregao ja fechado. O cabecalho do relatorio diz qual respondeu, para
-// que essa diferenca nunca fique implicita.
+// Em cascata, e nao uma so: a fonte nao publica SLA, e uma execucao sem
+// dado apagaria a leitura do dia. O cabecalho do relatorio sempre diz
+// qual elo respondeu.
 // ------------------------------------------------------------
 
 const MAX_VELAS = 720; // mesmo horizonte que os monitores de cripto usam
 
-const FONTES = [
-  {
-    nome: "yahoo",
-    url: (cfg, tf) =>
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.yahoo)}` +
-      `?interval=${tf.yahooInterval}&range=${tf.yahooRange}`,
-    parse: parseYahoo,
-  },
-  {
-    nome: "stooq",
-    url: (cfg, tf) =>
-      `https://stooq.com/q/d/l/?s=${encodeURIComponent(cfg.stooq)}&i=${tf.stooqInterval}`,
-    parse: parseStooq,
-  },
-];
+// O Stooq era o segundo elo desta cascata e SAIU em 2026-08-30. Ele
+// passou a responder HTTP 200 com um desafio de JavaScript ("This site
+// requires JavaScript to verify your browser") em vez do CSV. Um fetch
+// de Node nunca vai resolver esse desafio, entao o fallback estava
+// morto sem fazer barulho: so falharia junto com o Yahoo, que e'
+// exatamente quando ele precisaria funcionar. Nao readicione sem
+// verificar com uma sonda que ele voltou a servir CSV.
+//
+// Foram sondados como substitutos, e todos reprovaram:
+//   FXCM candledata      404, servico desativado
+//   AwesomeAPI           429 QuotaExceeded a partir de IP de runner
+//   Pyth Network         so 1 mes de historico (ranges: 1H, 1D, 1W, 1M)
+//   Frankfurter/BCE      so fechamento, sem maxima e minima
+//
+// O que restou e' um espelho de HOST da mesma provedora. Isso NAO
+// protege contra o Yahoo mudar o formato ou tirar o par do ar -- protege
+// contra o modo de falha que de fato acontece, que e' um host especifico
+// bloquear ou limitar o IP do runner. E' menos redundancia do que havia
+// no papel, e mais do que havia na pratica.
+const HOSTS_YAHOO = ["query1", "query2"];
+
+const FONTES = HOSTS_YAHOO.map((host) => ({
+  nome: `yahoo/${host}`,
+  url: (cfg, tf) =>
+    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.yahoo)}` +
+    `?interval=${tf.yahooInterval}&range=${tf.yahooRange}`,
+  parse: parseYahoo,
+}));
 
 // Toda vela e' ancorada na MEIA-NOITE UTC do proprio dia, venha de onde
 // vier. Sem isso as duas fontes cairiam em grades diferentes — o Yahoo
@@ -332,31 +340,6 @@ export function parseYahoo(texto) {
       high: Number(q.high && q.high[i]),
       low: Number(q.low && q.low[i]),
       close: Number(q.close && q.close[i]),
-    });
-  }
-  return montarSerie(linhas);
-}
-
-export function parseStooq(texto) {
-  const brutas = texto.trim().split(/\r?\n/);
-  // O Stooq responde 200 tambem quando nao tem o que mandar ("No data")
-  // e quando bloqueia por excesso de chamadas. Sem cabecalho CSV nao ha
-  // serie, e isso precisa virar erro para a cascata seguir adiante.
-  if (!brutas.length || !/^date,/i.test(brutas[0])) {
-    throw new Error("Stooq: resposta nao e' CSV de OHLC");
-  }
-  const linhas = [];
-  for (const linha of brutas.slice(1)) {
-    const c = linha.split(",");
-    if (c.length < 5) continue;
-    const t = Date.parse(`${c[0]}T00:00:00Z`);
-    if (!Number.isFinite(t)) continue;
-    linhas.push({
-      time: Math.floor(t / 1000),
-      open: Number(c[1]),
-      high: Number(c[2]),
-      low: Number(c[3]),
-      close: Number(c[4]),
     });
   }
   return montarSerie(linhas);

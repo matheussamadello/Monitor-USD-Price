@@ -23,25 +23,40 @@ Os preços são publicados com **4 casas decimais**. Não é preciosismo: o USD/
 
 ## Fonte de dados e timeframes
 
-Câmbio não tem uma "bolsa oficial" com endpoint público equivalente ao da Kraken. Por isso o monitor usa **duas fontes de OHLC em cascata**, e vale a primeira que responder:
+Câmbio não tem uma "bolsa oficial" com endpoint público equivalente ao da Kraken. O monitor usa **OHLC do Yahoo Finance** (`USDBRL=X`), buscado em cascata por dois hosts da provedora — `query1` e depois `query2` —, valendo o primeiro que responder.
 
-1. **Yahoo Finance** (`USDBRL=X`) — fonte primária. É a única das duas que devolve a **vela em formação** do dia corrente.
-2. **Stooq** (`usdbrl`, CSV) — fallback. É fim de dia: quando ele assume, a "vela atual" do relatório já é o último pregão fechado.
-
-Nenhuma das duas publica SLA. Uma execução sem dado apagaria a leitura do dia, então a cascata existe para que a indisponibilidade de uma não vire buraco no histórico. O cabeçalho do relatório sempre diz qual respondeu:
+O cabeçalho do relatório sempre diz qual elo respondeu:
 
 ```text
-fonte: OHLC de cambio (diario=yahoo, semanal=yahoo)
+fonte: OHLC de cambio (diario=yahoo/query1, semanal=yahoo/query1)
 ```
 
-Quando as duas caem, o bloco do par sai marcado com `FALHA:` citando o erro de cada uma, e o estado persistido do dia anterior é preservado em vez de apagado.
+Quando a cascata inteira cai, o bloco do par sai marcado com `FALHA:` citando o erro de cada elo, e o estado persistido do dia anterior é preservado em vez de apagado.
 
-As duas fontes são normalizadas para a **mesma grade**: toda vela é ancorada na meia-noite UTC do próprio dia. Sem isso o Yahoo (que carimba a vela no fuso da bolsa) e o Stooq (que só manda a data) cairiam em grades diferentes, e o estado persistido passaria a comparar velas que não são a mesma vela.
+Toda vela é ancorada na **meia-noite UTC do próprio dia**. O Yahoo carimba a vela no fuso da bolsa; sem a ancoragem, uma mudança de fuso jogaria velas para o dia seguinte e o estado persistido passaria a comparar velas que não são a mesma vela.
 
-Os timeframes são dois:
+Os timeframes são dois: `interval=1d` e `interval=1wk`.
 
-- **Diário:** `interval=1d` no Yahoo, `i=d` no Stooq.
-- **Semanal:** `interval=1wk` no Yahoo, `i=w` no Stooq.
+### Por que não há uma segunda provedora
+
+Havia. O **Stooq** era o segundo elo e **saiu em 2026-08-30**: passou a responder HTTP 200 com um desafio de JavaScript (`This site requires JavaScript to verify your browser`) em vez do CSV. Um `fetch` de Node nunca resolve esse desafio, então o fallback estava morto sem fazer barulho — só falharia junto com o Yahoo, que é exatamente quando precisaria funcionar.
+
+Foram sondados como substitutos, e todos reprovaram:
+
+| Candidato | Resultado |
+| --- | --- |
+| FXCM `candledata` | 404, serviço desativado |
+| AwesomeAPI | 429 `QuotaExceeded` a partir de IP de runner |
+| Pyth Network | só 1 mês de histórico (`Valid ranges: 1H, 1D, 1W, 1M`) |
+| Frankfurter / BCE | só fechamento, sem máxima e mínima |
+
+O que restou é um **espelho de host** da mesma provedora. Isso não protege contra o Yahoo mudar o formato ou tirar o par do ar; protege contra o modo de falha que de fato acontece, que é um host específico bloquear ou limitar o IP do runner. É menos redundância do que havia no papel, e mais do que havia na prática.
+
+### Por que não ICE / IDC
+
+O `FX_IDC:USDBRL` que aparece no TradingView é o feed da IDC (Interactive Data), hoje da ICE. É dado licenciado: não existe endpoint público, e usá-lo exigiria assinatura do ICE Data Services com credencial própria.
+
+O mesmo vale, em graus diferentes, para as outras fontes que o TradingView exibe: `OANDA:USDBRL` e `SAXO:USDBRL` precisam de conta na corretora, `FX:USDBRL` (FXCM) teve a API pública desativada, e `TVC:USDBRL` é composição interna do próprio TradingView, sem API. O Pyth (`PYTH:USDBRL`) tem API pública e gratuita, mas o histórico de 1 mês não cobre nem a EMA89 diária, quanto mais as 89 velas da semanal.
 
 ### Fim de semana e feriado
 
@@ -56,7 +71,7 @@ Fora do pregão o Yahoo não simplesmente para de mandar velas: ele **acrescenta
 
 Isso apareceu na primeira execução real, num sábado. Se a vela entra na série, ela vira a "vela em formação" do sábado, o relatório publica como `preco_atual` um número que não fechou em lugar nenhum, e `vela_atual_em_formacao` diz `sim` com o mercado fechado.
 
-O monitor descarta qualquer vela de **amplitude zero** (`high === low`). O critério é esse, e não o calendário, porque assim pega feriado, meio-pregão e a borda do Stooq do mesmo jeito, sem precisar saber o calendário de nenhum dos dois. Um dia inteiro de USD/BRL sem um pip de variação não existe, então nenhuma vela legítima é descartada.
+O monitor descarta qualquer vela de **amplitude zero** (`high === low`). O critério é esse, e não o calendário, porque assim pega fim de semana, feriado e meio-pregão do mesmo jeito, sem precisar embutir o calendário de nenhuma praça. Um dia inteiro de USD/BRL sem um pip de variação não existe, então nenhuma vela legítima é descartada.
 
 O **diário** é o timeframe principal para timing de pullbacks, rompimentos, retestes, perda/recuperação de níveis, candles e mudanças de momentum.
 
@@ -392,11 +407,11 @@ Monitor-USD-Price/
 Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem tocar na rede, e verifica:
 
 - que a fonte primária produz um relatório inteiro, sem `NaN` e sem `undefined`;
-- que o fallback assume quando o Yahoo responde erro;
-- que as duas fontes caindo produzem `FALHA:` citando o erro de cada uma;
 - que o volume sai declarado como indisponível e os campos de volume ficam fora;
 - que o `relatorio.json` continua parseável e tipado;
 - que uma segunda execução lê o estado da anterior sem quebrar;
+- que o espelho de host assume quando o primário é limitado;
+- que a cascata inteira caída vira `FALHA:` citando o status de cada elo;
 - que a vela-fantasma de fim de semana não vira a vela em formação;
 - que a ancoragem de fuso não joga uma vela para o dia seguinte.
 
@@ -478,7 +493,7 @@ Execute:
 node monitor.mjs
 ```
 
-Os arquivos em `docs/` serão atualizados localmente. O monitor consulta o Yahoo Finance — e, se necessário, o Stooq — pela internet durante a execução.
+Os arquivos em `docs/` serão atualizados localmente. O monitor consulta o Yahoo Finance pela internet durante a execução.
 
 Se quiser validar o código sem depender da rede, rode `node teste-fumaca.mjs`.
 
