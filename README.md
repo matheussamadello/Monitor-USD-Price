@@ -13,9 +13,22 @@ O projeto foi desenhado para acompanhamento de **swing trades e operações de p
 - Relatório JSON: https://matheussamadello.github.io/Monitor-USD-Price/relatorio.json
 - JSON bruto no repositório: https://raw.githubusercontent.com/matheussamadello/Monitor-USD-Price/main/docs/relatorio.json
 
+## Os dois pares
+
+O monitor analisa **dois pares**, com o mesmo tratamento técnico completo — indicadores, estrutura de pivôs, divergências, padrões de candle, máquina de rompimento/reteste, zonas automáticas, níveis manuais e gatilhos:
+
+| Par | Papel | Fonte | Volume |
+| --- | --- | --- | --- |
+| **USD/BRL** | referência analítica — o dólar em si | Yahoo Finance | não existe |
+| **USDT/BRL** | instrumento de execução — é nele que se dolariza e desdolariza rápido | Binance → Mercado Bitcoin | real |
+
+Cada par tem os **seus** níveis manuais (`NIVEIS_USD` e `NIVEIS_USDT`), a sua cascata de fontes e o seu prefixo de gatilho (`usd_*` e `usdt_*`). Nada é derivado do outro — em particular, os níveis do USDT **não** são os do dólar somados de um prêmio fixo, porque o prêmio não é fixo: medido em 518 dias, foi de −2,10% a +3,60%. Um nível derivado estaria errado justamente nos dias em que o prêmio se mexe, que são os que importam para quem vai atravessar.
+
+Além dos dois blocos por par, há a seção `TRILHO DE EXECUCAO`, que publica o prêmio de um sobre o outro — a informação que nenhum dos dois dá sozinho.
+
 ## Referência técnica: USD/BRL
 
-Toda a análise do monitor é feita em **USD/BRL**, ou seja, **quantos reais custa um dólar**.
+O par de referência é **USD/BRL**, ou seja, **quantos reais custa um dólar**.
 
 O ativo monitorado é o dólar; o real é a moeda de cotação. O preço sobe quando o dólar se valoriza frente ao real, e cai quando o real se fortalece. Um `rompimento_confirmado` é, portanto, dólar rompendo para cima — não o contrário.
 
@@ -198,13 +211,16 @@ Também detecta padrões e contextos que realmente existem no código atual, ent
 
 O código diferencia a geometria do padrão do contexto em que ele ocorre. Isso evita interpretar, por exemplo, uma sequência de três velas de alta em uma tendência já madura como se ela tivesse necessariamente o significado clássico de reversão.
 
-### Volume — desligado, e de propósito
+### Volume — depende do par
 
-Esta é a diferença de fundo em relação aos monitores de BTC e XMR.
+Quem decide é a provedora, não o código. E os dois pares caem em lados opostos:
 
-O câmbio à vista é mercado de balcão: **não existe volume consolidado público**. As duas fontes ou mandam zero, ou não mandam o campo. Tratar esse zero como dado seria pior do que não ter dado nenhum — o monitor leria "volume fraco" em todo candle e penalizaria toda zona por uma informação que nunca existiu.
+- **USDT/BRL negocia em corretora**, com livro e tape. O volume é real, e todo o subsistema funciona: alertas de rompimento com volume, volume decrescente na correção, fator de volume no score das zonas.
+- **USD/BRL é câmbio à vista, mercado de balcão**: não existe volume consolidado público. As fontes ou mandam zero, ou não mandam o campo.
 
-Então o volume está **desligado**, não zerado. Na prática:
+Tratar esse zero como dado seria pior do que não ter dado nenhum — o monitor leria "volume fraco" em todo candle do dólar e penalizaria toda zona por uma informação que nunca existiu.
+
+Então, **para o USD/BRL apenas**, o volume está desligado e não zerado. Na prática:
 
 - O relatório publica uma linha só, `volume_disponivel: nao`, e omite `volume_atual`, `volume_vs_media_pct`, `volume_classificacao`, `volume_tendencia_3_fechadas`, `trades_vela_atual` e a comparação semanal equivalente.
 - Publicar esses campos como `--` seria pior: um consumidor concluiria que o dado existe e falhou hoje. `nao` diz que ele não existe neste par, nunca.
@@ -259,6 +275,8 @@ Os níveis manuais ficam centralizados em `NIVEIS_USD` dentro de `monitor.mjs`.
 
 Os valores atuais foram calibrados na primeira execução real, em 2026-08-29, com o USD/BRL fechando a 5,1611.
 
+**USD/BRL** (`NIVEIS_USD`):
+
 | Faixa | Label | De onde veio |
 | --- | --- | --- |
 | R$ 5,25–5,36 | `faixa_5_25_5_36` | zona automática de resistência acima do preço |
@@ -269,6 +287,19 @@ Além das faixas, o código mantém uma resistência pontual em **R$ 5,30** e um
 
 - **5,30** é o centro da zona automática mais forte acima do preço (5,2255–5,3604, centro 5,2930) e coincide com a **EMA89 semanal** em 5,2926. Duas leituras independentes apontando o mesmo lugar.
 - **5,13** é tríplice confluência: **EMA89 diária** em 5,1321, borda inferior da zona de maior score (5,1306) e o último fundo mais alto da estrutura, o pivô de 2026-08-24 em 5,1308.
+
+**USDT/BRL** (`NIVEIS_USDT`), calibrado na primeira execução do par, com o USDT a 5,2133:
+
+| Faixa | Label |
+| --- | --- |
+| R$ 5,27–5,35 | `faixa_5_27_5_35` |
+| R$ 5,17–5,22 | `faixa_5_17_5_22` |
+| R$ 5,12–5,16 | `regiao_suporte_5_12_5_16` |
+
+Resistência pontual em **R$ 5,31** e suporte em **R$ 5,15**, também por confluência:
+
+- **5,31** — centro da zona diária mais testada acima do preço (13 toques, 11 rejeições), com a **EMA89 semanal** logo acima em 5,3296 e a zona semanal cobrindo 5,2755–5,4300.
+- **5,15** — tríplice confluência: **EMA89 diária** em 5,1549, centro da zona diária de score 81 em 5,1532, e a zona semanal de score 80 (5,1050–5,2300) por dentro.
 
 São uma leitura de um dia, não uma verdade permanente. Reveja quando o preço sair dessas regiões — o próprio relatório sinaliza isso quando as faixas deixam de conter o preço.
 

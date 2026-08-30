@@ -445,18 +445,30 @@ const FONTES_CRIPTO = [
 // que importam para quem vai atravessar.
 //
 // Assim como os do USD/BRL, saem das zonas automaticas e das medias da
-// primeira execucao real, nao de numero redondo escolhido a mao.
+// primeira execucao real (2026-08-30, USDT/BRL a 5.2133), nao de numero
+// redondo escolhido a mao:
+//
+//   resistencia 5.31 — centro da zona diaria de score 74, a mais
+//     testada acima do preco (13 toques, 11 rejeicoes), com a EMA89
+//     SEMANAL logo acima em 5.3296 e a zona semanal de score 72
+//     cobrindo 5.2755-5.4300. Tres leituras na mesma regiao.
+//   suporte 5.15 — triplice confluencia: EMA89 diaria em 5.1549, centro
+//     da zona diaria de score 81 em 5.1532, e a zona semanal de score
+//     80 (5.1050-5.2300) por dentro.
+//   faixas — as tres regioes que as zonas ja marcavam: resistencia
+//     5.27-5.35, campo de batalha atual 5.17-5.22 (o preco esta nela) e
+//     o suporte 5.12-5.16.
 // ------------------------------------------------------------
 const NIVEIS_USDT = {
   faixas: [
-    [5.28, 5.40, "faixa_5_28_5_40"],
-    [5.16, 5.25, "faixa_5_16_5_25"],
-    [5.06, 5.14, "regiao_suporte_5_06_5_14"],
+    [5.27, 5.35, "faixa_5_27_5_35"],
+    [5.17, 5.22, "faixa_5_17_5_22"],
+    [5.12, 5.16, "regiao_suporte_5_12_5_16"],
   ],
-  resistencia: 5.33,
-  resistenciaLabel: "5_33",
-  suporte: 5.16,
-  suporteLabel: "5_16",
+  resistencia: 5.31,
+  resistenciaLabel: "5_31",
+  suporte: 5.15,
+  suporteLabel: "5_15",
 };
 
 // A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia

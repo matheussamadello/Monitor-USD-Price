@@ -191,7 +191,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
   ok(/rsi14_fechado: \d/.test(usdtDia) && /adx14_fechado: \d/.test(usdtDia),
     "USDT/BRL: RSI e ADX calculados");
-  ok(/nivel_5_33_estado: /.test(usdtDia) && /nivel_5_16_estado: /.test(usdtDia),
+  ok(/nivel_5_31_estado: /.test(usdtDia) && /nivel_5_15_estado: /.test(usdtDia),
     "USDT/BRL: maquina de niveis com os niveis DELE");
   ok(/zonas_automaticas_total: \d|zonas_automaticas: nenhuma/.test(usdtDia),
     "USDT/BRL: zonas automaticas calculadas");
@@ -325,7 +325,7 @@ ok(j.diario["USDT/BRL"] && typeof j.diario["USDT/BRL"].rsi14_fechado === "number
   "JSON tem o par USDT/BRL com indicadores");
 ok(typeof j.diario["USDT/BRL"].volume_vs_media_pct === "number",
   "JSON traz volume real do USDT/BRL");
-ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_28_5_40",
+ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_27_5_35",
   "cada par publica as SUAS faixas manuais");
 ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_25_5_36",
   "as faixas do cambio nao foram trocadas pelas do cripto");

@@ -43,6 +43,18 @@ O objetivo prático é bilateral:
 1. identificar bons momentos técnicos para **COMPRAR DÓLAR (USD) usando BRL**;
 2. identificar bons momentos técnicos para **REALIZAR/CONVERTER parcialmente USD para BRL**.
 
+O relatório traz **dois pares**, cada um com análise técnica completa e níveis próprios:
+
+- **USD/BRL** — a referência analítica, o dólar em si. Gatilhos com prefixo `usd_`.
+- **USDT/BRL** — o instrumento de execução, onde se dolariza e desdolariza rápido. Gatilhos com prefixo `usdt_`. É o único dos dois com **volume real**.
+
+Como tratá-los:
+
+1. **Não some nem misture os dois.** Cada um tem seus níveis, suas zonas e sua estrutura. Um rompimento no USDT/BRL não é um rompimento no USD/BRL.
+2. **Quando os dois apontarem a mesma coisa, isso é confluência** e merece uma mensagem só, citando ambos — não duas.
+3. **Quando divergirem, o USD/BRL manda na leitura macro** e o USDT/BRL manda no preço de execução. Divergência persistente entre eles é, em si, informação: significa que o prêmio está se mexendo.
+4. **Só o USDT/BRL tem volume.** Nunca cobre campos de volume do USD/BRL, nem interprete a ausência deles como fraqueza.
+
 A referência analítica é **USD/BRL**: quantos reais custa um dólar. O ativo monitorado é o dólar; o real é a moeda de cotação.
 
 A direção importa e é fácil de inverter por engano:
