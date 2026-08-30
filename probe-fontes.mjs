@@ -1,82 +1,46 @@
-// Sonda descartavel, rodada 3.
-const fmt = (t) => new Date(t * 1000).toISOString().slice(0, 10);
+// Sonda descartavel, rodada 4: caracterizar web-api.pyth.network/history.
 async function pegar(url) {
   try {
     const res = await fetch(url, { headers: { "User-Agent": "usd-monitor-probe/1.0" } });
-    const txt = await res.text();
-    return { ok: res.ok, status: res.status, txt };
+    return { ok: res.ok, status: res.status, txt: await res.text() };
   } catch (e) { return { ok: false, status: "EXC", txt: e.message }; }
 }
+const iso = (s) => (/[Zz]|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z");
 
-console.log("###### 1. Pyth: sobrou alguma rota de OHLC? ######");
-for (const u of [
-  "https://benchmarks.pyth.network/v1/shims/tradingview/history?symbol=Crypto.BTC/USD&resolution=1D&from=1756000000&to=1788056209",
-  "https://benchmarks.pyth.network/v1/ohlc?symbol=FX.USD/BRL&resolution=1D",
-  "https://benchmarks.pyth.network/v1/history?symbol=FX.USD/BRL&resolution=1D&from=1756000000&to=1788056209",
-  "https://web-api.pyth.network/history?symbol=FX.USD/BRL&range=1M&cluster=pythnet",
-]) {
+console.log("###### ranges aceitos e granularidade ######");
+for (const range of ["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y", "ALL", "MAX"]) {
+  const u = `https://web-api.pyth.network/history?symbol=${encodeURIComponent("FX.USD/BRL")}&range=${range}&cluster=pythnet`;
   const r = await pegar(u);
-  console.log(`  http ${r.status} (${r.txt.length}b) ${u.slice(0, 95)}`);
-  if (r.ok) console.log(`     ${r.txt.slice(0, 220)}`);
+  if (!r.ok) { console.log(`  ${range.padEnd(4)} http ${r.status} (${r.txt.length}b) ${r.txt.slice(0,90)}`); continue; }
+  let j;
+  try { j = JSON.parse(r.txt); } catch { console.log(`  ${range.padEnd(4)} corpo nao-JSON: ${r.txt.slice(0,90)}`); continue; }
+  if (!Array.isArray(j) || !j.length) { console.log(`  ${range.padEnd(4)} 0 pontos (${r.txt.slice(0,90)})`); continue; }
+  const ts = j.map((x) => Date.parse(iso(x.timestamp)) / 1000).sort((a, b) => a - b);
+  const difs = [];
+  for (let i = 1; i < ts.length; i++) difs.push(ts[i] - ts[i - 1]);
+  difs.sort((a, b) => a - b);
+  const passo = difs[Math.floor(difs.length / 2)];
+  const dias = new Set(j.map((x) => x.timestamp.slice(0, 10))).size;
+  const ohlcIguais = j.filter((x) => x.high_price === x.low_price).length;
+  console.log(
+    `  ${range.padEnd(4)} ${String(j.length).padStart(6)} pontos | ${new Date(ts[0]*1000).toISOString().slice(0,16)} -> ${new Date(ts[ts.length-1]*1000).toISOString().slice(0,16)}` +
+    ` | passo mediano ${passo}s (${(passo/60).toFixed(0)}min) | ${dias} dias distintos | H==L em ${ohlcIguais}`
+  );
 }
 
-console.log("\n###### 2. Yahoo espelho query2 (redundancia da primaria) ######");
-for (const h of ["query1", "query2"]) {
-  const r = await pegar(`https://${h}.finance.yahoo.com/v8/finance/chart/USDBRL=X?interval=1d&range=1mo`);
-  let info = "";
+console.log("\n###### o ponto mais antigo disponivel (profundidade do historico) ######");
+{
+  const r = await pegar(`https://web-api.pyth.network/history?symbol=${encodeURIComponent("FX.USD/BRL")}&range=ALL&cluster=pythnet`);
   if (r.ok) {
     try {
-      const x = JSON.parse(r.txt).chart.result[0];
-      const q = x.indicators.quote[0];
-      const n = x.timestamp.length;
-      info = `${n} velas, ultima ${fmt(x.timestamp[n-1])} C=${q.close[n-1]}`;
-    } catch (e) { info = "parse falhou: " + e.message; }
-  }
-  console.log(`  ${h}: http ${r.status} (${r.txt.length}b) ${info}`);
-}
-
-console.log("\n###### 3. PTAX do Banco Central (oficial, sem chave) ######");
-{
-  const u = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='01-01-2024'&@dataFinalCotacao='08-29-2026'&$top=100000&$format=json&$select=cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim";
-  const r = await pegar(u);
-  console.log(`  http ${r.status} (${r.txt.length}b)`);
-  if (r.ok) {
-    const j = JSON.parse(r.txt);
-    const v = j.value || [];
-    console.log(`  registros: ${v.length}`);
-    console.log(`  amostra: ${JSON.stringify(v[0])}`);
-    console.log(`  ultimo:  ${JSON.stringify(v[v.length - 1])}`);
-    const porDia = new Map();
-    for (const x of v) {
-      const d = x.dataHoraCotacao.slice(0, 10);
-      const p = (x.cotacaoCompra + x.cotacaoVenda) / 2;
-      const e = porDia.get(d) || { n: 0, hi: -1e9, lo: 1e9 };
-      e.n++; e.hi = Math.max(e.hi, p); e.lo = Math.min(e.lo, p);
-      porDia.set(d, e);
-    }
-    const dias = [...porDia.entries()].sort();
-    const boletins = dias.map(([, e]) => e.n);
-    const amp = dias.map(([, e]) => ((e.hi - e.lo) / e.lo) * 100);
-    const med = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
-    console.log(`  dias uteis: ${dias.length} | ${dias[0][0]} -> ${dias[dias.length-1][0]}`);
-    console.log(`  boletins/dia: mediana ${med(boletins)} (min ${Math.min(...boletins)}, max ${Math.max(...boletins)})`);
-    console.log(`  amplitude diaria implicita: mediana ${med(amp).toFixed(3)}% (max ${Math.max(...amp).toFixed(3)}%)`);
-    console.log("  ^ comparar com a amplitude REAL do Yahoo abaixo");
-  }
-}
-
-console.log("\n###### 4. Amplitude real do Yahoo, para medir o quanto o PTAX subestima ######");
-{
-  const r = await pegar("https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X?interval=1d&range=1y");
-  if (r.ok) {
-    const x = JSON.parse(r.txt).chart.result[0];
-    const q = x.indicators.quote[0];
-    const amp = [];
-    for (let i = 0; i < x.timestamp.length; i++) {
-      if (Number.isFinite(q.high[i]) && Number.isFinite(q.low[i]) && q.low[i] > 0 && q.high[i] > q.low[i])
-        amp.push(((q.high[i] - q.low[i]) / q.low[i]) * 100);
-    }
-    amp.sort((a, b) => a - b);
-    console.log(`  ${amp.length} velas | amplitude mediana ${amp[Math.floor(amp.length/2)].toFixed(3)}%`);
-  }
+      const j = JSON.parse(r.txt);
+      if (Array.isArray(j) && j.length) {
+        const ts = j.map((x) => Date.parse(iso(x.timestamp))).sort((a, b) => a - b);
+        const anos = (ts[ts.length-1] - ts[0]) / (365.25 * 864e5);
+        console.log(`  ALL cobre ${anos.toFixed(2)} anos (${new Date(ts[0]).toISOString().slice(0,10)} -> ${new Date(ts[ts.length-1]).toISOString().slice(0,10)})`);
+        console.log(`  semanas cobertas: ${Math.floor(anos*52)} (EMA89 semanal precisa de 89)`);
+        console.log(`  amostra crua: ${JSON.stringify(j[j.length-1])}`);
+      }
+    } catch (e) { console.log("  parse falhou: " + e.message); }
+  } else console.log(`  http ${r.status}`);
 }
