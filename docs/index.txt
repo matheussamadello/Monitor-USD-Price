@@ -1,4 +1,4 @@
-timestamp: 2026-08-30 02:51 UTC
+timestamp: 2026-08-30 05:14 UTC
 fonte: OHLC de cambio (diario=yahoo/query1, semanal=yahoo/query1)
 fontes_em_cascata: yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI(14) e DMI/ADX(14) por Wilder/RMA, EMA(89) exponencial
@@ -87,12 +87,12 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: faixa_5_13_5_21, divergencia_bullish_oculta_confirmada, novo_HH_apos_topo_mais_baixo
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=em_teste score=83 estrutural=5.130750-5.194600 operacional=5.143456-5.182030 centro=5.162743 toques=9 rejeicoes=6 role_reversal=sim dist_pct=-0.03 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=81 estrutural=5.208725-5.285800 operacional=5.228418-5.266992 centro=5.247705 toques=9 rejeicoes=7 role_reversal=sim dist_pct=-1.65 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_3: id=usd|diario|z6 tipo=resistencia status=ativa estado=abaixo score=71 estrutural=5.281346-5.403800 operacional=5.323677-5.362251 centro=5.342964 toques=11 rejeicoes=7 role_reversal=sim dist_pct=-3.40 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=acima score=79 estrutural=5.065085-5.130600 operacional=5.078407-5.116981 centro=5.097694 toques=9 rejeicoes=6 role_reversal=sim dist_pct=1.24 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_5: id=usd|diario|z19 tipo=suporte status=ativa estado=acima score=79 estrutural=4.999000-5.064000 operacional=5.012161-5.050735 centro=5.031448 toques=8 rejeicoes=5 role_reversal=sim dist_pct=2.58 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
-zona_auto_6: id=usd|diario|z2 tipo=suporte status=ativa estado=acima score=84 estrutural=4.948557-4.998600 operacional=4.954369-4.992943 centro=4.973656 toques=4 rejeicoes=3 role_reversal=sim dist_pct=3.77 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=em_teste score=83 estrutural=5.130750-5.194600 operacional=5.143436-5.182010 centro=5.162723 toques=9 rejeicoes=6 role_reversal=sim dist_pct=-0.03 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=81 estrutural=5.208725-5.285800 operacional=5.228285-5.266859 centro=5.247572 toques=9 rejeicoes=7 role_reversal=sim dist_pct=-1.65 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_3: id=usd|diario|z6 tipo=resistencia status=ativa estado=abaixo score=71 estrutural=5.281346-5.403800 operacional=5.323560-5.362134 centro=5.342847 toques=11 rejeicoes=7 role_reversal=sim dist_pct=-3.40 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=acima score=79 estrutural=5.065085-5.130600 operacional=5.078451-5.117025 centro=5.097738 toques=9 rejeicoes=6 role_reversal=sim dist_pct=1.24 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_5: id=usd|diario|z19 tipo=suporte status=ativa estado=acima score=79 estrutural=4.999000-5.064000 operacional=5.012177-5.050751 centro=5.031464 toques=8 rejeicoes=5 role_reversal=sim dist_pct=2.58 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usd|diario|z2 tipo=suporte status=ativa estado=acima score=84 estrutural=4.948557-4.998600 operacional=4.954346-4.992920 centro=4.973633 toques=4 rejeicoes=3 role_reversal=sim dist_pct=3.77 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 
 confluencia_entrada: estrutura_de_alta_preservada, di_plus_dominante
 confluencia_pullback: tendencia_hh_hl_preservada, di_plus_ainda_dominante, divergencia_bullish_confirmada
@@ -140,7 +140,7 @@ nivel_5_13_estado: sem_registro
 nivel_5_13_historico: nenhum
 niveis_mudancas_nesta_vela: nenhuma
 
-fracao_periodo_decorrida: 0.874
+fracao_periodo_decorrida: 0.888
 vela_atual_em_formacao: sim
 volume_disponivel: nao
 
@@ -201,9 +201,9 @@ deterioracao_tendencia: nenhuma
 trilho_disponivel: sim
 trilho_par: USDT/BRL
 trilho_fonte: binance
-trilho_preco: 5.2117
+trilho_preco: 5.2132
 trilho_dia: 2026-08-30
-trilho_premio_pct: 0.98
+trilho_premio_pct: 1.01
 trilho_usd_referencia: 5.1611
 trilho_usd_referencia_dia: 2026-08-28
 trilho_premio_defasagem_dias: 2
