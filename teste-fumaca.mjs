@@ -183,7 +183,9 @@ await cenario("trilho de execucao (USDT/BRL)", {}, (r) => {
   ok(/trilho_fonte: binance/.test(r.texto), "fonte primaria do trilho");
   ok(/trilho_premio_pct: -?\d+\.\d\d/.test(r.texto), "premio calculado");
   ok(/trilho_premio_classificacao: (caro|normal|barato)/.test(r.texto), "premio classificado");
-  ok(/trilho_volume_usdt_ultimo_dia: \d/.test(r.texto), "volume do trilho publicado (a cripto tem)");
+  ok(/trilho_volume_usdt_ultimo_fechado: \d/.test(r.texto), "volume do trilho publicado (a cripto tem)");
+  ok(/trilho_premio_comparavel: (sim|nao)/.test(r.texto), "premio diz se e' comparavel");
+  ok(/trilho_usd_referencia_dia: \d{4}-\d\d-\d\d/.test(r.texto), "publica de que dia e' o dolar de referencia");
   // O trilho nao pode contaminar o par analisado.
   const diarioBloco = r.texto.split("========== GRAFICO DIARIO ==========")[1].split("==========")[0];
   ok(!/trilho_/.test(diarioBloco), "nenhum campo do trilho vazou para o bloco diario");
@@ -208,16 +210,40 @@ await cenario("trilho fora do ar nao derruba o relatorio", {
 console.log("\n== trilho: aritmetica ==");
 {
   // Premio conhecido: USDT 1% acima do dolar em toda a serie.
+  const dias3 = [1, 2, 3].map((d) => ancorarDia(1756425600 + d * DIA));
   const usd = {
-    times: [1, 2, 3].map((d) => ancorarDia(1756425600 + d * DIA)),
+    times: dias3,
     closes: [5.0, 5.1, 5.2],
-    live: { close: 5.2 },
+    live: { close: 5.2, time: dias3[2] },
   };
-  const usdt = usd.times.map((t, i) => ({ t, time: t, close: usd.closes[i] * 1.01, volume: 100 }));
+  const usdt = usd.times.map((t, i) => ({ time: t, close: usd.closes[i] * 1.01, volume: 100 }));
   const t = calcularTrilho(usdt, usd);
   ok(Math.abs(t.premioPct - 1) < 1e-9, `premio de 1% e' calculado como 1% (deu ${t.premioPct.toFixed(6)})`);
   ok(t.diasComparados === 3, "casou os tres dias por data");
   ok(t.classificacao === "caro", "premio no topo da propria distribuicao vira 'caro'");
+  ok(t.defasagemDias === 0 && t.comparavel === true,
+    "mesma data nas duas pontas e' comparavel");
+}
+
+console.log("\n== trilho: defasagem e volume parcial ==");
+{
+  // Domingo: o USDT ja andou dois dias, o dolar parou na sexta.
+  const dias = [0, 1, 2, 3].map((d) => ancorarDia(1756425600 + d * DIA));
+  const usd = { times: dias.slice(0, 2), closes: [5.0, 5.1], live: { close: 5.1, time: dias[1] } };
+  const usdt = [
+    { time: dias[0], close: 5.05, volume: 1000 },
+    { time: dias[1], close: 5.15, volume: 1200 },
+    { time: dias[2], close: 5.2, volume: 900 },
+    // dia em formacao: poucas horas de giro
+    { time: dias[3], close: 5.3, volume: 7 },
+  ];
+  const t = calcularTrilho(usdt, usd);
+  ok(t.defasagemDias === 2, `defasagem medida em dias (deu ${t.defasagemDias})`);
+  ok(t.comparavel === false, "com o cambio fechado, o premio nao e' comparavel");
+  ok(t.volumeUltimoFechado === 900,
+    `volume vem da ultima vela FECHADA, nao da que esta em formacao (deu ${t.volumeUltimoFechado})`);
+  ok(t.volumeMediana30 === 1000,
+    `mediana ignora a vela em formacao (deu ${t.volumeMediana30})`);
 }
 
 console.log("\n== JSON ==");

@@ -89,17 +89,33 @@ O relatório publica uma seção própria:
 trilho_disponivel: sim
 trilho_par: USDT/BRL
 trilho_fonte: binance
-trilho_preco: 5.1810
-trilho_premio_pct: 0.39
-trilho_premio_percentil: 58
-trilho_premio_mediana: 0.31
-trilho_premio_classificacao: normal
-trilho_volume_usdt_ultimo_dia: 585980
+trilho_preco: 5.2117
+trilho_premio_pct: 0.98
+trilho_usd_referencia: 5.1611
+trilho_usd_referencia_dia: 2026-08-28
+trilho_premio_defasagem_dias: 2
+trilho_premio_comparavel: nao
+trilho_premio_percentil: 89
+trilho_premio_mediana: 0.18
+trilho_premio_classificacao: caro
+trilho_volume_usdt_ultimo_fechado: 603339
 ```
 
 `trilho_premio_pct` é quanto o USDT/BRL está acima (ou abaixo) do USD/BRL agora. `trilho_premio_percentil` situa esse número na distribuição dos últimos 180 dias, e `trilho_premio_classificacao` resume: `caro` acima do percentil 75, `barato` abaixo do 25, `normal` entre os dois.
 
 A direção importa e é fácil inverter: **prêmio alto encarece dolarizar** (você compra USDT) e **favorece desdolarizar** (você vende USDT).
+
+### Defasagem: por que `trilho_premio_comparavel` existe
+
+A cripto negocia 24/7 e o câmbio não. Num domingo, o preço do USDT é de agora e o do dólar é de sexta — o "prêmio" entre os dois carrega dois dias em que uma ponta andou e a outra estava fechada. Isso não é pedágio, é o mercado tendo se mexido.
+
+Por isso o bloco publica de que dia é o dólar de referência (`trilho_usd_referencia_dia`), quantos dias separam as duas pontas (`trilho_premio_defasagem_dias`) e, direto, se o número vale como comparação (`trilho_premio_comparavel`). Com o câmbio fechado, o prêmio continua publicado mas marcado como `nao` — leia como curiosidade, não como custo.
+
+O exemplo acima é real, de um domingo: `caro` no percentil 89, mas com dois dias de defasagem.
+
+### Volume: última vela fechada, não a em formação
+
+A cripto não fecha, então às 3h da manhã a vela do dia tem três horas de giro. Comparar isso com a mediana de dias inteiros produziria um "volume 100× abaixo da mediana" que só significa que o dia mal começou — foi exatamente o que a primeira execução real publicou, antes da correção. A referência é a última vela **fechada**, e a mediana de 30 dias exclui a que está em formação.
 
 ### Por que o USDT/BRL não entra nos indicadores
 
@@ -465,6 +481,8 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que o trilho fora do ar não derruba o relatório do par analisado;
 - que nenhum campo do trilho vaza para o bloco diário, no texto e no JSON;
 - que um prêmio conhecido de 1% é calculado como 1%;
+- que a defasagem é medida em dias e marca o prêmio como não comparável;
+- que o volume vem da última vela fechada, e a mediana ignora a em formação;
 - que a cascata inteira caída vira `FALHA:` citando o status de cada elo;
 - que a vela-fantasma de fim de semana não vira a vela em formação;
 - que a ancoragem de fuso não joga uma vela para o dia seguinte.

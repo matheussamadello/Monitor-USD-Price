@@ -219,6 +219,17 @@ export function calcularTrilho(usdt, usd) {
   const precoUsd = usd.live.close;
   const premioAtual = ((atual.close - precoUsd) / precoUsd) * 100;
 
+  // DEFASAGEM. A cripto negocia 24/7 e o cambio nao. Num domingo, o
+  // preco do USDT e' de agora e o do dolar e' de sexta -- o "premio"
+  // entre os dois carrega dois dias em que uma ponta andou e a outra
+  // estava fechada. Isso nao e' pedagio, e' o mercado tendo se mexido.
+  // Publicar a defasagem, e dizer quando o numero nao e' comparavel, e'
+  // o que impede alguem de agir sobre um premio que nao existe.
+  const defasagemDias =
+    Number.isFinite(atual.time) && Number.isFinite(usd.live.time)
+      ? Math.round((atual.time - usd.live.time) / 86400)
+      : null;
+
   const pct = ord.length
     ? (ord.filter((x) => x <= premioAtual).length / ord.length) * 100
     : null;
@@ -231,7 +242,14 @@ export function calcularTrilho(usdt, usd) {
       ? "barato"
       : "normal";
 
-  const vols = usdt
+  // VOLUME. A ultima vela e' o dia em formacao, e a cripto nao fecha:
+  // as 3h da manha ela tem tres horas de giro. Compara-la com a mediana
+  // de dias INTEIROS daria um "volume 100x abaixo da mediana" que so
+  // significa que o dia mal comecou. Entao a referencia e' a ultima
+  // vela FECHADA, e a mediana exclui a que esta em formacao.
+  const fechadas = usdt.slice(0, -1);
+  const ultimaFechada = fechadas[fechadas.length - 1] || null;
+  const vols = fechadas
     .slice(-30)
     .map((l) => l.volume)
     .filter((v) => Number.isFinite(v) && v > 0);
@@ -246,7 +264,12 @@ export function calcularTrilho(usdt, usd) {
     p75: percentilNa(ord, 0.75),
     classificacao,
     diasComparados: janela.length,
-    volumeUltimo: atual.volume,
+    usdReferencia: precoUsd,
+    usdReferenciaDia: usd.live.time,
+    defasagemDias,
+    comparavel: defasagemDias === 0,
+    volumeUltimoFechado: ultimaFechada ? ultimaFechada.volume : null,
+    volumeUltimoFechadoDia: ultimaFechada ? ultimaFechada.time : null,
     volumeMediana30: medianaDe(vols),
   };
 }
@@ -269,6 +292,14 @@ function blocoTrilho(res, usd, dec) {
   L.push(`trilho_preco: ${num(t.preco, dec)}`);
   L.push(`trilho_dia: ${fmtDia(t.dia)}`);
   L.push(`trilho_premio_pct: ${num(t.premioPct, 2)}`);
+  L.push(`trilho_usd_referencia: ${num(t.usdReferencia, dec)}`);
+  L.push(`trilho_usd_referencia_dia: ${fmtDia(t.usdReferenciaDia)}`);
+  L.push(
+    `trilho_premio_defasagem_dias: ${t.defasagemDias === null ? "--" : t.defasagemDias}`
+  );
+  // Fora do pregao de cambio as duas pontas nao sao do mesmo instante.
+  // O premio continua publicado, mas marcado como nao comparavel.
+  L.push(`trilho_premio_comparavel: ${t.comparavel ? "sim" : "nao"}`);
   L.push(`trilho_premio_janela_dias: ${TRILHO_JANELA}`);
   L.push(`trilho_premio_dias_comparados: ${t.diasComparados}`);
   L.push(`trilho_premio_percentil: ${num(t.percentil, 0)}`);
@@ -276,7 +307,12 @@ function blocoTrilho(res, usd, dec) {
   L.push(`trilho_premio_p25: ${num(t.p25, 2)}`);
   L.push(`trilho_premio_p75: ${num(t.p75, 2)}`);
   L.push(`trilho_premio_classificacao: ${t.classificacao}`);
-  L.push(`trilho_volume_usdt_ultimo_dia: ${num(t.volumeUltimo, 0)}`);
+  L.push(`trilho_volume_usdt_ultimo_fechado: ${num(t.volumeUltimoFechado, 0)}`);
+  L.push(
+    `trilho_volume_usdt_ultimo_fechado_dia: ${
+      t.volumeUltimoFechadoDia ? fmtDia(t.volumeUltimoFechadoDia) : "--"
+    }`
+  );
   L.push(`trilho_volume_usdt_mediana_30d: ${num(t.volumeMediana30, 0)}`);
   return L;
 }

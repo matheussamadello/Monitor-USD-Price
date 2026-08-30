@@ -718,6 +718,7 @@ Serve para uma coisa só: quando você já for emitir um alerta por leitura téc
 
 - `trilho_premio_pct` — quanto o USDT/BRL está acima do USD/BRL agora.
 - `trilho_premio_classificacao` — `caro`, `normal` ou `barato`, face aos últimos 180 dias.
+- `trilho_premio_comparavel` — **leia isto antes dos outros dois.**
 
 A direção não pode ser invertida:
 
@@ -729,6 +730,7 @@ Regras:
 1. **Nunca alerte por mudança de prêmio.** O prêmio saindo de `normal` para `caro` não é evento; é contexto para um alerta que já existia por outro motivo.
 2. **Nunca use o USDT/BRL como leitura técnica.** Ele não tem RSI, DMI nem zonas no relatório, e isso é deliberado — o prêmio varia de −2,1% a +3,6% e contaminaria os níveis.
 3. **`trilho_disponivel: nao` não é alerta.** É uma fonte auxiliar fora do ar; o par analisado continua íntegro.
+4. **Com `trilho_premio_comparavel: nao`, não cite o prêmio como custo.** Significa que o câmbio estava fechado e as duas pontas não são do mesmo instante: o USDT andou enquanto o dólar não tinha onde andar. `trilho_premio_defasagem_dias` diz de quanto é o buraco. Se precisar mencionar, diga que o número só se fecha quando o câmbio reabrir.
 
 ## Fim de semana e feriado
 
