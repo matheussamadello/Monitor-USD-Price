@@ -77,6 +77,54 @@ O **diário** é o timeframe principal para timing de pullbacks, rompimentos, re
 
 O **semanal** funciona principalmente como contexto e filtro estrutural: ajuda a identificar se um sinal diário está alinhado, neutro ou em conflito com a estrutura maior. O relatório também calcula os mesmos indicadores principais no semanal e distingue os valores da vela semanal fechada dos valores provisórios da semana em formação.
 
+## Trilho de execução (USDT/BRL)
+
+O par **analisado** é USD/BRL e continua sendo. Este bloco responde a outra pergunta: quando a leitura técnica disser que é hora de dolarizar ou desdolarizar, **quanto custa atravessar de fato**, e o pedágio está caro ou barato hoje?
+
+O relatório publica uma seção própria:
+
+```text
+========== TRILHO DE EXECUCAO ==========
+
+trilho_disponivel: sim
+trilho_par: USDT/BRL
+trilho_fonte: binance
+trilho_preco: 5.1810
+trilho_premio_pct: 0.39
+trilho_premio_percentil: 58
+trilho_premio_mediana: 0.31
+trilho_premio_classificacao: normal
+trilho_volume_usdt_ultimo_dia: 585980
+```
+
+`trilho_premio_pct` é quanto o USDT/BRL está acima (ou abaixo) do USD/BRL agora. `trilho_premio_percentil` situa esse número na distribuição dos últimos 180 dias, e `trilho_premio_classificacao` resume: `caro` acima do percentil 75, `barato` abaixo do 25, `normal` entre os dois.
+
+A direção importa e é fácil inverter: **prêmio alto encarece dolarizar** (você compra USDT) e **favorece desdolarizar** (você vende USDT).
+
+### Por que o USDT/BRL não entra nos indicadores
+
+Porque foi medido, não suposto. Sobre 518 dias comparáveis:
+
+| Métrica | Valor |
+| --- | --- |
+| Prêmio mediano do USDT/BRL sobre o USD/BRL | +0,31% |
+| Percentil 5 / percentil 95 | −0,67% / +1,42% |
+| Mínimo / máximo | −2,10% / +3,60% |
+| Correlação das variações diárias | 0,43 |
+
+Uma faixa de quase 6 pontos percentuais, com níveis manuais calibrados na casa do décimo de por cento. Alimentar RSI, DMI, EMA e zonas com essa série trocaria a leitura do dólar pela leitura do dólar **mais** o prêmio do balcão cripto. Aqui ele fica onde serve: no custo de execução.
+
+Parte da correlação baixa é artefato de janela — a cripto opera 24/7 e o câmbio não, então o fechamento do mesmo dia do calendário não cobre o mesmo intervalo. O cálculo do prêmio casa as duas pontas **por data** e descarta os dias em que só uma delas negociou, justamente para não chamar de prêmio o que é diferença de sessão.
+
+### Fontes do trilho
+
+Aqui, ao contrário da série de USD/BRL, existe uma segunda provedora de verdade:
+
+1. **`data-api.binance.vision`** — espelho público de dados da Binance. O `api.binance.com` devolve HTTP 451 a partir de IP de runner do GitHub, que fica nos EUA; o espelho responde normalmente.
+2. **Mercado Bitcoin** (`api.mercadobitcoin.net`) — 3,5 anos de histórico diário com volume real.
+
+O trilho é **auxiliar e falha sozinho**: se as duas caírem, a seção sai com `trilho_disponivel: nao` e o motivo de cada uma, e o relatório do par analisado continua inteiro.
+
 ## Indicadores e leituras calculadas
 
 ### RSI(14)
@@ -344,6 +392,7 @@ Ele contém:
 - confluências e deteriorações;
 - `niveis_manuais`;
 - `zonas_automaticas`;
+- `trilho_execucao`, num objeto separado dos blocos de par;
 - `gatilhos_ativos`.
 
 O JSON é construído a partir do mesmo relatório textual usado para a página, e as zonas automáticas são injetadas a partir do objeto canônico calculado pelo monitor. A intenção do código é impedir que a página e o endpoint JSON passem a representar leituras calculadas diferentes.
@@ -411,6 +460,11 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que o `relatorio.json` continua parseável e tipado;
 - que uma segunda execução lê o estado da anterior sem quebrar;
 - que o espelho de host assume quando o primário é limitado;
+- que o trilho de execução sai com prêmio, percentil e classificação;
+- que a segunda provedora do trilho assume quando a Binance bloqueia;
+- que o trilho fora do ar não derruba o relatório do par analisado;
+- que nenhum campo do trilho vaza para o bloco diário, no texto e no JSON;
+- que um prêmio conhecido de 1% é calculado como 1%;
 - que a cascata inteira caída vira `FALHA:` citando o status de cada elo;
 - que a vela-fantasma de fim de semana não vira a vela em formação;
 - que a ancoragem de fuso não joga uma vela para o dia seguinte.

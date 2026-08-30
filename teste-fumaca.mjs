@@ -1,6 +1,6 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
-import { build, relatorioParaJSON, parseYahoo, ancorarDia } from "./monitor.mjs";
+import { build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho } from "./monitor.mjs";
 
 const DIA = 86400;
 let seed = 42;
@@ -31,6 +31,37 @@ function serie(n, passo, base = 5.40) {
 const diario = serie(900, DIA);
 const semanal = serie(400, DIA * 7);
 const porTf = { "1d": diario, "1wk": semanal, d: diario, w: semanal };
+const usdtPadrao = serieUsdt(diario);
+
+// USDT/BRL negocia todo dia, inclusive fim de semana. O premio varia de
+// proposito, para o percentil ter distribuicao de verdade.
+function serieUsdt(diarioRows, premioFixo = null) {
+  const porDia = new Map(diarioRows.map((r) => [r.t, r]));
+  const ini = diarioRows[0].t;
+  const fim = diarioRows[diarioRows.length - 1].t + DIA; // um dia a mais: cripto opera hoje
+  const out = [];
+  let ultimo = diarioRows[0].c;
+  for (let t = ini; t <= fim; t += DIA) {
+    const r = porDia.get(t);
+    if (r) ultimo = r.c;
+    const prem = premioFixo !== null ? premioFixo : (rnd() - 0.35) * 2.5;
+    out.push({ t, c: ultimo * (1 + prem / 100), v: 20000 + rnd() * 40000 });
+  }
+  return out;
+}
+function respBinance(rows) {
+  return JSON.stringify(
+    rows.map((r) => [r.t * 1000, r.c, r.c, r.c, r.c, r.v, 0, "0", 0, "0", "0", "0"])
+  );
+}
+function respMercadoBitcoin(rows) {
+  return JSON.stringify({
+    t: rows.map((r) => r.t),
+    o: rows.map((r) => r.c), h: rows.map((r) => r.c),
+    l: rows.map((r) => r.c), c: rows.map((r) => r.c),
+    v: rows.map((r) => r.v),
+  });
+}
 
 function respYahoo(rows) {
   return JSON.stringify({
@@ -51,10 +82,20 @@ function respYahoo(rows) {
   });
 }
 // hostsFora: quais hosts do Yahoo estao derrubados nesta simulacao.
-function fakeFetch({ hostsFora = [], series = porTf } = {}) {
+function fakeFetch({ hostsFora = [], series = porTf, usdt = usdtPadrao, usdtFora = [] } = {}) {
   const chamadas = [];
   const f = async (url) => {
     chamadas.push(url);
+    if (url.includes("binance")) {
+      return usdtFora.includes("binance")
+        ? { ok: false, status: 451, text: async () => "" }
+        : { ok: true, text: async () => respBinance(usdt) };
+    }
+    if (url.includes("mercadobitcoin")) {
+      return usdtFora.includes("mercadobitcoin")
+        ? { ok: false, status: 503, text: async () => "" }
+        : { ok: true, text: async () => respMercadoBitcoin(usdt) };
+    }
     const host = url.match(/https:\/\/([^.]+)\./)[1];
     if (hostsFora.includes(host)) {
       return { ok: false, status: host === "query1" ? 429 : 502, text: async () => "" };
@@ -136,6 +177,49 @@ await cenario("vela-fantasma de fim de semana", {
     "preco atual nao e' o ultimo preco repetido nas quatro pontas");
 });
 
+await cenario("trilho de execucao (USDT/BRL)", {}, (r) => {
+  ok(/^========== TRILHO DE EXECUCAO ==========$/m.test(r.texto), "secao propria no relatorio");
+  ok(/trilho_disponivel: sim/.test(r.texto), "trilho disponivel");
+  ok(/trilho_fonte: binance/.test(r.texto), "fonte primaria do trilho");
+  ok(/trilho_premio_pct: -?\d+\.\d\d/.test(r.texto), "premio calculado");
+  ok(/trilho_premio_classificacao: (caro|normal|barato)/.test(r.texto), "premio classificado");
+  ok(/trilho_volume_usdt_ultimo_dia: \d/.test(r.texto), "volume do trilho publicado (a cripto tem)");
+  // O trilho nao pode contaminar o par analisado.
+  const diarioBloco = r.texto.split("========== GRAFICO DIARIO ==========")[1].split("==========")[0];
+  ok(!/trilho_/.test(diarioBloco), "nenhum campo do trilho vazou para o bloco diario");
+  ok(/volume_disponivel: nao/.test(diarioBloco), "USD/BRL continua sem volume");
+});
+
+await cenario("trilho: binance bloqueada, MB assume", { usdtFora: ["binance"] }, (r) => {
+  ok(/trilho_disponivel: sim/.test(r.texto), "trilho continua disponivel");
+  ok(/trilho_fonte: mercadobitcoin/.test(r.texto), "segunda provedora assumiu");
+});
+
+await cenario("trilho fora do ar nao derruba o relatorio", {
+  usdtFora: ["binance", "mercadobitcoin"],
+}, (r) => {
+  ok(/trilho_disponivel: nao/.test(r.texto), "trilho marcado como indisponivel");
+  ok(/binance: HTTP 451/.test(r.texto) && /mercadobitcoin: HTTP 503/.test(r.texto),
+    "falha cita cada provedora");
+  ok(/rsi14_fechado: \d/.test(r.texto), "o par analisado continua saindo inteiro");
+  ok(/GATILHOS ATIVOS:/.test(r.texto), "gatilhos continuam sendo avaliados");
+});
+
+console.log("\n== trilho: aritmetica ==");
+{
+  // Premio conhecido: USDT 1% acima do dolar em toda a serie.
+  const usd = {
+    times: [1, 2, 3].map((d) => ancorarDia(1756425600 + d * DIA)),
+    closes: [5.0, 5.1, 5.2],
+    live: { close: 5.2 },
+  };
+  const usdt = usd.times.map((t, i) => ({ t, time: t, close: usd.closes[i] * 1.01, volume: 100 }));
+  const t = calcularTrilho(usdt, usd);
+  ok(Math.abs(t.premioPct - 1) < 1e-9, `premio de 1% e' calculado como 1% (deu ${t.premioPct.toFixed(6)})`);
+  ok(t.diasComparados === 3, "casou os tres dias por data");
+  ok(t.classificacao === "caro", "premio no topo da propria distribuicao vira 'caro'");
+}
+
 console.log("\n== JSON ==");
 const j = relatorioParaJSON(r1.texto, r1.zonas);
 ok(j.diario["USD/BRL"] && typeof j.diario["USD/BRL"].preco_atual === "number", "JSON tem diario USD/BRL com preco numerico");
@@ -143,6 +227,11 @@ ok(j.semanal["USD/BRL"] && typeof j.semanal["USD/BRL"].rsi14_fechado === "number
 ok(j.diario["USD/BRL"].volume_disponivel === "nao", "JSON marca volume_disponivel");
 ok(Array.isArray(j.diario["USD/BRL"].alertas_tecnicos), "alertas_tecnicos vira lista");
 ok(Array.isArray(j.gatilhos_ativos), "gatilhos_ativos vira lista");
+ok(j.trilho_execucao && typeof j.trilho_execucao.trilho_premio_pct === "number",
+  "JSON tem trilho_execucao com premio numerico");
+ok(j.trilho_execucao.trilho_par === "USDT/BRL", "JSON identifica o par do trilho");
+ok(j.diario["USD/BRL"].trilho_premio_pct === undefined,
+  "o trilho nao vazou para o bloco diario do JSON");
 
 console.log("\n== estado entre execucoes ==");
 const r2 = await build(fakeFetch(), { niveis: r1.estadoNiveis, zonas: r1.zonasEstado, contadoresZona: r1.contadoresZona });

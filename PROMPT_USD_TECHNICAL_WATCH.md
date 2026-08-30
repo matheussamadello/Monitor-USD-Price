@@ -710,6 +710,26 @@ Três consequências práticas:
 2. **Nunca trate o campo faltante como erro do relatório.** `volume_disponivel: nao` é resposta, não falha.
 3. **Exija mais das outras camadas.** Nos monitores de cripto o volume servia de desempate em rompimentos e pullbacks. Sem ele, um rompimento precisa se sustentar em fechamento, corpo, estrutura e reteste — não em "parece forte".
 
+## Trilho de execução (USDT/BRL)
+
+O JSON traz um objeto `trilho_execucao` separado dos blocos de par. Ele **não é sinal técnico** e nunca deve gerar alerta sozinho.
+
+Serve para uma coisa só: quando você já for emitir um alerta por leitura técnica do USD/BRL, e esse alerta envolver dolarizar ou desdolarizar, acrescente **na mesma mensagem** o custo de atravessar.
+
+- `trilho_premio_pct` — quanto o USDT/BRL está acima do USD/BRL agora.
+- `trilho_premio_classificacao` — `caro`, `normal` ou `barato`, face aos últimos 180 dias.
+
+A direção não pode ser invertida:
+
+- prêmio **alto** encarece **dolarizar** (comprar USDT) e favorece **desdolarizar** (vender USDT);
+- prêmio **baixo**, o contrário.
+
+Regras:
+
+1. **Nunca alerte por mudança de prêmio.** O prêmio saindo de `normal` para `caro` não é evento; é contexto para um alerta que já existia por outro motivo.
+2. **Nunca use o USDT/BRL como leitura técnica.** Ele não tem RSI, DMI nem zonas no relatório, e isso é deliberado — o prêmio varia de −2,1% a +3,6% e contaminaria os níveis.
+3. **`trilho_disponivel: nao` não é alerta.** É uma fonte auxiliar fora do ar; o par analisado continua íntegro.
+
 ## Fim de semana e feriado
 
 Diferente dos monitores de cripto, o câmbio não negocia todo dia.

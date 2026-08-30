@@ -105,6 +105,183 @@ const PAIRS = [
 ];
 
 // ------------------------------------------------------------
+// Trilho de execucao (USDT/BRL)
+//
+// O par ANALISADO continua sendo USD/BRL. Este bloco responde a uma
+// pergunta diferente: quando a leitura tecnica disser que e' hora de
+// dolarizar ou desdolarizar, quanto custa atravessar de fato, e o
+// pedagio esta caro ou barato hoje?
+//
+// O USDT/BRL NAO entra nos indicadores, e a razao foi medida, nao
+// suposta. Sobre 518 dias, o premio do USDT/BRL sobre o USD/BRL variou
+// de -2,10% a +3,60% (mediana +0,31%), e a correlacao das variacoes
+// diarias ficou em 0,43. Alimentar RSI, DMI, EMA e zonas com essa serie
+// trocaria a leitura do dolar pela leitura do dolar MAIS o premio do
+// balcao cripto -- com niveis calibrados na casa do decimo de por
+// cento, isso nao e' detalhe. Aqui ele fica onde serve: no custo de
+// execucao.
+// ------------------------------------------------------------
+
+const TRILHO_JANELA = 180; // dias de historico do premio
+const TRILHO_PCT_CARO = 75;
+const TRILHO_PCT_BARATO = 25;
+const TRILHO_MIN_VELAS = 30;
+
+// O api.binance.com devolve HTTP 451 a partir de IP de runner do GitHub
+// ("Service unavailable from a restricted location"), que fica nos EUA.
+// O data-api.binance.vision e' o espelho publico de dados da propria
+// Binance e responde normalmente. O Mercado Bitcoin entra atras dele
+// como segunda provedora de verdade -- aqui, ao contrario da serie de
+// USD/BRL, existe uma.
+const FONTES_USDT = [
+  {
+    nome: "binance",
+    url: () =>
+      "https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=400",
+    parse: (t) =>
+      JSON.parse(t).map((k) => ({
+        // kline: [openTime, open, high, low, close, volume, ...]
+        time: ancorarDia(Math.floor(Number(k[0]) / 1000)),
+        close: Number(k[4]),
+        volume: Number(k[5]),
+      })),
+  },
+  {
+    nome: "mercadobitcoin",
+    url: () => {
+      const agora = Math.floor(Date.now() / 1000);
+      return (
+        "https://api.mercadobitcoin.net/api/v4/candles?symbol=USDT-BRL&resolution=1d" +
+        `&from=${agora - TRILHO_JANELA * 2 * 86400}&to=${agora}`
+      );
+    },
+    parse: (t) => {
+      const j = JSON.parse(t);
+      return (j.t || []).map((ts, i) => ({
+        time: ancorarDia(Number(ts)),
+        close: Number(j.c[i]),
+        volume: Number(j.v[i]),
+      }));
+    },
+  },
+];
+
+export async function buscarUsdt(fetchImpl) {
+  const erros = [];
+  for (const fonte of FONTES_USDT) {
+    try {
+      const res = await fetchImpl(fonte.url(), {
+        headers: { "User-Agent": "usd-monitor/1.0" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const linhas = fonte
+        .parse(await res.text())
+        .filter((l) => Number.isFinite(l.time) && Number.isFinite(l.close) && l.close > 0)
+        .sort((a, b) => a.time - b.time);
+      if (linhas.length < TRILHO_MIN_VELAS) {
+        throw new Error(`so ${linhas.length} velas`);
+      }
+      return { ok: true, linhas, fonte: fonte.nome };
+    } catch (err) {
+      erros.push(`${fonte.nome}: ${err.message}`);
+    }
+  }
+  return { ok: false, erro: erros.join(" | ") };
+}
+
+function medianaDe(a) {
+  if (!a.length) return null;
+  const s = a.slice().sort((x, y) => x - y);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function percentilNa(s, f) {
+  return s.length ? s[Math.min(s.length - 1, Math.floor(s.length * f))] : null;
+}
+
+export function calcularTrilho(usdt, usd) {
+  // A serie de premios so usa dias em que as DUAS pontas negociaram. A
+  // cripto opera fim de semana e o cambio nao; casar por data evita
+  // comparar o sabado do USDT com a sexta do dolar e chamar isso de
+  // premio.
+  const porDia = new Map(usdt.map((l) => [l.time, l]));
+  const premios = [];
+  for (let i = 0; i < usd.times.length; i++) {
+    const l = porDia.get(usd.times[i]);
+    if (!l || !(usd.closes[i] > 0)) continue;
+    premios.push(((l.close - usd.closes[i]) / usd.closes[i]) * 100);
+  }
+  const janela = premios.slice(-TRILHO_JANELA);
+  const ord = janela.slice().sort((a, b) => a - b);
+
+  const atual = usdt[usdt.length - 1];
+  const precoUsd = usd.live.close;
+  const premioAtual = ((atual.close - precoUsd) / precoUsd) * 100;
+
+  const pct = ord.length
+    ? (ord.filter((x) => x <= premioAtual).length / ord.length) * 100
+    : null;
+  const classificacao =
+    pct === null
+      ? "indefinido"
+      : pct >= TRILHO_PCT_CARO
+      ? "caro"
+      : pct <= TRILHO_PCT_BARATO
+      ? "barato"
+      : "normal";
+
+  const vols = usdt
+    .slice(-30)
+    .map((l) => l.volume)
+    .filter((v) => Number.isFinite(v) && v > 0);
+
+  return {
+    preco: atual.close,
+    dia: atual.time,
+    premioPct: premioAtual,
+    percentil: pct,
+    mediana: medianaDe(janela),
+    p25: percentilNa(ord, 0.25),
+    p75: percentilNa(ord, 0.75),
+    classificacao,
+    diasComparados: janela.length,
+    volumeUltimo: atual.volume,
+    volumeMediana30: medianaDe(vols),
+  };
+}
+
+function blocoTrilho(res, usd, dec) {
+  const L = ["========== TRILHO DE EXECUCAO ==========", ""];
+  if (!res.ok || !usd) {
+    L.push("trilho_disponivel: nao");
+    L.push(`trilho_falha: ${res.ok ? "sem serie de USD/BRL para comparar" : res.erro}`);
+    return L;
+  }
+  const t = calcularTrilho(res.linhas, usd);
+  L.push("# USDT/BRL. NAO entra em nenhum indicador: e' o custo de");
+  L.push("# atravessar, nao a leitura tecnica do dolar.");
+  L.push("# Premio ALTO encarece dolarizar (comprar USDT) e favorece");
+  L.push("# desdolarizar (vender USDT). Premio BAIXO, o contrario.");
+  L.push("trilho_disponivel: sim");
+  L.push(`trilho_par: USDT/BRL`);
+  L.push(`trilho_fonte: ${res.fonte}`);
+  L.push(`trilho_preco: ${num(t.preco, dec)}`);
+  L.push(`trilho_dia: ${fmtDia(t.dia)}`);
+  L.push(`trilho_premio_pct: ${num(t.premioPct, 2)}`);
+  L.push(`trilho_premio_janela_dias: ${TRILHO_JANELA}`);
+  L.push(`trilho_premio_dias_comparados: ${t.diasComparados}`);
+  L.push(`trilho_premio_percentil: ${num(t.percentil, 0)}`);
+  L.push(`trilho_premio_mediana: ${num(t.mediana, 2)}`);
+  L.push(`trilho_premio_p25: ${num(t.p25, 2)}`);
+  L.push(`trilho_premio_p75: ${num(t.p75, 2)}`);
+  L.push(`trilho_premio_classificacao: ${t.classificacao}`);
+  L.push(`trilho_volume_usdt_ultimo_dia: ${num(t.volumeUltimo, 0)}`);
+  L.push(`trilho_volume_usdt_mediana_30d: ${num(t.volumeMediana30, 0)}`);
+  return L;
+}
+
+// ------------------------------------------------------------
 // Indicadores (suavizacao de Wilder / RMA, igual TradingView)
 // ------------------------------------------------------------
 
@@ -1445,6 +1622,7 @@ export function relatorioParaJSON(texto, zonas = null) {
     cabecalho: {},
     diario: {},
     semanal: {},
+    trilho_execucao: {},
     gatilhos_ativos: [],
   };
   let tfAtual = null;
@@ -1455,7 +1633,10 @@ export function relatorioParaJSON(texto, zonas = null) {
     if (!linha || linha.startsWith("#")) continue;
 
     if (linha.startsWith("==========")) {
-      tfAtual = /SEMANAL/.test(linha) ? "semanal" : "diario";
+      // O trilho e' uma secao sem par: se caisse na regra abaixo, os
+      // campos dele entrariam no bloco diario de USD/BRL.
+      if (/TRILHO/.test(linha)) tfAtual = "trilho";
+      else tfAtual = /SEMANAL/.test(linha) ? "semanal" : "diario";
       parAtual = null;
       continue;
     }
@@ -1487,7 +1668,8 @@ export function relatorioParaJSON(texto, zonas = null) {
     const campo = linha.slice(0, sep).trim();
     const valor = valorJSON(campo, linha.slice(sep + 2));
 
-    if (tfAtual && parAtual) out[tfAtual][parAtual][campo] = valor;
+    if (tfAtual === "trilho") out.trilho_execucao[campo] = valor;
+    else if (tfAtual && parAtual) out[tfAtual][parAtual][campo] = valor;
     else out.cabecalho[campo] = valor;
   }
 
@@ -2975,6 +3157,15 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
     blocks.push("");
     for (const b of blocosPorTf[tf.key]) blocks.push(b);
   }
+
+  // Trilho de execucao: auxiliar, e falha sozinho. Uma indisponibilidade
+  // do USDT/BRL nunca pode derrubar o relatorio do par analisado.
+  const usdDiario = (dados.diario || {}).usd;
+  const trilho = usdDiario
+    ? await buscarUsdt(fetchImpl)
+    : { ok: false, erro: "sem serie de USD/BRL para comparar" };
+  for (const l of blocoTrilho(trilho, usdDiario, PAIRS[0].dec)) blocks.push(l);
+  blocks.push("");
 
   // Gatilhos do alerta continuam olhando SOMENTE o diario.
   const gatilhos = avaliarGatilhos(dados.diario || {});
