@@ -1,83 +1,96 @@
-// Sonda descartavel: USDT/BRL como substituto de USD/BRL.
+// Sonda descartavel: quem serve USDT/BRL sem bloquear IP de runner.
 const fmt = (t) => new Date(t).toISOString().slice(0, 10);
+const agora = Math.floor(Date.now() / 1000);
+const ANO = 31536000;
 async function pegar(url) {
   try {
     const r = await fetch(url, { headers: { "User-Agent": "usd-monitor-probe/1.0" } });
     return { ok: r.ok, status: r.status, txt: await r.text() };
   } catch (e) { return { ok: false, status: "EXC", txt: e.message }; }
 }
-
-console.log("###### 1. O par USDTBRL existe na Binance? ######");
-{
-  const r = await pegar("https://api.binance.com/api/v3/exchangeInfo?symbol=USDTBRL");
-  console.log(`  http ${r.status}`);
-  if (r.ok) {
-    const s = JSON.parse(r.txt).symbols[0];
-    console.log(`  ${s.symbol} status=${s.status} base=${s.baseAsset} quote=${s.quoteAsset}`);
-  } else console.log(`  ${r.txt.slice(0, 200)}`);
-}
-
-console.log("\n###### 2. Klines: profundidade, volume, granularidade ######");
-const serie = {};
-for (const [iv, lim] of [["1d", 1000], ["1w", 1000]]) {
-  const r = await pegar(`https://api.binance.com/api/v3/klines?symbol=USDTBRL&interval=${iv}&limit=${lim}`);
-  if (!r.ok) { console.log(`  ${iv}: http ${r.status} ${r.txt.slice(0,150)}`); continue; }
-  const k = JSON.parse(r.txt);
-  const zero = k.filter((x) => +x[2] === +x[3]).length;
-  const semVol = k.filter((x) => +x[5] === 0).length;
+function resumo(nome, v) {
+  if (!v.length) return console.log(`  ${nome}: 0 velas`);
+  v.sort((a, b) => a.t - b.t);
+  const u = v[v.length - 1];
+  const anos = (u.t - v[0].t) / (365.25 * 864e5);
   console.log(
-    `  ${iv}: ${k.length} velas | ${fmt(k[0][0])} -> ${fmt(k[k.length-1][0])} | ` +
-    `ultima O=${k[k.length-1][1]} H=${k[k.length-1][2]} L=${k[k.length-1][3]} C=${k[k.length-1][4]} ` +
-    `vol=${(+k[k.length-1][5]).toFixed(0)} trades=${k[k.length-1][8]} | amplitude-zero: ${zero} | volume-zero: ${semVol}`
+    `  ${nome}: ${v.length} velas | ${fmt(v[0].t)} -> ${fmt(u.t)} (${anos.toFixed(1)} anos) | ` +
+    `ultima O=${u.o} H=${u.h} L=${u.l} C=${u.c} vol=${u.v ?? "--"} | ` +
+    `amplitude-zero: ${v.filter((x) => x.h === x.l).length} | volume-zero: ${v.filter((x) => !x.v).length}`
   );
-  serie[iv] = k;
-}
-if (serie["1w"]) {
-  const anos = (serie["1w"][serie["1w"].length-1][0] - serie["1w"][0][0]) / (365.25*864e5);
-  console.log(`  -> semanal cobre ${anos.toFixed(1)} anos, ${serie["1w"].length} velas (EMA89 precisa de 89)`);
+  return v;
 }
 
-console.log("\n###### 3. Premio do USDT/BRL sobre o USD/BRL (a pergunta que importa) ######");
+const achados = {};
+
+console.log("###### Binance via o mirror publico de dados ######");
+for (const host of ["data-api.binance.vision", "api-gcp.binance.com"]) {
+  const r = await pegar(`https://${host}/api/v3/klines?symbol=USDTBRL&interval=1d&limit=1000`);
+  console.log(`  ${host}: http ${r.status} (${r.txt.length}b)`);
+  if (r.ok) {
+    try {
+      const k = JSON.parse(r.txt);
+      achados[host] = resumo(host, k.map((x) => ({ t: x[0], o: +x[1], h: +x[2], l: +x[3], c: +x[4], v: +x[5] })));
+    } catch (e) { console.log(`     parse: ${e.message}`); }
+  } else console.log(`     ${r.txt.slice(0, 130)}`);
+}
+
+console.log("\n###### Corretoras brasileiras ######");
 {
+  const u = `https://api.mercadobitcoin.net/api/v4/candles?symbol=USDT-BRL&resolution=1d&from=${agora - 4 * ANO}&to=${agora}`;
+  const r = await pegar(u);
+  console.log(`  mercadobitcoin: http ${r.status} (${r.txt.length}b)`);
+  if (r.ok) {
+    try {
+      const j = JSON.parse(r.txt);
+      achados.mb = resumo("mercadobitcoin", j.t.map((t, i) => ({ t: t * 1000, o: +j.o[i], h: +j.h[i], l: +j.l[i], c: +j.c[i], v: +j.v[i] })));
+    } catch (e) { console.log(`     parse: ${e.message} | ${r.txt.slice(0,150)}`); }
+  } else console.log(`     ${r.txt.slice(0, 130)}`);
+}
+{
+  const r = await pegar("https://api.bitso.com/v3/available_books/");
+  console.log(`  bitso available_books: http ${r.status}`);
+  if (r.ok) {
+    try {
+      const livros = JSON.parse(r.txt).payload.map((b) => b.book).filter((b) => b.includes("brl"));
+      console.log(`     livros com brl: ${livros.join(", ") || "nenhum"}`);
+    } catch (e) { console.log(`     ${r.txt.slice(0, 150)}`); }
+  }
+}
+{
+  const r = await pegar("https://api.foxbit.com.br/rest/v3/markets/usdtbrl/candles?interval=1d&start_time=2024-01-01T00:00:00Z");
+  console.log(`  foxbit: http ${r.status} (${r.txt.length}b) ${r.txt.slice(0, 130)}`);
+}
+
+console.log("\n###### Premio do USDT/BRL sobre o USD/BRL ######");
+{
+  const fonte = achados["data-api.binance.vision"] || achados["api-gcp.binance.com"] || achados.mb;
   const y = await pegar("https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X?interval=1d&range=2y");
-  if (!y.ok || !serie["1d"]) { console.log("  nao deu para comparar"); }
+  if (!fonte || !y.ok) console.log("  sem fonte de USDT/BRL para comparar");
   else {
     const x = JSON.parse(y.txt).chart.result[0];
     const q = x.indicators.quote[0];
     const usd = new Map();
-    for (let i = 0; i < x.timestamp.length; i++) {
-      if (Number.isFinite(q.close[i]) && q.high[i] !== q.low[i])
-        usd.set(fmt(x.timestamp[i] * 1000), q.close[i]);
-    }
-    const premios = [];
-    for (const k of serie["1d"]) {
-      const d = fmt(k[0]);
-      const u = usd.get(d);
-      if (u) premios.push({ d, p: ((+k[4] - u) / u) * 100, usdt: +k[4], usd: u });
-    }
-    if (!premios.length) { console.log("  nenhuma data em comum"); }
+    for (let i = 0; i < x.timestamp.length; i++)
+      if (Number.isFinite(q.close[i]) && q.high[i] !== q.low[i]) usd.set(fmt(x.timestamp[i] * 1000), q.close[i]);
+    const par = [];
+    for (const k of fonte) { const u = usd.get(fmt(k.t)); if (u) par.push({ usdt: k.c, usd: u }); }
+    if (!par.length) { console.log("  nenhuma data em comum"); }
     else {
-      const ps = premios.map((x) => x.p).sort((a, b) => a - b);
-      const pct = (f) => ps[Math.floor(ps.length * f)].toFixed(2);
-      const ult = premios[premios.length - 1];
-      console.log(`  ${premios.length} dias comparaveis (${premios[0].d} -> ${ult.d})`);
-      console.log(`  premio mediano: ${pct(0.5)}%`);
-      console.log(`  faixa: p05 ${pct(0.05)}% | p25 ${pct(0.25)}% | p75 ${pct(0.75)}% | p95 ${pct(0.95)}%`);
-      console.log(`  extremos: min ${ps[0].toFixed(2)}% | max ${ps[ps.length-1].toFixed(2)}%`);
-      console.log(`  hoje: USDT/BRL ${ult.usdt} vs USD/BRL ${ult.usd.toFixed(4)} = ${ult.p.toFixed(2)}%`);
-      // O que interessa para analise tecnica nao e' o nivel, e' se as
-      // duas series ANDAM JUNTAS. Correlacao das variacoes diarias.
-      const vs = [];
-      for (let i = 1; i < premios.length; i++) {
-        const a = (premios[i].usdt - premios[i-1].usdt) / premios[i-1].usdt;
-        const b = (premios[i].usd - premios[i-1].usd) / premios[i-1].usd;
-        if (Number.isFinite(a) && Number.isFinite(b)) vs.push([a, b]);
-      }
-      const m = (arr, j) => arr.reduce((s, x) => s + x[j], 0) / arr.length;
-      const ma = m(vs, 0), mb = m(vs, 1);
-      let num = 0, da = 0, db = 0;
-      for (const [a, b] of vs) { num += (a-ma)*(b-mb); da += (a-ma)**2; db += (b-mb)**2; }
-      console.log(`  correlacao das variacoes diarias: ${(num/Math.sqrt(da*db)).toFixed(4)} (n=${vs.length})`);
+    const ps = par.map((p) => ((p.usdt - p.usd) / p.usd) * 100).sort((a, b) => a - b);
+    const P = (f) => ps[Math.floor(ps.length * f)].toFixed(2);
+    const ult = par[par.length - 1];
+    console.log(`  ${par.length} dias comparaveis`);
+    console.log(`  premio mediano ${P(0.5)}% | p05 ${P(0.05)}% | p95 ${P(0.95)}% | min ${ps[0].toFixed(2)}% max ${ps[ps.length-1].toFixed(2)}%`);
+    console.log(`  hoje: USDT/BRL ${ult.usdt} vs USD/BRL ${ult.usd.toFixed(4)}`);
+    const vs = [];
+    for (let i = 1; i < par.length; i++)
+      vs.push([(par[i].usdt - par[i-1].usdt) / par[i-1].usdt, (par[i].usd - par[i-1].usd) / par[i-1].usd]);
+    const m = (j) => vs.reduce((s, x) => s + x[j], 0) / vs.length;
+    const ma = m(0), mb2 = m(1);
+    let n = 0, da = 0, db = 0;
+    for (const [a, b] of vs) { n += (a-ma)*(b-mb2); da += (a-ma)**2; db += (b-mb2)**2; }
+    console.log(`  correlacao das variacoes diarias: ${(n/Math.sqrt(da*db)).toFixed(4)} (n=${vs.length})`);
     }
   }
 }
