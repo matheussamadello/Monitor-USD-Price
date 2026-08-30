@@ -29,7 +29,8 @@ const TIMEFRAMES = [
   {
     key: "diario",
     titulo: "GRAFICO DIARIO",
-    yahooInterval: "1d",
+    // Cada provedora nomeia o mesmo intervalo do seu jeito.
+    intervalos: { yahoo: "1d", binance: "1d", mercadobitcoin: "1d" },
     yahooRange: "5y",
     segundos: 86400,
     // Dias CORRIDOS, nao pregoes: o cambio nao negocia fim de semana,
@@ -42,7 +43,7 @@ const TIMEFRAMES = [
   {
     key: "semanal",
     titulo: "GRAFICO SEMANAL",
-    yahooInterval: "1wk",
+    intervalos: { yahoo: "1wk", binance: "1w", mercadobitcoin: "1w" },
     yahooRange: "10y",
     segundos: 604800,
     retestMaxCandles: 8,
@@ -90,20 +91,6 @@ const NIVEIS_USD = {
   suporteLabel: "5_13",
 };
 
-const PAIRS = [
-  {
-    key: "usd",
-    // O ativo monitorado e' o DOLAR; o real e' a moeda de cotacao. Por
-    // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
-    label: "USD/BRL",
-    yahoo: "USDBRL=X",
-    // 4 casas: o USD/BRL se move em milesimos, e 2 casas apagariam a
-    // diferenca entre uma vela parada e uma vela de meio por cento.
-    dec: 4,
-    niveis: NIVEIS_USD,
-  },
-];
-
 // ------------------------------------------------------------
 // Trilho de execucao (USDT/BRL)
 //
@@ -125,68 +112,18 @@ const PAIRS = [
 const TRILHO_JANELA = 180; // dias de historico do premio
 const TRILHO_PCT_CARO = 75;
 const TRILHO_PCT_BARATO = 25;
-const TRILHO_MIN_VELAS = 30;
 
-// O api.binance.com devolve HTTP 451 a partir de IP de runner do GitHub
-// ("Service unavailable from a restricted location"), que fica nos EUA.
-// O data-api.binance.vision e' o espelho publico de dados da propria
-// Binance e responde normalmente. O Mercado Bitcoin entra atras dele
-// como segunda provedora de verdade -- aqui, ao contrario da serie de
-// USD/BRL, existe uma.
-const FONTES_USDT = [
-  {
-    nome: "binance",
-    url: () =>
-      "https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=400",
-    parse: (t) =>
-      JSON.parse(t).map((k) => ({
-        // kline: [openTime, open, high, low, close, volume, ...]
-        time: ancorarDia(Math.floor(Number(k[0]) / 1000)),
-        close: Number(k[4]),
-        volume: Number(k[5]),
-      })),
-  },
-  {
-    nome: "mercadobitcoin",
-    url: () => {
-      const agora = Math.floor(Date.now() / 1000);
-      return (
-        "https://api.mercadobitcoin.net/api/v4/candles?symbol=USDT-BRL&resolution=1d" +
-        `&from=${agora - TRILHO_JANELA * 2 * 86400}&to=${agora}`
-      );
-    },
-    parse: (t) => {
-      const j = JSON.parse(t);
-      return (j.t || []).map((ts, i) => ({
-        time: ancorarDia(Number(ts)),
-        close: Number(j.c[i]),
-        volume: Number(j.v[i]),
-      }));
-    },
-  },
-];
-
-export async function buscarUsdt(fetchImpl) {
-  const erros = [];
-  for (const fonte of FONTES_USDT) {
-    try {
-      const res = await fetchImpl(fonte.url(), {
-        headers: { "User-Agent": "usd-monitor/1.0" },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const linhas = fonte
-        .parse(await res.text())
-        .filter((l) => Number.isFinite(l.time) && Number.isFinite(l.close) && l.close > 0)
-        .sort((a, b) => a.time - b.time);
-      if (linhas.length < TRILHO_MIN_VELAS) {
-        throw new Error(`so ${linhas.length} velas`);
-      }
-      return { ok: true, linhas, fonte: fonte.nome };
-    } catch (err) {
-      erros.push(`${fonte.nome}: ${err.message}`);
-    }
-  }
-  return { ok: false, erro: erros.join(" | ") };
+// A serie do trilho e' a MESMA ja buscada para o par USDT/BRL. Buscar
+// de novo daria duas chamadas por execucao e, pior, abriria a chance de
+// o bloco do par e o trilho publicarem precos de instantes diferentes.
+export function serieParaTrilho(d) {
+  const linhas = d.times.map((t, i) => ({
+    time: t,
+    close: d.closes[i],
+    volume: d.volumes[i],
+  }));
+  linhas.push({ time: d.live.time, close: d.live.close, volume: d.live.volume });
+  return linhas;
 }
 
 function medianaDe(a) {
@@ -461,13 +398,98 @@ const MAX_VELAS = 720; // mesmo horizonte que os monitores de cripto usam
 // no papel, e mais do que havia na pratica.
 const HOSTS_YAHOO = ["query1", "query2"];
 
-const FONTES = HOSTS_YAHOO.map((host) => ({
+const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
   nome: `yahoo/${host}`,
   url: (cfg, tf) =>
-    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.yahoo)}` +
-    `?interval=${tf.yahooInterval}&range=${tf.yahooRange}`,
+    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.simbolo)}` +
+    `?interval=${tf.intervalos.yahoo}&range=${tf.yahooRange}`,
   parse: parseYahoo,
 }));
+
+// Cascata do par de cripto. Aqui, ao contrario do cambio, existem duas
+// provedoras de verdade e nao um espelho de host.
+//
+// O api.binance.com devolve HTTP 451 a partir de IP de runner do GitHub
+// ("Service unavailable from a restricted location"), que fica nos EUA.
+// O data-api.binance.vision e' o espelho publico de dados da propria
+// Binance e responde normalmente.
+const FONTES_CRIPTO = [
+  {
+    nome: "binance",
+    url: (cfg, tf) =>
+      "https://data-api.binance.vision/api/v3/klines" +
+      `?symbol=${encodeURIComponent(cfg.simbolo)}&interval=${tf.intervalos.binance}&limit=1000`,
+    parse: parseBinance,
+  },
+  {
+    nome: "mercadobitcoin",
+    url: (cfg, tf) => {
+      const agora = Math.floor(Date.now() / 1000);
+      return (
+        "https://api.mercadobitcoin.net/api/v4/candles" +
+        `?symbol=${encodeURIComponent(cfg.simboloMB)}&resolution=${tf.intervalos.mercadobitcoin}` +
+        `&from=${agora - MAX_VELAS * (tf.segundos || 86400)}&to=${agora}`
+      );
+    },
+    parse: parseMercadoBitcoin,
+  },
+];
+
+// ------------------------------------------------------------
+// NIVEIS DO USDT/BRL
+//
+// Par SEPARADO, com niveis proprios, e nao os do USD/BRL somados de um
+// premio fixo: o premio nao e' fixo. Medido em 518 dias, ele foi de
+// -2,10% a +3,60% (mediana +0,31%). Um nivel derivado do dolar estaria
+// errado justamente nos dias em que o premio se mexe, que sao os dias
+// que importam para quem vai atravessar.
+//
+// Assim como os do USD/BRL, saem das zonas automaticas e das medias da
+// primeira execucao real, nao de numero redondo escolhido a mao.
+// ------------------------------------------------------------
+const NIVEIS_USDT = {
+  faixas: [
+    [5.28, 5.40, "faixa_5_28_5_40"],
+    [5.16, 5.25, "faixa_5_16_5_25"],
+    [5.06, 5.14, "regiao_suporte_5_06_5_14"],
+  ],
+  resistencia: 5.33,
+  resistenciaLabel: "5_33",
+  suporte: 5.16,
+  suporteLabel: "5_16",
+};
+
+// A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia
+// analitica, e o bloco diario dele e' o que a automacao externa le.
+const PAIRS = [
+  {
+    key: "usd",
+    // O ativo monitorado e' o DOLAR; o real e' a moeda de cotacao. Por
+    // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
+    label: "USD/BRL",
+    simbolo: "USDBRL=X",
+    fontes: FONTES_CAMBIO,
+    // 4 casas: o par se move em milesimos, e 2 casas apagariam a
+    // diferenca entre uma vela parada e uma vela de meio por cento.
+    dec: 4,
+    niveis: NIVEIS_USD,
+  },
+  {
+    key: "usdt",
+    // O instrumento de EXECUCAO: e' nele que se dolariza e desdolariza
+    // rapido. Tem a analise tecnica completa, com uma vantagem sobre o
+    // par de cambio -- negocia em corretora, entao tem volume de
+    // verdade, e todo o subsistema de volume funciona aqui.
+    label: "USDT/BRL",
+    simbolo: "USDTBRL",
+    simboloMB: "USDT-BRL",
+    fontes: FONTES_CRIPTO,
+    dec: 4,
+    niveis: NIVEIS_USDT,
+  },
+];
+
+const PAR_POR_LABEL = new Map(PAIRS.map((c) => [c.label, c]));
 
 // Toda vela e' ancorada na MEIA-NOITE UTC do proprio dia, venha de onde
 // vier. Sem isso as duas fontes cairiam em grades diferentes — o Yahoo
@@ -481,7 +503,7 @@ export function ancorarDia(epochSeconds, offsetSegundos = 0) {
   return Math.floor(Date.parse(`${dia}T00:00:00Z`) / 1000);
 }
 
-function montarSerie(linhas) {
+function montarSerie(linhas, { temVolume = false } = {}) {
   // Uma entrada por instante, a ultima vence: o Yahoo repete a vela do
   // dia corrente a cada chamada e o Stooq pode repetir a borda.
   const porTempo = new Map();
@@ -495,9 +517,10 @@ function montarSerie(linhas) {
     // vela_atual_em_formacao: sim com o mercado fechado.
     //
     // Amplitude zero e' o criterio porque nao depende de calendario:
-    // pega feriado, meio-pregao e a borda do Stooq do mesmo jeito. Um
-    // dia inteiro de USD/BRL sem UM pip de variacao nao existe, entao
-    // nao ha vela legitima sendo descartada aqui.
+    // pega feriado e meio-pregao do mesmo jeito, sem embutir o
+    // calendario de nenhuma praca. Um dia inteiro de USD/BRL ou de
+    // USDT/BRL sem UM pip de variacao nao existe, entao nao ha vela
+    // legitima sendo descartada aqui.
     if (l.high === l.low) continue;
     porTempo.set(l.time, l);
   }
@@ -509,29 +532,31 @@ function montarSerie(linhas) {
   }
   const liveRow = rows[rows.length - 1];
   const closed = rows.slice(0, -1);
+  // VOLUME. Quem decide e' a provedora, nao este arquivo. O cambio a
+  // vista e' balcao e nao tem tape consolidado publico: as fontes de
+  // USD/BRL ou mandam zero ou nao mandam o campo, e temVolume: false e'
+  // o que desliga o volume no score das zonas e no relatorio — o
+  // contrario seria ler zero como "volume fraco" e penalizar toda zona
+  // por um dado que nunca existiu. Ja o USDT/BRL negocia em corretora,
+  // com livro e tape: ali o volume e' real e entra na analise.
   return {
-    // VOLUME: o cambio a vista e' balcao, sem tape consolidado publico.
-    // As duas fontes ou mandam zero ou nao mandam o campo. Declarar
-    // false aqui e' o que desliga o volume no score das zonas e no
-    // relatorio — o contrario seria ler zero como "volume fraco" e
-    // penalizar toda zona por um dado que nunca existiu.
-    temVolume: false,
+    temVolume,
     live: {
       time: liveRow.time,
       open: liveRow.open,
       high: liveRow.high,
       low: liveRow.low,
       close: liveRow.close,
-      volume: null,
-      trades: null,
+      volume: temVolume ? liveRow.volume : null,
+      trades: temVolume && Number.isFinite(liveRow.trades) ? liveRow.trades : null,
     },
     times: closed.map((r) => r.time),
     opens: closed.map((r) => r.open),
     highs: closed.map((r) => r.high),
     lows: closed.map((r) => r.low),
     closes: closed.map((r) => r.close),
-    volumes: [],
-    trades: [],
+    volumes: temVolume ? closed.map((r) => r.volume) : [],
+    trades: temVolume ? closed.map((r) => (Number.isFinite(r.trades) ? r.trades : 0)) : [],
   };
 }
 
@@ -558,13 +583,48 @@ export function parseYahoo(texto) {
   return montarSerie(linhas);
 }
 
+export function parseBinance(texto) {
+  const k = JSON.parse(texto);
+  if (!Array.isArray(k)) throw new Error("Binance: resposta nao e' lista de klines");
+  return montarSerie(
+    // kline: [openTime, open, high, low, close, volume, closeTime,
+    //         quoteVolume, trades, ...]
+    k.map((x) => ({
+      time: ancorarDia(Math.floor(Number(x[0]) / 1000)),
+      open: Number(x[1]),
+      high: Number(x[2]),
+      low: Number(x[3]),
+      close: Number(x[4]),
+      volume: Number(x[5]),
+      trades: Number(x[8]),
+    })),
+    { temVolume: true }
+  );
+}
+
+export function parseMercadoBitcoin(texto) {
+  const j = JSON.parse(texto);
+  if (!Array.isArray(j.t)) throw new Error("Mercado Bitcoin: resposta sem series");
+  return montarSerie(
+    j.t.map((ts, i) => ({
+      time: ancorarDia(Number(ts)),
+      open: Number(j.o[i]),
+      high: Number(j.h[i]),
+      low: Number(j.l[i]),
+      close: Number(j.c[i]),
+      volume: Number(j.v[i]),
+    })),
+    { temVolume: true }
+  );
+}
+
 // Percorre as fontes na ordem e devolve a primeira que responder. Os
 // erros de TODAS ficam na mensagem: quando as duas caem, o bloco do
 // relatorio precisa dizer por que cada uma caiu, senao a investigacao
 // comeca do zero.
 export async function buscarSerie(fetchImpl, cfg, tf) {
   const erros = [];
-  for (const fonte of FONTES) {
+  for (const fonte of cfg.fontes) {
     try {
       const res = await fetchImpl(fonte.url(cfg, tf), {
         headers: { "User-Agent": "usd-monitor/1.0" },
@@ -1687,7 +1747,7 @@ export function relatorioParaJSON(texto, zonas = null) {
       continue;
     }
 
-    if (linha === "USD/BRL") {
+    if (PAR_POR_LABEL.has(linha)) {
       parAtual = linha;
       if (tfAtual) out[tfAtual][parAtual] = {};
       continue;
@@ -1712,20 +1772,22 @@ export function relatorioParaJSON(texto, zonas = null) {
   // niveis_manuais e zonas_automaticas ficam SEPARADOS por par/timeframe
   for (const tfKey of ["diario", "semanal"]) {
     for (const par of Object.keys(out[tfKey] || {})) {
+      const cfgPar = PAR_POR_LABEL.get(par);
+      if (!cfgPar) continue;
       const bloco = out[tfKey][par];
-      const chave = `usd|${tfKey}`;
+      const chave = `${cfgPar.key}|${tfKey}`;
       bloco.niveis_manuais = {};
 
-      // Faixas manuais publicadas como METADADO, derivadas direto de
-      // NIVEIS_USD.faixas. Nao existe copia dos numeros aqui: mexer em
-      // NIVEIS_USD.faixas muda o JSON sozinho.
+      // Faixas manuais publicadas como METADADO, derivadas direto das
+      // faixas do par. Nao existe copia dos numeros aqui: mexer em
+      // NIVEIS_USD ou NIVEIS_USDT muda o JSON sozinho.
       //
       // Vem da configuracao e nao do texto, igual a zonas_automaticas
       // logo abaixo, que tambem e' injetada por fora. A regra de derivar
       // do texto existe para dado CALCULADO, onde texto e JSON poderiam
       // divergir; faixa manual e' constante de configuracao, entao nao ha
       // o que divergir.
-      bloco.niveis_manuais.faixas = (NIVEIS_USD.faixas || []).map(
+      bloco.niveis_manuais.faixas = (cfgPar.niveis.faixas || []).map(
         ([inferior, superior, label]) => ({ inferior, superior, label })
       );
 
@@ -3037,51 +3099,61 @@ function readPair(cfg, d, tf, opts = {}) {
 // move em milesimos.
 // ------------------------------------------------------------
 
-function avaliarGatilhos(d) {
+function avaliarGatilhos(dados) {
   const out = [];
   const add = (id, msg) => out.push({ id, msg });
-  const usd = d.usd;
-  if (!usd) return out;
 
-  const nv = NIVEIS_USD;
-  const p = usd.live.close;
-  const i = usd.closes.length - 1;
-  const fech = usd.closes[i];
-  const abert = usd.opens[i];
-  const corpoBaixo = Math.min(abert, fech);
+  // Um par por vez, cada um com os proprios niveis e o proprio prefixo
+  // de id. Os ids do USD/BRL continuam sendo usd_*, byte por byte iguais
+  // aos de antes: quem ja consome a linha GATILHOS ATIVOS nao percebe a
+  // chegada do segundo par, so ve ids usdt_* novos aparecerem.
+  for (const cfg of PAIRS) {
+    const d = dados[cfg.key];
+    if (!d) continue;
 
-  for (const [lo, hi, nome] of nv.faixas || []) {
-    if (p >= lo && p <= hi)
-      add(
-        `usd_${nome}`,
-        `USD/BRL entrou na regiao ${lo.toFixed(2)}-${hi.toFixed(2)} (agora ${p.toFixed(4)})`
-      );
-  }
+    const nv = cfg.niveis;
+    const D = cfg.dec;
+    const p = d.live.close;
+    const i = d.closes.length - 1;
+    if (i < 0) continue;
+    const fech = d.closes[i];
+    const abert = d.opens[i];
+    const corpoBaixo = Math.min(abert, fech);
 
-  // Rompimento so conta com o corpo real acima do nivel — mesmo criterio
-  // estrito dos monitores de BTC e XMR.
-  if (nv.resistencia !== null && nv.resistencia !== undefined) {
-    if (fech > nv.resistencia && corpoBaixo > nv.resistencia) {
-      add(
-        `usd_rompe_${nv.resistenciaLabel}`,
-        `USD/BRL fechou o diario acima de ${nv.resistencia.toFixed(2)} com corpo confirmando (fech ${fech.toFixed(4)}, abert ${abert.toFixed(4)})`
-      );
+    for (const [lo, hi, nome] of nv.faixas || []) {
+      if (p >= lo && p <= hi)
+        add(
+          `${cfg.key}_${nome}`,
+          `${cfg.label} entrou na regiao ${lo.toFixed(2)}-${hi.toFixed(2)} (agora ${p.toFixed(D)})`
+        );
     }
-  }
 
-  // Perda de suporte exige dois fechamentos seguidos abaixo.
-  if (nv.suporte !== null && nv.suporte !== undefined && i >= 1) {
-    const ant = usd.closes[i - 1];
-    if (fech < nv.suporte && ant < nv.suporte) {
-      add(
-        `usd_perde_${nv.suporteLabel}`,
-        `USD/BRL perdeu ${nv.suporte.toFixed(2)} com dois fechamentos diarios seguidos (${ant.toFixed(4)} e ${fech.toFixed(4)})`
-      );
+    // Rompimento so conta com o corpo real acima do nivel — mesmo
+    // criterio estrito dos monitores de BTC e XMR.
+    if (nv.resistencia !== null && nv.resistencia !== undefined) {
+      if (fech > nv.resistencia && corpoBaixo > nv.resistencia) {
+        add(
+          `${cfg.key}_rompe_${nv.resistenciaLabel}`,
+          `${cfg.label} fechou o diario acima de ${nv.resistencia.toFixed(2)} com corpo confirmando (fech ${fech.toFixed(D)}, abert ${abert.toFixed(D)})`
+        );
+      }
+    }
+
+    // Perda de suporte exige dois fechamentos seguidos abaixo.
+    if (nv.suporte !== null && nv.suporte !== undefined && i >= 1) {
+      const ant = d.closes[i - 1];
+      if (fech < nv.suporte && ant < nv.suporte) {
+        add(
+          `${cfg.key}_perde_${nv.suporteLabel}`,
+          `${cfg.label} perdeu ${nv.suporte.toFixed(2)} com dois fechamentos diarios seguidos (${ant.toFixed(D)} e ${fech.toFixed(D)})`
+        );
+      }
     }
   }
 
   return out;
 }
+
 
 // ------------------------------------------------------------
 // Montagem da pagina
@@ -3104,7 +3176,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   // de saber qual das fontes da cascata respondeu — por isso o cabecalho
   // termina de ser montado abaixo, e nao aqui.
   const brutos = {};
-  const fontesUsadas = [];
+  const fontesPorPar = {};
   for (const tf of TIMEFRAMES) {
     dados[tf.key] = {};
     brutos[tf.key] = {};
@@ -3112,17 +3184,26 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       const r = await buscarSerie(fetchImpl, cfg, tf);
       brutos[tf.key][cfg.key] = r;
       if (r.ok) dados[tf.key][cfg.key] = r.parsed;
-      fontesUsadas.push(`${tf.key}=${r.ok ? r.fonte : "indisponivel"}`);
+      (fontesPorPar[cfg.key] || (fontesPorPar[cfg.key] = [])).push(
+        `${tf.key}=${r.ok ? r.fonte : "indisponivel"}`
+      );
     }
   }
 
-  blocks.push(`fonte: OHLC de cambio (${fontesUsadas.join(", ")})`);
   blocks.push(
-    `fontes_em_cascata: ${FONTES.map((f) => f.nome).join(" -> ")} (vale a primeira que responder)`
+    `fonte: ${PAIRS.map(
+      (c) => `${c.label} ${(fontesPorPar[c.key] || []).join(" ")}`
+    ).join(" | ")}`
+  );
+  blocks.push(
+    `fontes_em_cascata: ${PAIRS.map(
+      (c) => `${c.label} ${c.fontes.map((f) => f.nome).join(" -> ")}`
+    ).join(" | ")} (vale a primeira que responder)`
   );
   blocks.push(`indicadores: RSI(14) e DMI/ADX(14) por Wilder/RMA, EMA(89) exponencial`);
   blocks.push(
-    `volume: nao_aplicavel — cambio a vista e' balcao e nao tem volume consolidado publico`
+    `volume: USD/BRL nao_aplicavel (cambio a vista e' balcao, sem tape publico) | ` +
+      `USDT/BRL real (negocia em corretora)`
   );
   blocks.push(`nota: campos *_fechado usam apenas velas fechadas; *_provisorio inclui a vela em formacao`);
   blocks.push(`nota: a linha "eventos:" existe so no bloco diario; no semanal ela se chama "eventos_semanal:"`);
@@ -3194,12 +3275,24 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
     for (const b of blocosPorTf[tf.key]) blocks.push(b);
   }
 
-  // Trilho de execucao: auxiliar, e falha sozinho. Uma indisponibilidade
-  // do USDT/BRL nunca pode derrubar o relatorio do par analisado.
+  // Trilho de execucao: auxiliar, e falha sozinho. Ele reaproveita as
+  // series JA buscadas dos dois pares, entao nao ha chamada extra nem
+  // risco de publicar precos de instantes diferentes dos blocos acima.
+  // Faltando qualquer uma das duas pontas, a secao sai marcada e o
+  // resto do relatorio segue inteiro.
   const usdDiario = (dados.diario || {}).usd;
-  const trilho = usdDiario
-    ? await buscarUsdt(fetchImpl)
-    : { ok: false, erro: "sem serie de USD/BRL para comparar" };
+  const usdtDiario = (dados.diario || {}).usdt;
+  const faltando = [
+    usdDiario ? null : "USD/BRL",
+    usdtDiario ? null : "USDT/BRL",
+  ].filter(Boolean);
+  const trilho = faltando.length
+    ? { ok: false, erro: `serie indisponivel nesta execucao: ${faltando.join(" e ")}` }
+    : {
+        ok: true,
+        linhas: serieParaTrilho(usdtDiario),
+        fonte: (brutos.diario.usdt || {}).fonte || "--",
+      };
   for (const l of blocoTrilho(trilho, usdDiario, PAIRS[0].dec)) blocks.push(l);
   blocks.push("");
 

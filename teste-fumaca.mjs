@@ -30,35 +30,52 @@ function serie(n, passo, base = 5.40) {
 
 const diario = serie(900, DIA);
 const semanal = serie(400, DIA * 7);
-const porTf = { "1d": diario, "1wk": semanal, d: diario, w: semanal };
-const usdtPadrao = serieUsdt(diario);
+const porTf = { "1d": diario, "1wk": semanal };
 
-// USDT/BRL negocia todo dia, inclusive fim de semana. O premio varia de
-// proposito, para o percentil ter distribuicao de verdade.
-function serieUsdt(diarioRows, premioFixo = null) {
-  const porDia = new Map(diarioRows.map((r) => [r.t, r]));
-  const ini = diarioRows[0].t;
-  const fim = diarioRows[diarioRows.length - 1].t + DIA; // um dia a mais: cripto opera hoje
+// USDT/BRL negocia 24/7: nada de pular fim de semana. O premio sobre o
+// dolar varia de proposito, para o percentil do trilho ter distribuicao
+// de verdade em vez de uma constante.
+function serieCripto(referencia, passo) {
+  const porTempo = new Map(referencia.map((r) => [r.t, r]));
+  const ini = referencia[0].t;
+  const fim = referencia[referencia.length - 1].t + passo;
   const out = [];
-  let ultimo = diarioRows[0].c;
-  for (let t = ini; t <= fim; t += DIA) {
-    const r = porDia.get(t);
+  let ultimo = referencia[0].c;
+  for (let t = ini; t <= fim; t += passo) {
+    const r = porTempo.get(t);
     if (r) ultimo = r.c;
-    const prem = premioFixo !== null ? premioFixo : (rnd() - 0.35) * 2.5;
-    out.push({ t, c: ultimo * (1 + prem / 100), v: 20000 + rnd() * 40000 });
+    const prem = 1 + ((rnd() - 0.35) * 2.5) / 100;
+    const c = ultimo * prem;
+    const o = c * (1 + (rnd() - 0.5) * 0.004);
+    out.push({
+      t,
+      o,
+      h: Math.max(o, c) * (1 + rnd() * 0.003),
+      l: Math.min(o, c) * (1 - rnd() * 0.003),
+      c,
+      v: 20000 + rnd() * 40000,
+      n: Math.floor(500 + rnd() * 2000),
+    });
   }
   return out;
 }
+
+const usdtDiario = serieCripto(diario, DIA);
+const usdtSemanal = serieCripto(semanal, DIA * 7);
+const usdtPorTf = { "1d": usdtDiario, "1w": usdtSemanal };
+
 function respBinance(rows) {
   return JSON.stringify(
-    rows.map((r) => [r.t * 1000, r.c, r.c, r.c, r.c, r.v, 0, "0", 0, "0", "0", "0"])
+    rows.map((r) => [r.t * 1000, r.o, r.h, r.l, r.c, r.v, 0, "0", r.n, "0", "0", "0"])
   );
 }
 function respMercadoBitcoin(rows) {
   return JSON.stringify({
     t: rows.map((r) => r.t),
-    o: rows.map((r) => r.c), h: rows.map((r) => r.c),
-    l: rows.map((r) => r.c), c: rows.map((r) => r.c),
+    o: rows.map((r) => r.o),
+    h: rows.map((r) => r.h),
+    l: rows.map((r) => r.l),
+    c: rows.map((r) => r.c),
     v: rows.map((r) => r.v),
   });
 }
@@ -82,19 +99,28 @@ function respYahoo(rows) {
   });
 }
 // hostsFora: quais hosts do Yahoo estao derrubados nesta simulacao.
-function fakeFetch({ hostsFora = [], series = porTf, usdt = usdtPadrao, usdtFora = [] } = {}) {
+function fakeFetch({
+  hostsFora = [],
+  series = porTf,
+  seriesUsdt = usdtPorTf,
+  usdtFora = [],
+} = {}) {
   const chamadas = [];
   const f = async (url) => {
     chamadas.push(url);
     if (url.includes("binance")) {
-      return usdtFora.includes("binance")
-        ? { ok: false, status: 451, text: async () => "" }
-        : { ok: true, text: async () => respBinance(usdt) };
+      if (usdtFora.includes("binance")) {
+        return { ok: false, status: 451, text: async () => "" };
+      }
+      const iv = url.match(/interval=([^&]+)/)[1];
+      return { ok: true, text: async () => respBinance(seriesUsdt[iv]) };
     }
     if (url.includes("mercadobitcoin")) {
-      return usdtFora.includes("mercadobitcoin")
-        ? { ok: false, status: 503, text: async () => "" }
-        : { ok: true, text: async () => respMercadoBitcoin(usdt) };
+      if (usdtFora.includes("mercadobitcoin")) {
+        return { ok: false, status: 503, text: async () => "" };
+      }
+      const iv = url.match(/resolution=([^&]+)/)[1];
+      return { ok: true, text: async () => respMercadoBitcoin(seriesUsdt[iv]) };
     }
     const host = url.match(/https:\/\/([^.]+)\./)[1];
     if (hostsFora.includes(host)) {
@@ -119,6 +145,21 @@ function comFantasma(rows, recuar) {
 }
 const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 
+// Extrai o bloco de UM par dentro de UMA secao. Com dois pares na
+// mesma secao, uma busca solta pelo texto inteiro confunde os dois.
+function blocoDoPar(texto, secao, par) {
+  const sec = texto.split(`========== ${secao} ==========`)[1];
+  if (!sec) return "";
+  const linhas = sec.split("\n==========")[0].split("\n");
+  const i = linhas.findIndex((l) => l.trim() === par);
+  if (i === -1) return "";
+  let j = linhas.length;
+  for (let k = i + 1; k < linhas.length; k++) {
+    if (/^(USD\/BRL|USDT\/BRL)$/.test(linhas[k].trim())) { j = k; break; }
+  }
+  return linhas.slice(i, j).join("\n");
+}
+
 let falhas = 0;
 const ok = (cond, msg) => { console.log((cond ? "  ok   " : "  FALHA") + "  " + msg); if (!cond) falhas++; };
 
@@ -131,12 +172,31 @@ async function cenario(nome, opts, checa) {
 
 const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(!/FALHA:/.test(r.texto), "nenhum bloco em FALHA");
-  ok(/fonte: OHLC de cambio \(diario=yahoo\/query1, semanal=yahoo\/query1\)/.test(r.texto),
-    "cabecalho aponta o host primario");
+  ok(/fonte: USD\/BRL diario=yahoo\/query1 semanal=yahoo\/query1/.test(r.texto),
+    "cabecalho aponta o host primario do cambio");
+  ok(/USDT\/BRL diario=binance semanal=binance/.test(r.texto),
+    "cabecalho aponta a fonte do par de cripto");
   ok(!/NaN|undefined/.test(r.texto), "sem NaN/undefined no texto");
   ok(/^USD\/BRL$/m.test(r.texto), "bloco do par USD/BRL");
   ok(/volume_disponivel: nao/.test(r.texto), "volume declarado indisponivel");
-  ok(!/volume_vs_media_pct|volume_classificacao|trades_vela_atual/.test(r.texto), "campos de volume fora do relatorio");
+  const usdDia = blocoDoPar(r.texto, "GRAFICO DIARIO", "USD/BRL");
+  const usdtDia = blocoDoPar(r.texto, "GRAFICO DIARIO", "USDT/BRL");
+  ok(!/volume_vs_media_pct|volume_classificacao|trades_vela_atual/.test(usdDia),
+    "USD/BRL: campos de volume fora do bloco");
+  // O par de cripto e' o oposto: tem livro, tem tape, tem volume.
+  ok(/volume_disponivel/.test(usdDia) && !/volume_disponivel/.test(usdtDia),
+    "so o par de cambio declara volume indisponivel");
+  ok(/volume_vs_media_pct: -?\d/.test(usdtDia), "USDT/BRL: volume comparado com a media");
+  ok(/volume_classificacao: \w/.test(usdtDia), "USDT/BRL: volume classificado");
+  ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
+  ok(/rsi14_fechado: \d/.test(usdtDia) && /adx14_fechado: \d/.test(usdtDia),
+    "USDT/BRL: RSI e ADX calculados");
+  ok(/nivel_5_33_estado: /.test(usdtDia) && /nivel_5_16_estado: /.test(usdtDia),
+    "USDT/BRL: maquina de niveis com os niveis DELE");
+  ok(/zonas_automaticas_total: \d|zonas_automaticas: nenhuma/.test(usdtDia),
+    "USDT/BRL: zonas automaticas calculadas");
+  ok(/estrutura_preco: \w/.test(usdtDia), "USDT/BRL: estrutura de pivos");
+  ok(/padrao_candles: /.test(usdtDia), "USDT/BRL: padroes de candle");
   ok(/vela_atual_em_formacao: (sim|nao)/.test(r.texto), "linha vela_atual_em_formacao");
   ok(/rsi14_fechado: \d/.test(r.texto), "RSI calculado");
   ok(/adx14_fechado: \d/.test(r.texto), "ADX calculado");
@@ -149,7 +209,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
 // bloqueia o IP do runner, e o outro continua servindo.
 await cenario("host primario limitado (429)", { hostsFora: ["query1"] }, (r) => {
   ok(!/FALHA:/.test(r.texto), "o espelho assumiu, nenhum bloco em FALHA");
-  ok(/fonte: OHLC de cambio \(diario=yahoo\/query2, semanal=yahoo\/query2\)/.test(r.texto),
+  ok(/fonte: USD\/BRL diario=yahoo\/query2 semanal=yahoo\/query2/.test(r.texto),
     "cabecalho aponta o espelho");
   ok(!/NaN|undefined/.test(r.texto), "sem NaN/undefined no texto");
 });
@@ -158,7 +218,10 @@ await cenario("cascata inteira fora do ar", { hostsFora: ["query1", "query2"] },
   ok(/FALHA:/.test(r.texto), "bloco marcado como FALHA");
   ok(/yahoo\/query1: HTTP 429/.test(r.texto) && /yahoo\/query2: HTTP 502/.test(r.texto),
     "erro cita cada elo com seu proprio status");
-  ok(/fonte: OHLC de cambio \(diario=indisponivel/.test(r.texto), "cabecalho registra indisponibilidade");
+  ok(/fonte: USD\/BRL diario=indisponivel semanal=indisponivel/.test(r.texto),
+    "cabecalho registra indisponibilidade do cambio");
+  ok(/USDT\/BRL diario=binance/.test(r.texto),
+    "o par de cripto continua respondendo: as cascatas sao independentes");
 });
 
 await cenario("vela-fantasma de fim de semana", {
@@ -258,6 +321,14 @@ ok(j.trilho_execucao && typeof j.trilho_execucao.trilho_premio_pct === "number",
 ok(j.trilho_execucao.trilho_par === "USDT/BRL", "JSON identifica o par do trilho");
 ok(j.diario["USD/BRL"].trilho_premio_pct === undefined,
   "o trilho nao vazou para o bloco diario do JSON");
+ok(j.diario["USDT/BRL"] && typeof j.diario["USDT/BRL"].rsi14_fechado === "number",
+  "JSON tem o par USDT/BRL com indicadores");
+ok(typeof j.diario["USDT/BRL"].volume_vs_media_pct === "number",
+  "JSON traz volume real do USDT/BRL");
+ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_28_5_40",
+  "cada par publica as SUAS faixas manuais");
+ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_25_5_36",
+  "as faixas do cambio nao foram trocadas pelas do cripto");
 
 console.log("\n== estado entre execucoes ==");
 const r2 = await build(fakeFetch(), { niveis: r1.estadoNiveis, zonas: r1.zonasEstado, contadoresZona: r1.contadoresZona });
