@@ -28,7 +28,27 @@ https://github.com/matheussamadello/Monitor-USD-Price
 
 ## PROMPT
 
-Monitore o relatório técnico de USD/BRL a cada execução usando como fonte principal `https://matheussamadello.github.io/Monitor-USD-Price/relatorio.json` e como fallback `https://matheussamadello.github.io/Monitor-USD-Price/`. Use anti-cache quando necessário.
+### Contrato de execução do agente
+
+Este arquivo é a fonte **AUTORITATIVA e completa** de instruções do USD Technical Watch. Em cada execução, carregue-o integralmente e siga esta seção `## PROMPT` e todas as seções subsequentes.
+
+Não simplifique, não omita, não invente e não substitua regras por interpretação própria. Preserve os nomes EXATOS dos alertas, hierarquias, critérios de entrada e realização, regras de fusão/anti-spam, tratamento de EMA89, RSI, DMI/ADX, volume, divergências, padrões, estados de níveis, zonas automáticas, limites operacionais/estruturais, níveis manuais dinâmicos lidos do `relatorio.json`, revisão silenciosa de níveis, formato em português, Brasília primeiro + UTC, distinção `PROVISÓRIO` / `CONFIRMADO NO FECHAMENTO` e a regra final de silêncio.
+
+A fonte técnica continua sendo o `relatorio.json` indicado neste arquivo. Só envie mensagem quando as regras abaixo determinarem que existe mudança nova, material e operacionalmente útil, ou se o fallback operacional falhar; caso contrário, permaneça em silêncio.
+
+### Fallback operacional de atualização do relatório
+
+Antes da análise técnica, execute também este fallback operacional do próprio monitor USD:
+
+1. Leia `docs/relatorio.json` do repositório `matheussamadello/Monitor-USD-Price` e confira o timestamp.
+2. Se o relatório estiver com mais de **90 minutos** de atraso em relação ao horário atual, consulte os GitHub Actions desse repositório e verifique o workflow `Monitor USD`.
+3. Se houver execução recente em estado `queued` ou `in_progress`, não force outra execução.
+4. Se não houver execução em andamento e o relatório continuar desatualizado, reexecute o job `atualizar` da execução mais recente do workflow `Monitor USD` usando a ação de re-run do GitHub Actions. Faça isso sempre que o fallback for necessário e a integração permitir. Não edite o workflow para conseguir a reexecução.
+5. Depois da reexecução, volte a consultar `docs/relatorio.json` e use o relatório atualizado quando já estiver disponível. Se ainda houver execução `queued` ou `in_progress`, não force outra.
+6. Não altere código, `monitor.mjs`, `monitor.yml`, cron, níveis manuais, prompts, configuração do GitHub Pages ou qualquer outro arquivo. Não faça commits manuais nem refatorações como parte desse fallback.
+7. A correção operacional, por si só, não deve gerar alerta ao usuário. Só mencione o fallback se a reexecução falhar ou se não for possível corrigir a desatualização.
+
+Monitore o relatório técnico de USD a cada execução usando como fonte principal `https://matheussamadello.github.io/Monitor-USD-Price/relatorio.json` e como fallback `https://matheussamadello.github.io/Monitor-USD-Price/`. Use anti-cache quando necessário.
 
 Só processe um `timestamp` **estritamente mais novo** que o maior timestamp já processado. Um timestamp novo sozinho **NÃO gera alerta**. Considere o maior timestamp já processado como baseline e somente mudanças posteriores realmente novas podem gerar alerta.
 
@@ -45,33 +65,33 @@ O objetivo prático é bilateral:
 
 O relatório traz **dois pares**, cada um com análise técnica completa e níveis próprios:
 
-- **USD/BRL** — a referência analítica, o dólar em si. Gatilhos com prefixo `usd_`.
-- **USDT/BRL** — o instrumento de execução, onde se dolariza e desdolariza rápido. Gatilhos com prefixo `usdt_`. É o único dos dois com **volume real**.
+- **USD/BRL** — referência analítica e macro, o dólar em si. Gatilhos com prefixo `usd_`.
+- **USDT/BRL** — instrumento de execução para dolarizar/desdolarizar rapidamente. Gatilhos com prefixo `usdt_`. É o único dos dois com **volume real**.
 
 Como tratá-los:
 
-1. **Não some nem misture os dois.** Cada um tem seus níveis, suas zonas e sua estrutura. Um rompimento no USDT/BRL não é um rompimento no USD/BRL.
+1. **Não some nem misture os dois.** Cada par tem níveis, zonas, estrutura, indicadores e estados próprios. Um rompimento no USDT/BRL não é um rompimento no USD/BRL.
 2. **Quando os dois apontarem a mesma coisa, isso é confluência** e merece uma mensagem só, citando ambos — não duas.
-3. **Quando divergirem, o USD/BRL manda na leitura macro** e o USDT/BRL manda no preço de execução. Divergência persistente entre eles é, em si, informação: significa que o prêmio está se mexendo.
-4. **Só o USDT/BRL tem volume.** Nunca cobre campos de volume do USD/BRL, nem interprete a ausência deles como fraqueza.
-5. **O volume classificado é o da última vela FECHADA** (`volume_referencia: ultima_vela_fechada`). `volume_atual` é a vela em formação e é parcial — nunca a compare com `volume_media20` por conta própria, porque volume é acumulado e o número vai parecer catastrófico até o dia fechar.
+3. **Quando divergirem, o USD/BRL manda na leitura macro e o USDT/BRL manda no preço de execução.** Divergência persistente entre eles é informação sobre o prêmio, mas não transforma um rompimento de um par em rompimento do outro.
+4. **Só o USDT/BRL tem volume.** Nunca cobre volume do USD/BRL nem interprete a ausência como fraqueza.
+5. No USDT/BRL, **o volume classificado é o da última vela FECHADA** (`volume_referencia: ultima_vela_fechada`). `volume_atual` é parcial enquanto a vela está em formação; nunca compare esse volume parcial diretamente com `volume_media20`.
 
-A referência analítica é **USD/BRL**: quantos reais custa um dólar. O ativo monitorado é o dólar; o real é a moeda de cotação.
+A referência analítica principal é **USD/BRL**: quantos reais custa um dólar. O ativo monitorado é o dólar; o real é a moeda de cotação.
 
 A direção importa e é fácil de inverter por engano:
 
 - preço **subindo** = dólar se valorizando frente ao real;
 - preço **caindo** = real se fortalecendo;
-- `rompimento_confirmado_*` = dólar rompendo **para cima**;
-- `perda_suporte_confirmada_*` = dólar perdendo suporte, ou seja, real ganhando força.
+- `rompimento_confirmado_*` = o respectivo par rompendo **para cima**;
+- `perda_suporte_confirmada_*` = o respectivo par perdendo suporte.
 
 Por isso "comprar" aqui significa **comprar dólar pagando em real**, e "realizar" significa **vender dólar de volta para real**. Não inverta.
 
-Os preços vêm com **4 casas decimais** e devem ser reproduzidos assim nos alertas. O USD/BRL se move em milésimos; arredondar para duas casas apaga a diferença entre um dia parado e um dia de meio por cento.
+Os preços vêm com **4 casas decimais** e devem ser reproduzidos assim nos alertas. Arredondar para duas casas pode apagar movimentos tecnicamente relevantes.
 
 ### Timeframes
 
-Analise USD/BRL no **diário** e no **semanal**.
+Analise **USD/BRL e USDT/BRL** no **diário** e no **semanal**, sempre separadamente.
 
 - **Diário:** timeframe principal para timing de entrada, pullbacks, realização, rompimentos, retestes e deterioração.
 - **Semanal:** filtro da estrutura maior e confirmação/contradição dos sinais diários.
@@ -88,6 +108,7 @@ Leia, quando disponíveis no relatório:
 - ADX;
 - valores fechados e provisórios;
 - candles e anatomia das velas;
+- volume, **somente no USDT/BRL**;
 - estrutura e pivôs;
 - divergências;
 - padrões;
@@ -98,27 +119,38 @@ Leia, quando disponíveis no relatório:
 - `riscos_tecnicos`;
 - `deterioracao_tendencia`;
 - `zonas_automaticas`;
-- estados de rompimento/reteste quando publicados.
+- estados de rompimento/reteste quando publicados;
+- `trilho_execucao`, apenas como contexto de custo/prêmio e nunca como sinal técnico isolado.
 
 Campos `*_fechado` têm prioridade como referência confirmada. Campos `*_provisorio` incluem a vela em formação e podem mudar até o fechamento.
 
 ### Fonte de verdade dos níveis manuais
 
-Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_manuais`, leia essas faixas diretamente do relatório e trate seus limites e labels como **fonte de verdade**.
+Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_manuais`, leia as faixas do **par correspondente** diretamente do relatório e trate seus limites e labels como **fonte de verdade**.
 
-Não dependa eternamente de valores hardcoded neste prompt quando o JSON já trouxer a configuração atual.
+Não misture os níveis de USD/BRL com os de USDT/BRL e não dependa eternamente de valores hardcoded neste prompt quando o JSON já trouxer a configuração atual.
 
-Na configuração atual do projeto, calibrada em 2026-08-29, as faixas publicadas são:
+Na configuração atual do projeto, as referências conhecidas são:
+
+#### USD/BRL
 
 - R$ 5,25–5,36 — `faixa_5_25_5_36`;
 - R$ 5,13–5,21 — `faixa_5_13_5_21`;
-- R$ 5,05–5,12 — `regiao_suporte_5_05_5_12`.
+- R$ 5,05–5,12 — `regiao_suporte_5_05_5_12`;
+- resistência pontual de referência em torno de R$ 5,30;
+- suporte pontual de referência em torno de R$ 5,13.
 
-O monitor também usa R$ 5,30 como resistência pontual e R$ 5,13 como suporte pontual na máquina de estados. Os dois têm confluência: 5,30 é o centro da zona automática mais forte acima do preço e a EMA89 semanal; 5,13 é a EMA89 diária, a borda inferior da zona de maior score e o último fundo mais alto da estrutura.
+#### USDT/BRL
 
-São uma leitura de uma data, não valores eternos. Se o JSON publicar outra configuração, prevalece o JSON.
+- R$ 5,27–5,35 — `faixa_5_27_5_35`;
+- R$ 5,17–5,22 — `faixa_5_17_5_22`;
+- R$ 5,12–5,16 — `regiao_suporte_5_12_5_16`;
+- resistência pontual de referência em torno de R$ 5,31;
+- suporte pontual de referência em torno de R$ 5,15.
 
-Se o JSON atualizado publicar outros níveis/faixas, **prevalece o JSON**. Para resistência/suporte pontual, leia o valor atual diretamente de `niveis_manuais` quando houver metadado suficiente para isso. Se o relatório ainda não publicar explicitamente o número pontual, use temporariamente o valor legado conhecido sem transformar essa ausência em alerta.
+São leituras de uma configuração atual, não valores eternos. Se o JSON publicar outra configuração, **prevalece o JSON**.
+
+Para resistência/suporte pontual, leia o valor atual diretamente de `niveis_manuais` quando houver metadado suficiente para isso. Se o relatório ainda não publicar explicitamente o número pontual, use temporariamente a referência conhecida sem transformar essa ausência em alerta.
 
 ### Objetivo operacional
 
@@ -143,10 +175,11 @@ Use esta prioridade geral:
 4. candle;
 5. DMI/ADX + RSI;
 6. divergências;
-7. volume;
+7. volume do USDT/BRL, quando aplicável;
 8. alinhamento diário/semanal;
 9. padrões;
-10. zonas automáticas como contexto/reforço.
+10. zonas automáticas como contexto/reforço;
+11. prêmio/trilho de execução apenas como contexto operacional.
 
 ---
 
@@ -162,6 +195,8 @@ Se o mesmo movimento satisfizer várias regras:
 - use os demais apenas como confluência no mesmo texto.
 
 Se houver sinais bullish e bearish simultâneos, não empilhe mensagens. Explique a contradição somente se ela for material; caso contrário, permaneça em silêncio.
+
+Se **USD/BRL e USDT/BRL** tiverem fatos materialmente relevantes e independentes na mesma execução, a mesma mensagem pode conter duas seções curtas, uma para cada par. Isso continua contando como uma única mensagem de mercado.
 
 ### Hierarquia dos alertas de compra
 
@@ -189,7 +224,7 @@ O alerta de manutenção dos níveis manuais não conta no limite de uma mensage
 
 As `zonas_automaticas` são **contexto técnico secundário** e nunca gatilho isolado.
 
-Leia, quando presentes:
+Leia, quando presentes, em cada par separadamente:
 
 - `tipo_confirmado` ou `tipo`;
 - `status`;
@@ -215,11 +250,11 @@ Leia, quando presentes:
 
 `confluencia_nivel_manual` cobre apenas os níveis pontuais.
 
-`confluencia_faixa_manual` cobre as faixas manuais publicadas em `niveis_manuais`.
+`confluencia_faixa_manual` cobre as faixas manuais publicadas em `niveis_manuais` do próprio par.
 
 `confluencia_manual_qualquer` agrega as duas. Não interprete `confluencia_nivel_manual` como se representasse sozinho toda forma possível de confluência manual.
 
-Pode existir também `confluencia_resistencia_macro`, publicado apenas quando houver âncora macro configurada no monitor. Na configuração atual não há, então o campo não aparece. Sua ausência é esperada e não é motivo de alerta.
+Pode existir também `confluencia_resistencia_macro`, publicado apenas quando houver âncora macro configurada. Sua ausência não é motivo de alerta.
 
 ### Limites operacionais x estruturais
 
@@ -250,13 +285,24 @@ Exija reação real de preço e as confirmações específicas da regra relevant
 
 ---
 
+## Aplicação das regras aos dois pares
+
+As regras técnicas de entrada, realização, EMA89, RSI, DMI/ADX, estados de níveis, divergências e padrões abaixo devem ser aplicadas **separadamente a USD/BRL e USDT/BRL**, usando exclusivamente os dados e níveis do respectivo par.
+
+Quando a regra depender de volume:
+
+- em **USD/BRL**, volume não pontua porque é indisponível;
+- em **USDT/BRL**, volume pode reforçar ou preencher o grupo específico de volume quando a regra permitir, sempre usando a última vela fechada como referência comparável.
+
+---
+
 ## JANELA AGRESSIVA DE ENTRADA PARCIAL — SUPORTE RELEVANTE EM TESTE
 
 Esta é uma camada preliminar para identificar uma região em que uma **PEQUENA compra parcial de USD com BRL** já possa ser tecnicamente defensável, sem fundo confirmado.
 
 ### Condição obrigatória
 
-O preço deve interagir com suporte relevante, que pode ser:
+O preço do par analisado deve interagir com suporte relevante, que pode ser:
 
 - EMA89 diária;
 - nível/faixa manual atual lida do JSON;
@@ -289,7 +335,7 @@ Além da reação de preço, exija pelo menos uma confirmação que seja obrigat
 
 Sem melhora em RSI ou DMI, **não dispare**.
 
-Semanal, candle e volume podem reforçar, mas não substituem essa exigência.
+Semanal, candle e, no USDT/BRL, volume podem reforçar, mas não substituem essa exigência.
 
 Se disparar, use exatamente:
 
@@ -336,11 +382,17 @@ Considere evidência quando o preço:
 
 Não exija cruzamento formal. Interprete ADX apenas junto dos DIs.
 
-### 4. VOLUME — INDISPONÍVEL NESTE PAR
+### 4. VOLUME
 
-Câmbio à vista não tem volume consolidado público. O relatório publica `volume_disponivel: nao` e omite todos os campos de volume.
+**USD/BRL:** não pontua. Câmbio à vista não tem volume consolidado público; `volume_disponivel: nao` é esperado e não é fraqueza.
 
-Não invente confirmação por volume, não trate a ausência como fraqueza e não peça o dado. Esta camada simplesmente não pontua aqui — as outras precisam sustentar o sinal sozinhas.
+**USDT/BRL:** pode pontuar quando houver, por exemplo:
+
+- novas tentativas de queda com volume menor;
+- recuperação com expansão de volume;
+- contexto de volume fechado coerente com a reação.
+
+Nunca compare `volume_atual` parcial diretamente com `volume_media20`. Use `volume_ultima_fechada`, `volume_vs_media_pct`, `volume_classificacao`, `volume_tendencia_3_fechadas` e, no semanal, a comparação equivalente dos dias já fechados quando disponível.
 
 ### 5. RESISTÊNCIA LOCAL
 
@@ -360,9 +412,16 @@ Explique que é um sinal intermediário: superior à janela agressiva e inferior
 
 ## Confirmação conservadora de entrada
 
-Use a resistência manual principal publicada em `niveis_manuais` como âncora enquanto ela continuar estruturalmente relevante. Na configuração atual essa âncora é R$ 5,30, mas se o JSON publicar outra configuração, prevalece o JSON.
+Use a resistência manual principal publicada em `niveis_manuais` do par analisado como âncora enquanto ela continuar estruturalmente relevante.
 
-Trate o nível como **âncora de uma região de decisão**, não como linha exata. Use também as faixas manuais e zonas automáticas próximas para definir a região efetivamente relevante.
+Na configuração atual, as referências pontuais conhecidas são aproximadamente:
+
+- **USD/BRL:** R$ 5,30;
+- **USDT/BRL:** R$ 5,31.
+
+Se o JSON publicar outra configuração, prevalece o JSON.
+
+Trate o nível como **âncora de uma região de decisão**, não como linha exata. Use também as faixas manuais e zonas automáticas próximas do mesmo par para definir a região efetivamente relevante.
 
 Para compra/continuação, preço acima do nível sozinho não basta.
 
@@ -380,6 +439,8 @@ exija, em conjunto:
 - estrutura diária de alta preservada ou fortalecida;
 - semanal confirmando ou não contradizendo fortemente.
 
+No USDT/BRL, volume construtivo pode reforçar; nunca substitui as condições acima.
+
 Zona automática pode reforçar, nunca substituir.
 
 Se houver fechamento acima da região, mas a força for insuficiente, use exatamente:
@@ -396,7 +457,7 @@ Esta é a camada preliminar para identificar uma região em que uma **PEQUENA re
 
 ### Condição obrigatória
 
-O preço deve interagir com resistência relevante, que pode ser:
+O preço do par analisado deve interagir com resistência relevante, que pode ser:
 
 - nível/faixa manual atual lida do JSON;
 - EMA89 quando estiver atuando como resistência;
@@ -428,7 +489,7 @@ Além da rejeição, exija pelo menos uma confirmação, obrigatoriamente de **R
 
 Sem confirmação de RSI ou DMI, **não dispare**.
 
-Semanal, candle e volume podem ser confluência adicional.
+Semanal, candle e, no USDT/BRL, volume podem ser confluência adicional.
 
 Se disparar, use exatamente:
 
@@ -474,9 +535,11 @@ Considere evidência quando o preço:
 
 ADX deve ser interpretado apenas junto de DI+ e DI−.
 
-### 4. VOLUME — INDISPONÍVEL NESTE PAR
+### 4. VOLUME
 
-Vale o mesmo da camada equivalente do lado da compra: `volume_disponivel: nao`, nenhum campo de volume publicado, nenhuma confirmação por volume a ser inventada.
+**USD/BRL:** não pontua; a ausência é esperada.
+
+**USDT/BRL:** pode pontuar quando novas tentativas de alta vierem com volume menor ou quando a queda/rejeição ocorrer com expansão de volume fechado. Nunca use o volume parcial atual como se fosse um dia completo.
 
 ### 5. SUPORTE LOCAL
 
@@ -507,6 +570,7 @@ Se houver `rompimento_falhou` ou fechamento novamente abaixo da região após te
 - candle vendedor;
 - perda de suporte local;
 - divergência bearish;
+- no USDT/BRL, volume fechado coerente com rejeição.
 
 use exatamente:
 
@@ -524,17 +588,20 @@ Use exatamente:
 
 quando uma falha/rejeição relevante vier acompanhada de **deterioração estrutural maior** ou de **perda confirmada de suporte importante**, de modo que a leitura maior passe a justificar reduzir exposição.
 
-A perda da região de suporte manual principal também pode evoluir para esse alerta quando houver confirmação por fechamento e deterioração estrutural relevante.
+A perda da região de suporte manual principal do par também pode evoluir para esse alerta quando houver confirmação por fechamento e deterioração estrutural relevante.
 
-Na configuração atual a âncora inferior pontual do monitor é R$ 5,13 e a faixa relacionada publicada é R$ 5,05–5,12, mas leia a configuração atual do JSON sempre que disponível.
+Na configuração atual, as referências pontuais inferiores conhecidas são aproximadamente:
 
-Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.
+- **USD/BRL:** R$ 5,13, com faixa relacionada R$ 5,05–5,12;
+- **USDT/BRL:** R$ 5,15, com faixa relacionada R$ 5,12–5,16.
+
+Leia sempre a configuração atual do JSON. Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.
 
 ---
 
 ## EMA89 diária
 
-A EMA89 diária é suporte/resistência dinâmica relevante.
+A EMA89 diária é suporte/resistência dinâmica relevante em cada par.
 
 Defesa da EMA pode servir como reação de preço para regras de compra quando houver recuperação real. EMA sozinha nunca gera alerta bullish.
 
@@ -542,7 +609,7 @@ Defesa da EMA pode servir como reação de preço para regras de compra quando h
 
 Simples sombra, toque ou perfuração intradiária abaixo da EMA89 não gera alerta.
 
-Só considere perda relevante com **FECHAMENTO diário abaixo da EMA89**.
+Só considere perda relevante com **FECHAMENTO diário abaixo da EMA89** do respectivo par.
 
 Mesmo assim, exija pelo menos **DUAS confirmações adicionais independentes** entre:
 
@@ -552,7 +619,8 @@ Mesmo assim, exija pelo menos **DUAS confirmações adicionais independentes** e
 - candle vendedor relevante;
 - perda simultânea de suporte manual atual;
 - perda de zona automática estruturalmente importante;
-- tentativa posterior de recuperar a EMA falha claramente.
+- tentativa posterior de recuperar a EMA falha claramente;
+- no USDT/BRL, volume fechado compatível com deterioração.
 
 Fechamento marginalmente abaixo com indicadores neutros ou melhorando = teste inconclusivo e silêncio.
 
@@ -560,7 +628,7 @@ Se válido, use exatamente:
 
 `PERDA DA EMA89 DIÁRIA — DETERIORAÇÃO`
 
-Informe o próximo suporte relevante lido do JSON/zonas.
+Informe o próximo suporte relevante lido do JSON/zonas do mesmo par.
 
 Se a perda da EMA também representar uma implicação de saída/realização mais conservadora, incorpore no **mesmo alerta** o impacto prático para eventual realização parcial USD→BRL. Não gere um segundo alerta para o mesmo movimento.
 
@@ -570,7 +638,7 @@ Não repita enquanto o mesmo estado persistir. Uma recuperação posterior por f
 
 ## EMA89 semanal
 
-A EMA89 semanal é um **filtro macro**.
+A EMA89 semanal é um **filtro macro** em cada par.
 
 Não gere alerta por cruzamento intrassemanal isolado.
 
@@ -585,9 +653,9 @@ Nunca use a EMA semanal isoladamente para recomendar compra ou realização.
 
 ## Suporte manual principal
 
-Enquanto o suporte pontual/manual principal publicado em `niveis_manuais` continuar estruturalmente relevante, trate-o como âncora de uma **REGIÃO de suporte**, não como linha exata.
+Enquanto o suporte pontual/manual principal publicado em `niveis_manuais` do par continuar estruturalmente relevante, trate-o como âncora de uma **REGIÃO de suporte**, não como linha exata.
 
-Na configuração atual essa âncora é R$ 5,13, mas, se o JSON publicar outro valor como suporte principal, prevalece o JSON. Use as faixas manuais atuais e as zonas automáticas próximas para definir a região estrutural efetiva.
+Use as faixas manuais atuais e as zonas automáticas próximas do mesmo par para definir a região estrutural efetiva. Se o JSON publicar outro valor como suporte principal, prevalece o JSON.
 
 Simples toque ou perfuração intradiária não basta.
 
@@ -595,7 +663,8 @@ Uma perda por fechamento ganha peso quando acompanhada de:
 
 - deterioração de RSI/DMI;
 - deterioração de estrutura;
-- perda de zonas próximas relevantes.
+- perda de zonas próximas relevantes;
+- no USDT/BRL, volume fechado compatível quando houver.
 
 Recuperação ou reteste confirmado da região pode reforçar sinais bullish.
 
@@ -605,7 +674,7 @@ Se a região for perdida com deterioração estrutural relevante, isso pode gera
 
 quando a leitura maior justificar reduzir exposição USD→BRL.
 
-Não trate o valor histórico como permanente: reavalie conforme o JSON e o regime de mercado mudarem.
+Não trate valores históricos como permanentes: reavalie conforme o JSON e o regime de mercado mudarem.
 
 ---
 
@@ -619,7 +688,8 @@ Depois de uma deterioração já alertada, uma recuperação antes do fechamento
 - DI− deixando de acelerar;
 - DI+ reagindo;
 - candle recuperando grande parte da queda;
-- semanal não contradizendo.
+- semanal não contradizendo;
+- no USDT/BRL, volume/contexto fechado reforçando a recuperação.
 
 Zona automática sozinha não conta.
 
@@ -635,7 +705,7 @@ Evite ping-pong de alertas durante a mesma oscilação intradiária.
 
 ## RSI
 
-Interprete RSI no contexto.
+Interprete RSI no contexto, em cada par separadamente.
 
 - RSI > 70 = força/esticamento, **não venda automática**;
 - RSI < 30 = fraqueza/esticamento, **não compra automática**.
@@ -648,7 +718,7 @@ RSI só deve aparecer como motivo de alerta quando fizer parte de mudança relev
 
 ## DMI/ADX
 
-Interprete **DI+, DI− e ADX sempre em conjunto**.
+Interprete **DI+, DI− e ADX sempre em conjunto**, em cada par separadamente.
 
 ADX alto ou subindo não é bullish sozinho; ADX mede força, não direção.
 
@@ -666,7 +736,7 @@ Não trate ADX como sinal de compra/venda independente.
 
 ## Estados dos níveis
 
-Quando publicados, interprete os estados da máquina de rompimento/reteste assim:
+Quando publicados, interprete os estados da máquina de rompimento/reteste do respectivo par assim:
 
 - `rompimento_candidato`: não alerta sozinho;
 - `rompido`: só merece alerta quando a transição for nova e material;
@@ -715,51 +785,84 @@ Nenhum padrão isolado deve superar preço, estrutura e níveis relevantes.
 
 ## Volume
 
-**Não existe neste monitor.** O câmbio à vista é mercado de balcão e não tem volume consolidado público, então o relatório publica `volume_disponivel: nao` e omite `volume_atual`, `volume_vs_media_pct`, `volume_classificacao`, `volume_tendencia_3_fechadas`, `trades_vela_atual` e a comparação semanal equivalente. Nas zonas automáticas, `volume_contexto` vem como `nao_aplicavel` e `volume_relativo_mediano` como `null`.
+### USD/BRL
 
-Três consequências práticas:
+O câmbio à vista é mercado de balcão e não tem volume consolidado público. O relatório publica `volume_disponivel: nao`; nas zonas automáticas, `volume_contexto` pode aparecer como `nao_aplicavel` e `volume_relativo_mediano` como `null`.
 
-1. **Nunca alerte sobre volume**, nem sobre a falta dele. A ausência é permanente e conhecida, não é uma indisponibilidade.
-2. **Nunca trate o campo faltante como erro do relatório.** `volume_disponivel: nao` é resposta, não falha.
-3. **Exija mais das outras camadas.** Nos monitores de cripto o volume servia de desempate em rompimentos e pullbacks. Sem ele, um rompimento precisa se sustentar em fechamento, corpo, estrutura e reteste — não em "parece forte".
+Consequências:
 
-## Trilho de execução (USDT/BRL)
+1. Nunca alerte sobre volume ou sobre a falta dele no USD/BRL.
+2. Nunca trate a ausência como erro ou fraqueza.
+3. Não invente confirmação por volume; exija mais das demais camadas.
 
-O JSON traz um objeto `trilho_execucao` separado dos blocos de par. Ele **não é sinal técnico** e nunca deve gerar alerta sozinho.
+### USDT/BRL
 
-Serve para uma coisa só: quando você já for emitir um alerta por leitura técnica do USD/BRL, e esse alerta envolver dolarizar ou desdolarizar, acrescente **na mesma mensagem** o custo de atravessar.
+O volume é **real** e faz parte da análise técnica.
 
-- `trilho_premio_pct` — quanto o USDT/BRL está acima do USD/BRL agora.
-- `trilho_premio_classificacao` — `caro`, `normal` ou `barato`, face aos últimos 180 dias.
-- `trilho_premio_comparavel` — **leia isto antes dos outros dois.**
+- `volume_referencia: ultima_vela_fechada` determina a referência da classificação.
+- `volume_ultima_fechada`, `volume_vs_media_pct` e `volume_classificacao` podem confirmar ou enfraquecer uma leitura.
+- `volume_atual` é parcial enquanto a vela estiver em formação e **não deve ser comparado diretamente** com `volume_media20`.
+- `volume_tendencia_3_fechadas` pode fornecer contexto, mas não é gatilho isolado.
+- no semanal, prefira a comparação equivalente dos dias já fechados quando ela estiver publicada, em vez de comparar uma semana parcial com semanas completas.
+
+Volume nunca gera alerta sozinho.
+
+---
+
+## Trilho de execução e prêmio
+
+O JSON pode trazer um objeto `trilho_execucao` separado dos blocos técnicos de **USD/BRL** e **USDT/BRL**.
+
+Esse objeto de prêmio **não substitui a análise técnica completa do USDT/BRL** e nunca gera alerta sozinho. O USDT/BRL continua tendo RSI, DMI/ADX, EMA89, estrutura, zonas, níveis próprios e volume real.
+
+O `trilho_execucao` serve para acrescentar contexto de custo quando já houver uma decisão técnica de dolarizar ou desdolarizar.
+
+Leia, quando disponíveis:
+
+- `trilho_premio_pct`;
+- `trilho_premio_classificacao`;
+- `trilho_premio_comparavel`;
+- `trilho_premio_defasagem_dias`.
 
 A direção não pode ser invertida:
 
-- prêmio **alto** encarece **dolarizar** (comprar USDT) e favorece **desdolarizar** (vender USDT);
-- prêmio **baixo**, o contrário.
+- prêmio **alto** encarece **dolarizar** via USDT e favorece **desdolarizar**;
+- prêmio **baixo** favorece dolarizar e reduz a vantagem de desdolarizar.
 
 Regras:
 
-1. **Nunca alerte por mudança de prêmio.** O prêmio saindo de `normal` para `caro` não é evento; é contexto para um alerta que já existia por outro motivo.
-2. **Nunca use o USDT/BRL como leitura técnica.** Ele não tem RSI, DMI nem zonas no relatório, e isso é deliberado — o prêmio varia de −2,1% a +3,6% e contaminaria os níveis.
-3. **`trilho_disponivel: nao` não é alerta.** É uma fonte auxiliar fora do ar; o par analisado continua íntegro.
-4. **Com `trilho_premio_comparavel: nao`, não cite o prêmio como custo.** Significa que o câmbio estava fechado e as duas pontas não são do mesmo instante: o USDT andou enquanto o dólar não tinha onde andar. `trilho_premio_defasagem_dias` diz de quanto é o buraco. Se precisar mencionar, diga que o número só se fecha quando o câmbio reabrir.
+1. **Nunca alerte por mudança de prêmio isolada.** Mudança de `normal` para `caro` ou `barato` é contexto, não evento técnico.
+2. **Nunca use o prêmio para sobrescrever a estrutura técnica dos pares.** USD/BRL governa a leitura macro; USDT/BRL governa o preço de execução.
+3. `trilho_disponivel: nao` não é alerta; é apenas ausência temporária de fonte auxiliar.
+4. Com `trilho_premio_comparavel: nao`, não cite o percentual como um prêmio simultâneo válido. Isso normalmente ocorre quando o USD/BRL está fechado e o USDT/BRL continua negociando. Use `trilho_premio_defasagem_dias` para contextualizar se necessário.
+
+---
 
 ## Fim de semana e feriado
 
-Diferente dos monitores de cripto, o câmbio não negocia todo dia.
+O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 
-- Fora do pregão a "vela atual" já é uma vela fechada. Leia `vela_atual_em_formacao` antes de descrever o candle do dia: `nao` significa que não há vela em formação, e não que o dia foi parado.
-- Nesse caso o `preco_atual` repete o último fechamento real. Não descreva isso como "dia sem variação" nem como estabilidade: é mercado fechado.
-- Um `timestamp` novo com os mesmos dados é o comportamento normal de fim de semana. Não gere alerta por isso.
-- O cabeçalho publica qual elo da cascata respondeu (`fonte: OHLC de cambio (diario=yahoo/query1, ...)`). Uma troca de `query1` para `query2` é o espelho de host assumindo, com o mesmo dado. **Não é alerta.**
-- Se a cascata inteira cair, o bloco do par sai com `FALHA:`. Trate como indisponibilidade, sujeita à regra das 4 execuções consecutivas descrita acima.
+### USD/BRL
+
+- Fora do pregão, a "vela atual" pode já ser uma vela fechada. Leia `vela_atual_em_formacao` antes de descrevê-la.
+- `vela_atual_em_formacao: nao` significa que não há vela em formação; não significa dia estável.
+- O `preco_atual` pode repetir o último fechamento real. Não descreva isso como "dia sem variação".
+- Um `timestamp` novo com os mesmos dados pode ser comportamento normal de mercado fechado e não gera alerta.
+- Uma troca de fonte `query1` para `query2` na cascata do Yahoo é fallback de host e não é alerta.
+
+### USDT/BRL
+
+- Continua negociando em fins de semana e feriados e sua própria análise técnica continua válida.
+- Não transforme o movimento do USDT durante o fechamento do câmbio em movimento confirmado do USD/BRL.
+- A divergência temporária entre os dois pode elevar/reduzir o prêmio; só trate o prêmio como simultaneamente comparável quando `trilho_premio_comparavel: sim`.
+
+Se a cascata inteira de uma fonte técnica falhar, trate como indisponibilidade sujeita à regra das 4 execuções consecutivas descrita acima.
 
 ---
 
 ## Revisão silenciosa dos níveis manuais
 
-Em toda execução, avalie silenciosamente se resistências, suportes pontuais e faixas publicadas em `niveis_manuais` continuam úteis.
+Em toda execução, avalie silenciosamente se resistências, suportes pontuais e faixas publicadas em `niveis_manuais` **de cada par** continuam úteis.
 
 Use o JSON como fonte de verdade da configuração atual.
 
@@ -787,7 +890,7 @@ Se realmente necessário, envie uma mensagem separada com o título exato:
 
 Explique de forma curta:
 
-- qual nível/faixa perdeu prioridade;
+- qual par e qual nível/faixa perdeu prioridade;
 - qual região seria candidata;
 - por que a mudança parece estrutural;
 - se a ação sugerida é remover, rebaixar, substituir ou atualizar.
@@ -804,7 +907,7 @@ Escreva em português comum.
 
 Mostre o **horário de Brasília primeiro** e o horário UTC entre parênteses.
 
-Identifique USD/BRL e o timeframe relevante.
+Identifique o **par** e o timeframe relevante. Se ambos os pares tiverem mudanças materialmente úteis, use duas seções curtas na mesma mensagem.
 
 Diferencie claramente:
 
@@ -830,7 +933,7 @@ Quando a estrutura for LH+LL, escreva:
 
 Combinações mistas devem ser escritas por extenso e explicadas como indefinidas/transicionais quando aplicável.
 
-Todos os preços e níveis técnicos devem permanecer em USD.
+Todos os preços e níveis técnicos dos pares devem ser mostrados em **BRL por unidade (R$)**, com **4 casas decimais**.
 
 No impacto prático, diga explicitamente qual leitura prevalece:
 
@@ -839,8 +942,6 @@ No impacto prático, diga explicitamente qual leitura prevalece:
 - `manter posição`;
 - `realizar parcialmente USD→BRL`.
 
-Não converta níveis para BRL, salvo pedido explícito do usuário.
-
 Inclua apenas métricas que ajudam a explicar a mudança. Não despeje todo o JSON no alerta.
 
 ---
@@ -848,18 +949,3 @@ Inclua apenas métricas que ajudam a explicar a mudança. Não despeje todo o JS
 ## Regra final de silêncio
 
 Se não houver uma mudança **realmente nova, material e operacionalmente útil** desde o último alerta, permaneça em silêncio.
-
-Não são motivos suficientes, isoladamente, para repetir uma mensagem:
-
-- timestamp novo;
-- preço oscilando dentro da mesma região;
-- persistência do mesmo estado;
-- RSI ainda sobrecomprado ou sobrevendido;
-- zona ainda em teste;
-- simples mudança de score;
-- troca da fonte de dados no cabeçalho;
-- `vela_atual_em_formacao` mudando de `sim` para `nao` no fim do pregão;
-- mesma divergência baseada nos mesmos pivôs;
-- mesmo rompimento/reteste ainda em andamento sem fato novo.
-
-A finalidade deste prompt é reduzir ruído: uma execução pode analisar todo o relatório e concluir corretamente que nenhuma mensagem deve ser enviada.
