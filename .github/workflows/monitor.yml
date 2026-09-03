@@ -2,9 +2,10 @@ name: Monitor USD
 
 on:
   schedule:
-    # Minuto 40 para nao coincidir com os outros dois monitores (o de BTC
-    # roda no minuto 20). As chamadas as fontes ficam espalhadas, e da'
-    # para saber qual execucao e' qual so pelo horario no log.
+    # Os tres monitores rodam de hora em hora, espacados 20 minutos: XMR
+    # no 00, BTC no 20, USD no 40. As chamadas as fontes ficam
+    # distribuidas, e da' para saber qual execucao e' qual so pelo
+    # horario no log.
     - cron: "40 * * * *"
   workflow_dispatch:
 
@@ -23,7 +24,7 @@ jobs:
         with:
           # Historico completo. Push a partir de clone raso funciona, mas
           # o fetch/reset do loop de retry fica mais previsivel com o
-          # historico inteiro — e e' o que os outros monitores ja usam.
+          # historico inteiro.
           fetch-depth: 0
 
       - uses: actions/setup-node@v5
@@ -32,7 +33,7 @@ jobs:
 
       - name: Teste de fumaca
         # Roda com series sinteticas, sem tocar na rede: se um refactor
-        # quebrou o parse de alguma das fontes, o job para aqui em vez de
+        # quebrou o parse ou o calculo, o job para aqui em vez de
         # publicar um relatorio pela metade.
         run: node teste-fumaca.mjs
 

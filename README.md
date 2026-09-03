@@ -506,13 +506,14 @@ Monitor-USD-Price/
 │   └── relatorio.json
 ├── monitor.mjs
 ├── teste-fumaca.mjs
+├── teste-fumaca.mjs
 ├── README.md
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
 
 ## Teste de fumaça
 
-`teste-fumaca.mjs` existe neste monitor e não nos outros dois por um motivo concreto: aqui a fonte de dados é nova e tem fallback, e um erro de parse só apareceria em produção.
+Os três monitores da família têm um `teste-fumaca.mjs`, que roda o monitor inteiro contra séries sintéticas **sem tocar na rede**. O deste é o mais extenso porque aqui a fonte de dados é a mais nova e tem cascata em dois níveis, e um erro de parse só apareceria em produção.
 
 Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem tocar na rede, e verifica:
 
@@ -552,7 +553,7 @@ O cron atual é:
 - cron: "40 * * * *"
 ```
 
-Ou seja, o GitHub Actions solicita uma execução **uma vez por hora, no minuto 40 UTC**. O minuto foi escolhido para não coincidir com os outros dois monitores (o de BTC roda no minuto 20), de modo que as chamadas às fontes fiquem espalhadas e dê para saber qual execução é qual só pelo horário no log. Como todo cron do GitHub Actions, o início efetivo pode sofrer atraso de fila da própria plataforma.
+Ou seja, o GitHub Actions solicita uma execução **uma vez por hora, no minuto 40 UTC**. Os três monitores da família são espaçados em 20 minutos — **XMR no 00, BTC no 20, USD no 40** — para as chamadas às fontes ficarem distribuídas e dar para saber qual execução é qual só pelo horário no log. Como todo cron do GitHub Actions, o início efetivo pode sofrer atraso de fila da própria plataforma.
 
 O workflow também possui `workflow_dispatch`, permitindo execução manual pela aba **Actions**.
 

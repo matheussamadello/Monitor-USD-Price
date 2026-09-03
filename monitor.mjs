@@ -401,7 +401,7 @@ const HOSTS_YAHOO = ["query1", "query2"];
 const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
   nome: `yahoo/${host}`,
   url: (cfg, tf) =>
-    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.simbolo)}` +
+    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.par)}` +
     `?interval=${tf.intervalos.yahoo}&range=${tf.yahooRange}`,
   parse: parseYahoo,
 }));
@@ -418,7 +418,7 @@ const FONTES_CRIPTO = [
     nome: "binance",
     url: (cfg, tf) =>
       "https://data-api.binance.vision/api/v3/klines" +
-      `?symbol=${encodeURIComponent(cfg.simbolo)}&interval=${tf.intervalos.binance}&limit=1000`,
+      `?symbol=${encodeURIComponent(cfg.par)}&interval=${tf.intervalos.binance}&limit=1000`,
     parse: parseBinance,
   },
   {
@@ -427,7 +427,7 @@ const FONTES_CRIPTO = [
       const agora = Math.floor(Date.now() / 1000);
       return (
         "https://api.mercadobitcoin.net/api/v4/candles" +
-        `?symbol=${encodeURIComponent(cfg.simboloMB)}&resolution=${tf.intervalos.mercadobitcoin}` +
+        `?symbol=${encodeURIComponent(cfg.parMB)}&resolution=${tf.intervalos.mercadobitcoin}` +
         `&from=${agora - MAX_VELAS * (tf.segundos || 86400)}&to=${agora}`
       );
     },
@@ -479,7 +479,7 @@ const PAIRS = [
     // O ativo monitorado e' o DOLAR; o real e' a moeda de cotacao. Por
     // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
     label: "USD/BRL",
-    simbolo: "USDBRL=X",
+    par: "USDBRL=X",
     fontes: FONTES_CAMBIO,
     // 4 casas: o par se move em milesimos, e 2 casas apagariam a
     // diferenca entre uma vela parada e uma vela de meio por cento.
@@ -493,15 +493,20 @@ const PAIRS = [
     // par de cambio -- negocia em corretora, entao tem volume de
     // verdade, e todo o subsistema de volume funciona aqui.
     label: "USDT/BRL",
-    simbolo: "USDTBRL",
-    simboloMB: "USDT-BRL",
+    par: "USDTBRL",
+    parMB: "USDT-BRL",
     fontes: FONTES_CRIPTO,
     dec: 4,
     niveis: NIVEIS_USDT,
   },
 ];
 
-const PAR_POR_LABEL = new Map(PAIRS.map((c) => [c.label, c]));
+// Busca a configuracao de um par pelo rotulo publicado no relatorio.
+// Mesma forma nos tres monitores: e' o que permite ao parser do JSON
+// nao ter rotulo nenhum cravado no codigo.
+function parPorLabel(label) {
+  return PAIRS.find((c) => c.label === label) || null;
+}
 
 // Toda vela e' ancorada na MEIA-NOITE UTC do proprio dia, venha de onde
 // vier. Sem isso as duas fontes cairiam em grades diferentes — o Yahoo
@@ -1776,7 +1781,7 @@ export function relatorioParaJSON(texto, zonas = null) {
       continue;
     }
 
-    if (PAR_POR_LABEL.has(linha)) {
+    if (parPorLabel(linha)) {
       parAtual = linha;
       if (tfAtual) out[tfAtual][parAtual] = {};
       continue;
@@ -1801,7 +1806,7 @@ export function relatorioParaJSON(texto, zonas = null) {
   // niveis_manuais e zonas_automaticas ficam SEPARADOS por par/timeframe
   for (const tfKey of ["diario", "semanal"]) {
     for (const par of Object.keys(out[tfKey] || {})) {
-      const cfgPar = PAR_POR_LABEL.get(par);
+      const cfgPar = parPorLabel(par);
       if (!cfgPar) continue;
       const bloco = out[tfKey][par];
       const chave = `${cfgPar.key}|${tfKey}`;
