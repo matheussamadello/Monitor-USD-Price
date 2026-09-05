@@ -783,7 +783,27 @@ Nenhum padrão isolado deve superar preço, estrutura e níveis relevantes.
 
 ---
 
+## Volatilidade (ATR)
+
+O relatório publica, por par e por timeframe, dois campos calculados sobre velas **fechadas**:
+
+- `atr14` — ATR de 14 períodos, em unidade de preço;
+- `atr14_pct` — o mesmo em porcentagem do fechamento.
+
+Use sempre `atr14_pct` para comparar. O valor absoluto não diz nada sozinho: 0,05 pode ser muito ou pouco dependendo do par e da época.
+
+Como tratá-lo:
+
+1. **Nunca alerte por mudança de ATR.** Volatilidade subindo ou caindo não é evento; é contexto para um alerta que já exista por outro motivo.
+2. **Use para dar escala à distância.** Quando um alerta citar a distância até um nível ou uma zona, expresse também em ATR: "o suporte está a 0,8 ATR" carrega o regime de volatilidade do momento, coisa que "a 1,2%" não carrega.
+3. **Use para pesar a força de um rompimento.** É a mesma lógica que as zonas automáticas já aplicam em `forca_reacao_atr`: uma excursão medida em ATR diz se o movimento foi grande *para aquele par naquele momento*, e não em termos absolutos.
+4. **Compare diário e semanal.** ATR semanal muito acima do diário sugere que o movimento maior ainda não apareceu no gráfico curto.
+
+O ATR não substitui nenhuma leitura existente e não gera sinal próprio. Ele calibra a interpretação das outras.
+
 ## Volume
+
+`volume_classificacao` e `volume_vs_media_pct` descrevem a **última vela fechada**, não a que está em formação — o relatório declara isso em `volume_referencia: ultima_vela_fechada`. `volume_atual` é a vela viva e é parcial: volume é acumulado, então comparar esse número com `volume_media20` por conta própria dá sempre um resultado catastrófico até o período fechar. Não faça essa conta.
 
 ### USD/BRL
 
