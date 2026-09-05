@@ -3071,7 +3071,18 @@ function readPair(cfg, d, tf, opts = {}) {
   // de alguem reparar. "obsoleto" quer dizer que o preco esta a mais de
   // 3 ATR da faixa manual mais proxima -- os niveis descreveram outro
   // regime de mercado e precisam de revisao.
-  const sitNiveis = situacaoNiveis(cfg.niveis, live.close, atr[i]);
+  //
+  // VELA FECHADA nas duas pontas. A primeira versao passava live.close
+  // aqui, o que misturava preco da vela em formacao com ATR de vela
+  // fechada: nem provisorio nem confirmado, um hibrido sem significado
+  // limpo. E contrariava a convencao do proprio monitor, em que o que
+  // alimenta decisao usa vela fechada -- e este campo alimenta uma, a
+  // revisao dos niveis manuais.
+  //
+  // O custo e' uma vela de latencia, irrelevante para um sinal que diz
+  // "seus niveis sao de outra era": o caso que motivou a vigilancia
+  // levou 19 dias para ser notado.
+  const sitNiveis = situacaoNiveis(cfg.niveis, closes[i], atr[i]);
   L.push(`niveis_manuais_situacao: ${sitNiveis.situacao}`);
   L.push(`niveis_manuais_faixa_mais_proxima: ${sitNiveis.faixa || "--"}`);
   L.push(`niveis_manuais_distancia_atr: ${num(sitNiveis.distanciaAtr, 2)}`);

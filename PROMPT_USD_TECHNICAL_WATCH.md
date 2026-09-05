@@ -231,9 +231,18 @@ O alerta de manutenção dos níveis manuais não conta no limite de uma mensage
 
 Esta é a distinção que mais evita ruído, e ela não é óbvia lendo o relatório.
 
-**`alertas_tecnicos` é uma fotografia do estado, não um registro do que mudou.** Um `rompimento_confirmado_X` permanece na lista por todo o tempo em que a condição for verdadeira — pode ser um dia, pode ser um mês. Ele apareceu de novo não porque aconteceu de novo, mas porque continua sendo o caso.
+**`alertas_tecnicos` é, em sua maior parte, uma fotografia do estado.** Um `rompimento_confirmado_X` permanece na lista por todo o tempo em que a condição for verdadeira — pode ser um dia, pode ser um mês. Ele apareceu de novo não porque aconteceu de novo, mas porque continua sendo o caso. O mesmo vale para `faixa_X`, `rsi_acima_70` e as divergências confirmadas.
 
-**O campo que carrega evento é `niveis_mudancas_nesta_vela`.** Quando ele diz `nenhuma`, nada mudou de estado nesta vela, por mais longa que esteja a lista de `alertas_tecnicos`.
+**Mas a lista mistura os dois tipos.** Dentro dela também entram itens que são genuinamente eventos daquela vela: mudanças de estrutura (`novo_HH_apos_topo_mais_baixo`, `perda_estrutura_alta_novo_LL` e afins) e mudanças de estado de nível (`rompido_X`, `reteste_confirmado_X`). Não descarte a lista inteira como se fosse só estado.
+
+**Os campos canônicos de novidade são dois**, e é neles que você deve olhar para saber o que mudou:
+
+- `niveis_mudancas_nesta_vela` — mudanças na máquina de rompimento/reteste;
+- `estrutura_eventos` — mudanças de estrutura de preço.
+
+Quando os dois dizem `nenhuma` e `nenhum`, nada mudou nesta vela, por mais longa que esteja a lista de `alertas_tecnicos`.
+
+`alertas_tecnicos` responde **o que é verdade agora**. Esses dois respondem **o que passou a ser verdade nesta vela**.
 
 Na prática:
 
@@ -867,7 +876,7 @@ Como tratá-lo:
 1. **Nunca alerte por mudança de ATR.** Volatilidade subindo ou caindo não é evento; é contexto para um alerta que já exista por outro motivo.
 2. **Use para dar escala à distância.** Quando um alerta citar a distância até um nível ou uma zona, expresse também em ATR: "o suporte está a 0,8 ATR" carrega o regime de volatilidade do momento, coisa que "a 1,2%" não carrega.
 3. **Use para pesar a força de um rompimento.** É a mesma lógica que as zonas automáticas já aplicam em `forca_reacao_atr`: uma excursão medida em ATR diz se o movimento foi grande *para aquele par naquele momento*, e não em termos absolutos.
-4. **Compare diário e semanal.** ATR semanal muito acima do diário sugere que o movimento maior ainda não apareceu no gráfico curto.
+4. **Compare `atr14_pct` do mesmo timeframe ao longo do tempo.** Volatilidade expandindo ou contraindo é contexto útil. Já a comparação entre timeframes diferentes não é: diário e semanal medem horizontes diferentes, e o semanal é naturalmente maior por aritmética — a amplitude escala com a raiz do número de períodos, então o semanal costuma ficar em torno de 2 a 2,5 vezes o diário só por isso. Essa diferença **não** indica movimento oculto, tendência nem direção. Não infira nada dela.
 
 O ATR não substitui nenhuma leitura existente e não gera sinal próprio. Ele calibra a interpretação das outras.
 

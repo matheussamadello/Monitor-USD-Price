@@ -102,11 +102,23 @@ function respYahoo(rows) {
   });
 }
 // hostsFora: quais hosts do Yahoo estao derrubados nesta simulacao.
+// Mexe SO na ultima vela, a que esta em formacao. Tudo que ja fechou
+// continua identico entre execucoes.
+function soAVivaMudou(rows, fator) {
+  if (!fator) return rows;
+  const out = rows.slice();
+  const v = { ...out[out.length - 1] };
+  for (const k of ["o", "h", "l", "c"]) v[k] = v[k] * (1 + fator);
+  out[out.length - 1] = v;
+  return out;
+}
+
 function fakeFetch({
   hostsFora = [],
   series = porTf,
   seriesUsdt = usdtPorTf,
   usdtFora = [],
+  mexerNaViva = 0,
 } = {}) {
   const chamadas = [];
   const f = async (url) => {
@@ -116,21 +128,24 @@ function fakeFetch({
         return { ok: false, status: 451, text: async () => "" };
       }
       const iv = url.match(/interval=([^&]+)/)[1];
-      return { ok: true, text: async () => respBinance(seriesUsdt[iv]) };
+      return { ok: true, text: async () => respBinance(soAVivaMudou(seriesUsdt[iv], mexerNaViva)) };
     }
     if (url.includes("mercadobitcoin")) {
       if (usdtFora.includes("mercadobitcoin")) {
         return { ok: false, status: 503, text: async () => "" };
       }
       const iv = url.match(/resolution=([^&]+)/)[1];
-      return { ok: true, text: async () => respMercadoBitcoin(seriesUsdt[iv]) };
+      return {
+        ok: true,
+        text: async () => respMercadoBitcoin(soAVivaMudou(seriesUsdt[iv], mexerNaViva)),
+      };
     }
     const host = url.match(/https:\/\/([^.]+)\./)[1];
     if (hostsFora.includes(host)) {
       return { ok: false, status: host === "query1" ? 429 : 502, text: async () => "" };
     }
     const iv = url.match(/interval=([^&]+)/)[1];
-    return { ok: true, text: async () => respYahoo(series[iv]) };
+    return { ok: true, text: async () => respYahoo(soAVivaMudou(series[iv], mexerNaViva)) };
   };
   f.chamadas = chamadas;
   return f;
@@ -382,6 +397,29 @@ console.log("\n== afastado mede distancia, nao etapa do ciclo ==");
   ok(e.afastado === true, "nivel 30% para tras e' marcado como afastado mesmo em 'rompido'");
   e = atualizarEstadoNivel(e, { ...base, vela: { open: 101, close: 101.5, high: 102, low: 100.8, time: t0 + 2 * 86400 } });
   ok(e.afastado === false, "preco de volta perto do nivel desmarca o afastamento");
+}
+
+
+console.log("\n== a situacao dos niveis olha a vela FECHADA ==");
+{
+  // Duas execucoes identicas a nao ser pela vela EM FORMACAO. Se a
+  // vigilancia usasse o preco vivo -- como usava na primeira versao --
+  // a distancia mudaria. Usando o fechamento, nao pode mudar.
+  const campo = (t, c) => {
+    const m = t.match(new RegExp(`^${c}: (.+)$`, "m"));
+    return m ? m[1] : null;
+  };
+  const normal = await build(fakeFetch(), {});
+  const viva = await build(fakeFetch({ mexerNaViva: 0.25 }), {});
+
+  ok(campo(viva.texto, "preco_atual") !== campo(normal.texto, "preco_atual"),
+    "a vela em formacao de fato mudou de preco entre as duas execucoes");
+  ok(campo(viva.texto, "ultimo_fechamento_close") === campo(normal.texto, "ultimo_fechamento_close"),
+    "o ultimo fechamento continua o mesmo, como deve");
+  ok(campo(viva.texto, "niveis_manuais_distancia_atr") === campo(normal.texto, "niveis_manuais_distancia_atr"),
+    "a distancia ate a faixa manual NAO mudou: ela vem do fechamento");
+  ok(campo(viva.texto, "niveis_manuais_situacao") === campo(normal.texto, "niveis_manuais_situacao"),
+    "a situacao dos niveis tambem nao mudou");
 }
 
 console.log("\n== JSON ==");
