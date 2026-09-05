@@ -198,6 +198,13 @@ Se houver sinais bullish e bearish simultâneos, não empilhe mensagens. Expliqu
 
 Se **USD/BRL e USDT/BRL** tiverem fatos materialmente relevantes e independentes na mesma execução, a mesma mensagem pode conter duas seções curtas, uma para cada par. Isso continua contando como uma única mensagem de mercado.
 
+### Hierarquia dos alertas de contexto macro
+
+Estes precedem os alertas de mercado. Quando um deles couber, ele é a mensagem da execução.
+
+1. `CONTEXTO MACRO ALTERADO — EMA89 SEMANAL PERDIDA NO FECHAMENTO`
+2. `CONTEXTO MACRO ALTERADO — EMA89 SEMANAL RECUPERADA NO FECHAMENTO`
+
 ### Hierarquia dos alertas de compra
 
 Da maior para a menor prioridade:
@@ -652,6 +659,15 @@ Mesmo assim, exija pelo menos **DUAS confirmações adicionais independentes** e
 
 Fechamento marginalmente abaixo com indicadores neutros ou melhorando = teste inconclusivo e silêncio.
 
+**Corroboração semanal obrigatória.** O horizonte deste monitor é de swing longo — meses a mais de um ano — e a EMA89 diária cobre cerca de três a quatro meses. Uma correção normal dentro de uma tese de um ano derruba a média diária sem encostar na tese. Por isso, só chame de deterioração quando o semanal também estiver cedendo. Exija pelo menos uma destas:
+
+- o `ultimo_fechamento_close` do bloco semanal está abaixo da `ema89` semanal; **ou**
+- a `estrutura_tendencia` semanal deixou de ser de alta; **ou**
+- o preço está a menos de 1 ATR semanal da EMA89 semanal — use `atr14` do bloco semanal —, ou seja, prestes a testá-la.
+
+Se nada disso valer, o semanal está intacto e a perda da média diária é **contexto, não deterioração**: não gere mensagem própria. Ela pode ser citada dentro de outro alerta que já tenha disparado por outro motivo.
+
+
 Se válido, use exatamente:
 
 `PERDA DA EMA89 DIÁRIA — DETERIORAÇÃO`
@@ -666,16 +682,42 @@ Não repita enquanto o mesmo estado persistir. Uma recuperação posterior por f
 
 ## EMA89 semanal
 
-A EMA89 semanal é um **filtro macro** em cada par.
+A EMA89 semanal cobre cerca de **1 ano e 8 meses**. É a única referência do relatório que abrange o horizonte de uma posição longa inteira — por isso ela deixou de ser apenas filtro macro. Um fechamento semanal confirmado atravessando-a é o evento mais material que este monitor consegue reportar.
 
-Não gere alerta por cruzamento intrassemanal isolado.
+### Leitura confirmada x provisória
 
-Só dê importância especial a fechamento semanal acima ou abaixo quando isso alterar o contexto maior.
+No bloco semanal, `posicao_vs_ema89` compara a média com o preço da semana **em formação**. Durante a semana inteira esse campo é provisório e pode mudar.
 
-- recuperação semanal da EMA pode reforçar leitura bullish diária;
-- perda semanal da EMA pode reforçar deterioração e tese de realização.
+Para a leitura confirmada, compare `ultimo_fechamento_close` com `ema89`, os dois publicados no bloco semanal. **Só essa comparação vale para os alertas abaixo.**
 
-Nunca use a EMA semanal isoladamente para recomendar compra ou realização.
+### Condições comuns aos dois alertas macro
+
+1. A semana **fechada** anterior estava de um lado da EMA89 semanal e a semana fechada atual está do outro. Cruzamento intrassemanal não conta.
+2. A distância entre `ultimo_fechamento_close` e `ema89` é de pelo menos **0,25 ATR semanal** (`atr14` do bloco semanal). Sem essa margem, o preço apenas encostou na média, e o alerta alternaria toda semana.
+3. A travessia ainda não foi comunicada.
+
+Cumpridas as três, dispare — mesmo que nenhuma outra regra tenha disparado. Estes alertas **têm precedência sobre os alertas de mercado**: se um deles couber, ele é a mensagem da execução.
+
+### CONTEXTO MACRO ALTERADO — EMA89 SEMANAL PERDIDA NO FECHAMENTO
+
+Use exatamente esse título quando a travessia for para baixo.
+
+Diga que a referência que cobre o horizonte inteiro da posição foi perdida por fechamento semanal, informe a distância em ATR e aponte o próximo suporte relevante lido do JSON ou das zonas. Não transforme isso em recomendação automática de sair: é mudança de contexto, e a decisão continua sendo do usuário.
+
+### CONTEXTO MACRO ALTERADO — EMA89 SEMANAL RECUPERADA NO FECHAMENTO
+
+Use exatamente esse título quando a travessia for para cima, com a mesma estrutura.
+
+### O que continua não sendo alerta
+
+- cruzamento intrassemanal, provisório ou não confirmado por fechamento;
+- o preço oscilando em torno da média sem a margem de 0,25 ATR;
+- a mesma travessia já comunicada;
+- a EMA89 semanal isoladamente, como razão para comprar ou realizar.
+
+### Nos dois pares
+
+Avalie a travessia **por par**. USD/BRL e USDT/BRL têm EMAs e ATRs próprios, e um pode atravessar sem o outro. Quando os dois atravessarem na mesma semana, é uma mensagem só, citando ambos.
 
 ---
 
