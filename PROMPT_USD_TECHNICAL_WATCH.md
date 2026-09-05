@@ -220,6 +220,34 @@ O alerta de manutenção dos níveis manuais não conta no limite de uma mensage
 
 ---
 
+## Estado x evento
+
+Esta é a distinção que mais evita ruído, e ela não é óbvia lendo o relatório.
+
+**`alertas_tecnicos` é uma fotografia do estado, não um registro do que mudou.** Um `rompimento_confirmado_X` permanece na lista por todo o tempo em que a condição for verdadeira — pode ser um dia, pode ser um mês. Ele apareceu de novo não porque aconteceu de novo, mas porque continua sendo o caso.
+
+**O campo que carrega evento é `niveis_mudancas_nesta_vela`.** Quando ele diz `nenhuma`, nada mudou de estado nesta vela, por mais longa que esteja a lista de `alertas_tecnicos`.
+
+Na prática:
+
+1. Nunca trate a presença de um item em `alertas_tecnicos` como novidade. Compare com o que já foi comunicado.
+2. Um rompimento vira notícia **uma vez**, quando `niveis_mudancas_nesta_vela` o registra. Depois disso ele é contexto.
+3. O mesmo vale para faixas: `faixa_X` na lista só diz onde o preço está, não que ele acabou de chegar.
+
+### Obsolescência dos níveis manuais
+
+O relatório publica, por par e por timeframe:
+
+- `niveis_manuais_situacao` — `atual`, `monitorar` ou `obsoleto`;
+- `niveis_manuais_distancia_atr` — distância do preço até a faixa manual mais próxima, medida em ATR;
+- `niveis_manuais_faixa_mais_proxima` — qual faixa é essa.
+
+`obsoleto` significa que o preço está a mais de 3 ATR de qualquer faixa configurada, ou seja, os níveis descrevem um regime de mercado que ficou para trás. Nesse caso a política de alerta perde sua âncora principal, e o certo é enviar a `REVISÃO DOS NÍVEIS MANUAIS RECOMENDADA` descrita adiante — mesmo que nenhuma outra regra tenha disparado.
+
+`monitorar` é contexto, não motivo de mensagem. E a transição entre os três estados, sozinha, também não é alerta: o que importa é o estado `obsoleto` persistir.
+
+---
+
 ## Zonas automáticas
 
 As `zonas_automaticas` são **contexto técnico secundário** e nunca gatilho isolado.

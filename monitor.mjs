@@ -1527,18 +1527,75 @@ export function atualizarEstadoNivel(anterior, ctx) {
 
   // ciclo encerrado por afastamento: volta ao estado operacional de
   // rompido, sem apagar o historico do que ja aconteceu.
+  // AFASTADO e' distancia, nao etapa do ciclo. Antes so era marcado ao
+  // encerrar um ciclo de reteste, entao um nivel rompido ha semanas e
+  // deixado muito para tras seguia publicando afastado: nao -- quem
+  // lesse concluiria que o preco ainda estava por perto. Agora vale em
+  // qualquer estado.
   const distPct = (Math.abs(vela.close - nivel) / Math.abs(nivel)) * 100;
+  e.afastado = distPct > resetPct;
+  // O encerramento do ciclo continua valendo so para os dois estados em
+  // que ele faz sentido: um reteste confirmado ou uma recuperacao que o
+  // preco deixou para tras voltam a ser simplesmente "rompido".
   if (
     distPct > resetPct &&
     (e.estado === "reteste_confirmado" || e.estado === "recuperado")
   ) {
     e.estado = "rompido";
-    e.afastado = true;
-  } else if (distPct <= resetPct) {
-    e.afastado = false;
   }
 
   return e;
+}
+
+// ------------------------------------------------------------
+// Vigilancia dos niveis manuais
+//
+// Os niveis manuais sao a espinha da politica de alerta: janela
+// agressiva, confirmacao conservadora e a propria revisao de niveis
+// partem todos deles. Quando envelhecem, o monitor nao passa a errar --
+// ele fica MUDO justamente na parte que mais importa, e nada avisa.
+//
+// Foi o que aconteceu com o monitor de XMR: o preco subiu 29% acima da
+// faixa mais alta configurada e ficou 19 dias assim, republicando de
+// hora em hora um rompimento que havia muito deixara de ser noticia.
+// Detectar isso estava delegado a quem lesse o relatorio, e e'
+// exatamente o tipo de coisa que ninguem nota, porque nada acontece.
+//
+// A distancia e' medida em ATR, e nao em porcentagem: 5% e' muito num
+// par de cambio e pouco num de cripto, enquanto "duas vezes a
+// volatilidade diaria" quer dizer a mesma coisa em qualquer um.
+// ------------------------------------------------------------
+
+const NIVEIS_ATUAL_ATR = 1; // ate aqui, os niveis cercam o preco
+const NIVEIS_OBSOLETO_ATR = 3; // alem daqui, o preco vive noutro lugar
+
+export function situacaoNiveis(niveis, preco, atr) {
+  const faixas = (niveis && niveis.faixas) || [];
+  if (!faixas.length || !(preco > 0)) {
+    return { situacao: "indefinida", distanciaAtr: null, faixa: null };
+  }
+
+  let melhor = null;
+  for (const [lo, hi, label] of faixas) {
+    const dentro = preco >= lo && preco <= hi;
+    const dist = dentro ? 0 : Math.min(Math.abs(preco - lo), Math.abs(preco - hi));
+    if (!melhor || dist < melhor.dist) melhor = { dist, label };
+  }
+  if (!(atr > 0)) {
+    return { situacao: "indefinida", distanciaAtr: null, faixa: melhor.label };
+  }
+
+  const emAtr = melhor.dist / atr;
+  return {
+    situacao:
+      emAtr <= NIVEIS_ATUAL_ATR
+        ? "atual"
+        : emAtr <= NIVEIS_OBSOLETO_ATR
+        ? "monitorar"
+        : "obsoleto",
+    distanciaAtr: emAtr,
+    faixa: melhor.label,
+  };
 }
 
 function niveisDoPar(cfg) {
@@ -3010,6 +3067,14 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(
     `niveis_mudancas_nesta_vela: ${mudancasNivel.length ? mudancasNivel.join(", ") : "nenhuma"}`
   );
+  // Vigilancia da obsolescencia: transforma em dado o que antes dependia
+  // de alguem reparar. "obsoleto" quer dizer que o preco esta a mais de
+  // 3 ATR da faixa manual mais proxima -- os niveis descreveram outro
+  // regime de mercado e precisam de revisao.
+  const sitNiveis = situacaoNiveis(cfg.niveis, live.close, atr[i]);
+  L.push(`niveis_manuais_situacao: ${sitNiveis.situacao}`);
+  L.push(`niveis_manuais_faixa_mais_proxima: ${sitNiveis.faixa || "--"}`);
+  L.push(`niveis_manuais_distancia_atr: ${num(sitNiveis.distanciaAtr, 2)}`);
 
   // ---- periodo e volume ----
   L.push("");
