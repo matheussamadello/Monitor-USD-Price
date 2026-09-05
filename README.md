@@ -187,6 +187,19 @@ O monitor calcula uma **EMA exponencial de 89 períodos** e publica, entre outro
 
 No uso do relatório por agentes externos, a EMA89 diária pode funcionar como suporte/resistência dinâmica para timing, enquanto a EMA89 semanal é especialmente útil como filtro de contexto maior.
 
+### ATR(14) — volatilidade
+
+O monitor calcula **ATR de 14 períodos** por Wilder sobre velas fechadas e publica:
+
+- `atr14` — em unidade de preço;
+- `atr14_pct` — o mesmo em porcentagem do fechamento.
+
+O ATR sempre existiu internamente, dimensionando a largura das zonas automáticas, mas não era publicado. Agora sai no relatório, porque é a leitura que permite dimensionar distância de stop e tamanho de posição sem refazer a conta por fora.
+
+Use `atr14_pct` para comparar: o valor absoluto não diz nada sozinho. `0,05` é muito ou pouco dependendo do par e da época; `1,18%` é comparável com qualquer coisa.
+
+Ele também é a unidade em que a obsolescência dos níveis manuais é medida — ver abaixo.
+
 ### Candles
 
 O monitor registra a anatomia das velas fechadas e da vela atual, incluindo:
@@ -333,6 +346,26 @@ Alguns limiares foram reduzidos em relação aos monitores de cripto, porque um 
 
 As faixas são publicadas diretamente no objeto `niveis_manuais` do `relatorio.json`, derivadas da configuração do código. Portanto, consumidores externos devem preferir o JSON como fonte de verdade dos valores atuais em vez de manter cópias eternas desses números.
 
+## Vigilância dos níveis manuais
+
+Os níveis manuais são a espinha da política de alerta: janela agressiva, confirmação conservadora e a própria revisão de níveis partem todos deles. Quando envelhecem, o monitor não passa a errar — ele fica **mudo** justamente na parte que mais importa, e nada avisa.
+
+Foi o que aconteceu no monitor de XMR: o preço rompeu a resistência manual em 17/08 e seguiu até 29% acima da faixa mais alta configurada, republicando de hora em hora um rompimento que havia muito deixara de ser notícia. Detectar isso estava delegado a quem lesse o relatório, e é exatamente o tipo de coisa que ninguém nota, porque nada acontece.
+
+Agora o relatório publica, por par e por timeframe:
+
+| Campo | O que traz |
+| --- | --- |
+| `niveis_manuais_situacao` | `atual`, `monitorar` ou `obsoleto` |
+| `niveis_manuais_distancia_atr` | distância do preço até a faixa manual mais próxima, em ATR |
+| `niveis_manuais_faixa_mais_proxima` | qual faixa é essa |
+
+Os cortes são **1 ATR** e **3 ATR**: dentro de uma faixa ou a menos de 1 ATR dela é `atual`; entre 1 e 3 é `monitorar`; além de 3 é `obsoleto`.
+
+A distância é medida em ATR, e não em porcentagem, de propósito. Cinco por cento é muito num par de câmbio e pouco num de cripto, enquanto "três vezes a volatilidade diária" quer dizer a mesma coisa em qualquer um — um limiar só serve para os três monitores, sem recalibragem.
+
+`obsoleto` não é alerta de mercado: é aviso de manutenção. Significa que os níveis descrevem um regime que ficou para trás e precisam de revisão.
+
 ## Máquina de estados de rompimento e reteste
 
 Os níveis pontuais possuem estado persistente, avaliado sobre a **última vela fechada**, para evitar oscilações intradiárias da máquina de estados.
@@ -346,7 +379,7 @@ Os principais estados implementados são:
 - `rompimento_falhou`;
 - `recuperado`.
 
-O registro também pode marcar `afastado` quando o preço já se distanciou do nível depois de um reteste confirmado ou recuperação. Estados inativos podem ser arquivados sem apagar o histórico do ciclo.
+O registro marca `afastado` sempre que o preço estiver além da distância de reset do nível, **em qualquer estado**. Isso já foi diferente: a marcação só valia ao encerrar um ciclo de reteste, então um nível rompido semanas antes e deixado 29% para trás continuava publicando `afastado: nao`, e quem lesse concluía que o preço ainda estava por perto. O encerramento do ciclo — voltar de `reteste_confirmado` ou `recuperado` para `rompido` — continua restrito aos dois estados em que faz sentido. Estados inativos podem ser arquivados sem apagar o histórico do ciclo.
 
 A máquina diferencia um critério sensível, que apenas arma um `rompimento_candidato`, de um critério mais rigoroso usado para classificar `rompido`.
 
