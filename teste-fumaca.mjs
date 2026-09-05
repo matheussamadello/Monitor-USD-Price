@@ -205,6 +205,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/rsi14_fechado: \d/.test(r.texto), "RSI calculado");
   ok(/adx14_fechado: \d/.test(r.texto), "ADX calculado");
   ok(/ema89: \d/.test(r.texto), "EMA89 calculada");
+  ok(/atr14: \d/.test(r.texto) && /atr14_pct: \d/.test(r.texto), "ATR publicado em preco e em %");
   ok(/zonas_automaticas_total: \d/.test(r.texto) || /zonas_automaticas: nenhuma/.test(r.texto), "secao de zonas presente");
   ok(/preco_atual: \d\.\d{4}/.test(r.texto), "preco com 4 casas");
 });
@@ -233,12 +234,18 @@ await cenario("vela-fantasma de fim de semana", {
 }, (r) => {
   const ultimoRealDiario = diario[diario.length - 4];
   ok(!/FALHA:/.test(r.texto), "relatorio sai inteiro");
+  // ESCOPO POR PAR, de proposito. O USDT/BRL negocia 24/7, entao a vela
+  // viva DELE pode ser legitimamente a de hoje -- procurar a data de
+  // hoje no relatorio inteiro acusaria o par de cripto e falharia nos
+  // dias em que as duas series se alinham. Foi o que aconteceu num
+  // sabado, derrubando o job de publicar.
+  const usdDia = blocoDoPar(r.texto, "GRAFICO DIARIO", "USD/BRL");
   ok(
-    new RegExp(`candle_atual_data: ${dia(ultimoRealDiario.t)}`).test(r.texto),
+    new RegExp(`candle_atual_data: ${dia(ultimoRealDiario.t)}`).test(usdDia),
     "vela atual e' o ultimo pregao real, nao o fantasma de hoje"
   );
-  ok(!new RegExp(`candle_atual_data: ${dia(ancorarDia(Math.floor(Date.now() / 1000)))}`).test(r.texto),
-    "o fantasma de hoje nao aparece como vela atual");
+  ok(!new RegExp(`candle_atual_data: ${dia(ancorarDia(Math.floor(Date.now() / 1000)))}`).test(usdDia),
+    "o fantasma de hoje nao aparece como vela atual do par de cambio");
   ok(/vela_atual_em_formacao: nao/.test(r.texto), "mercado fechado nao e' vela em formacao");
   ok(!/candle_atual_var_pct_desde_abertura: 0\.00\b/.test(r.texto),
     "preco atual nao e' o ultimo preco repetido nas quatro pontas");

@@ -2747,6 +2747,12 @@ function readPair(cfg, d, tf, opts = {}) {
   const rsi = rsiSeries(closes);
   const { plusDI, minusDI, adx } = dmiSeries(highs, lows, closes);
   const ema = emaSeries(closes);
+  // O ATR ja era calculado la dentro das zonas, para dimensionar a
+  // largura delas. Aqui ele e' calculado tambem para ser PUBLICADO: e' a
+  // leitura de volatilidade do periodo, e sem ela quem consome o
+  // relatorio nao tem como dimensionar distancia de stop nem tamanho de
+  // posicao sem refazer a conta por fora.
+  const atr = atrSeries(highs, lows, closes);
 
   const i = closes.length - 1;
   const j = i - 1;
@@ -2970,6 +2976,15 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(`adx14_fechado: ${num(adx[i], 2)}`);
   L.push(`ultimo_fechamento_data: ${fmtDia(times[i])}`);
   L.push(`ultimo_fechamento_close: ${num(closes[i], D)}`);
+  // Em unidade de preco E em porcentagem. O percentual e' o que permite
+  // comparar volatilidade entre pares e entre epocas -- 0,05 nao diz
+  // nada sozinho, 1,2% diz.
+  L.push(`atr14: ${num(atr[i], D)}`);
+  L.push(
+    `atr14_pct: ${
+      atr[i] !== null && closes[i] ? num((atr[i] / closes[i]) * 100, 2) : "--"
+    }`
+  );
   L.push("");
   L.push("# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o");
   L.push(`# fechamento ${tf.key}. NAO sao a referencia principal.`);
