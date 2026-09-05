@@ -420,6 +420,16 @@ console.log("\n== a situacao dos niveis olha a vela FECHADA ==");
     "a distancia ate a faixa manual NAO mudou: ela vem do fechamento");
   ok(campo(viva.texto, "niveis_manuais_situacao") === campo(normal.texto, "niveis_manuais_situacao"),
     "a situacao dos niveis tambem nao mudou");
+
+  // A travessia da EMA89 e' o alerta mais caro do monitor: ela nao pode
+  // depender da vela em formacao. A ultima assercao e' a contraprova --
+  // o campo antigo em % E' do preco vivo, e por isso muda.
+  ok(campo(viva.texto, "ema89_cruzamento_fechado") === campo(normal.texto, "ema89_cruzamento_fechado"),
+    "o cruzamento da EMA89 NAO muda com a vela em formacao");
+  ok(campo(viva.texto, "ema89_fechada_anterior") === campo(normal.texto, "ema89_fechada_anterior"),
+    "a EMA89 do fechamento anterior tambem nao muda");
+  ok(campo(viva.texto, "distancia_ema89_pct") !== campo(normal.texto, "distancia_ema89_pct"),
+    "e o campo antigo em % continua sendo do preco vivo, como documentado");
 }
 
 console.log("\n== JSON ==");

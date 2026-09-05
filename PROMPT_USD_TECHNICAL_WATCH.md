@@ -32,7 +32,7 @@ https://github.com/matheussamadello/Monitor-USD-Price
 
 Este arquivo é a fonte **AUTORITATIVA e completa** de instruções do USD Technical Watch. Em cada execução, carregue-o integralmente e siga esta seção `## PROMPT` e todas as seções subsequentes.
 
-Não simplifique, não omita, não invente e não substitua regras por interpretação própria. Preserve os nomes EXATOS dos alertas, hierarquias, critérios de entrada e realização, regras de fusão/anti-spam, tratamento de EMA89, RSI, DMI/ADX, volume, divergências, padrões, estados de níveis, zonas automáticas, limites operacionais/estruturais, níveis manuais dinâmicos lidos do `relatorio.json`, revisão silenciosa de níveis, formato em português, Brasília primeiro + UTC, distinção `PROVISÓRIO` / `CONFIRMADO NO FECHAMENTO` e a regra final de silêncio.
+Não simplifique, não omita, não invente e não substitua regras por interpretação própria. Preserve os nomes EXATOS dos alertas, hierarquias, critérios de entrada e realização, regras de fusão/anti-spam, tratamento de EMA89, RSI, DMI/ADX, volume, divergências, padrões, estados de níveis, zonas automáticas, limites operacionais/estruturais, níveis manuais dinâmicos lidos do `relatorio.json`, revisão silenciosa de níveis, formato em português, Brasília primeiro + UTC, distinção `PROVISÓRIO` / `CONFIRMADO NO FECHAMENTO`, os rótulos de horizonte `[TÁTICO]` / `[ESTRATÉGICO]` / `[AMBOS]` e a regra final de silêncio.
 
 A fonte técnica continua sendo o `relatorio.json` indicado neste arquivo. Só envie mensagem quando as regras abaixo determinarem que existe mudança nova, material e operacionalmente útil, ou se o fallback operacional falhar; caso contrário, permaneça em silêncio.
 
@@ -124,6 +124,17 @@ Leia, quando disponíveis no relatório:
 
 Campos `*_fechado` têm prioridade como referência confirmada. Campos `*_provisorio` incluem a vela em formação e podem mudar até o fechamento.
 
+### Horizontes: tático e estratégico
+
+Este monitor serve **dois horizontes com o mesmo relatório**. Nenhum campo do JSON muda: o que muda é o peso que você dá a cada timeframe.
+
+- **TÁTICO — 2 a 6 semanas.** O diário pesa mais. A EMA89 diária (~3 a 4 meses) é referência legítima de fôlego, e perdê-la é material mesmo com o semanal intacto. Estrutura diária, zonas diárias, RSI/DMI diários e níveis manuais mandam.
+- **ESTRATÉGICO — de vários meses a mais de um ano.** O semanal pesa mais. A EMA89 semanal (~1 ano e 8 meses) cobre o horizonte inteiro da posição. Oscilação diária dentro de uma estrutura semanal íntegra é ruído aqui.
+
+**Divergência entre os dois horizontes é o estado normal, não erro.** Semanal acima da EMA89 e diário abaixo é a definição de pullback dentro de tendência. Não force um veredito único nem trate um dos lados como dado defeituoso: a divergência é exatamente a diferença entre "a tese quebrou" e "a tese está sendo testada", e essa informação é valiosa. Diga qual horizonte foi afetado e deixe o outro em paz.
+
+Todo alerta de mercado deve ser rotulado por horizonte — ver `Formato obrigatório dos alertas`.
+
 ### Fonte de verdade dos níveis manuais
 
 Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_manuais`, leia as faixas do **par correspondente** diretamente do relatório e trate seus limites e labels como **fonte de verdade**.
@@ -185,9 +196,17 @@ Use esta prioridade geral:
 
 ## Regra global de fusão e anti-spam
 
-Envie no máximo **UMA mensagem de mercado por execução**.
+Envie no máximo **UMA mensagem de mercado por horizonte e por execução** — no máximo duas no total, e só quando forem de horizontes diferentes. Nunca duas `[TÁTICO]`, nunca duas `[ESTRATÉGICO]`, nunca uma `[AMBOS]` acompanhada de outra mensagem de mercado.
 
-Se o mesmo movimento satisfizer várias regras:
+Na prática:
+
+- sinal em um só horizonte → uma mensagem;
+- o mesmo movimento cabendo nos dois → **uma** mensagem `[AMBOS]`, nunca duas;
+- duas mensagens só quando forem fatos **diferentes** em horizontes **diferentes**. Isso é raro, e é exatamente quando você quer saber.
+
+O teto de duas existe para que o tático, mais frequente por construção, não sufoque o estratégico. Não o use como licença para partir um único movimento em duas mensagens.
+
+Dentro de cada horizonte, se o mesmo movimento satisfizer várias regras:
 
 - não envie alertas separados;
 - não conte o mesmo fato duas vezes como confirmações independentes;
@@ -200,7 +219,7 @@ Se **USD/BRL e USDT/BRL** tiverem fatos materialmente relevantes e independentes
 
 ### Hierarquia dos alertas de contexto macro
 
-Estes precedem os alertas de mercado. Quando um deles couber, ele é a mensagem da execução.
+Estes são sempre `[ESTRATÉGICO]` — ou `[AMBOS]`, se o diário estiver cedendo junto — e precedem qualquer outro alerta. Quando um deles couber, ele ocupa a vaga estratégica da execução; a vaga tática só pode ser usada por um fato tático **distinto**, nunca para repetir o mesmo movimento com outras palavras.
 
 1. `CONTEXTO MACRO ALTERADO — EMA89 SEMANAL PERDIDA NO FECHAMENTO`
 2. `CONTEXTO MACRO ALTERADO — EMA89 SEMANAL RECUPERADA NO FECHAMENTO`
@@ -223,7 +242,7 @@ Da maior para a menor prioridade:
 3. `ALTA PERDENDO FORÇA — POSSÍVEL JANELA DE REALIZAÇÃO PARCIAL`
 4. `JANELA AGRESSIVA DE REALIZAÇÃO PARCIAL — RESISTÊNCIA RELEVANTE EM TESTE`
 
-O alerta de manutenção dos níveis manuais não conta no limite de uma mensagem de mercado e pode ser enviado separadamente.
+O alerta de manutenção dos níveis manuais não conta no limite de mensagens de mercado e pode ser enviado separadamente.
 
 ---
 
@@ -668,13 +687,15 @@ Mesmo assim, exija pelo menos **DUAS confirmações adicionais independentes** e
 
 Fechamento marginalmente abaixo com indicadores neutros ou melhorando = teste inconclusivo e silêncio.
 
-**Corroboração semanal obrigatória.** O horizonte deste monitor é de swing longo — meses a mais de um ano — e a EMA89 diária cobre cerca de três a quatro meses. Uma correção normal dentro de uma tese de um ano derruba a média diária sem encostar na tese. Por isso, só chame de deterioração quando o semanal também estiver cedendo. Exija pelo menos uma destas:
+**Corroboração semanal obrigatória.** O horizonte deste monitor é de swing longo — meses a mais de um ano — e a EMA89 diária cobre cerca de três a quatro meses. Uma correção normal dentro de uma tese de um ano derruba a média diária sem encostar na tese. Por isso, a perda da média diária nunca é deterioração da tese por si só. Antes de escrever, confira o semanal: é ele que decide o rótulo do alerta. Verifique estas três:
 
-- o `ultimo_fechamento_close` do bloco semanal está abaixo da `ema89` semanal; **ou**
+- `ema89_cruzamento_fechado` do bloco semanal é `abaixo`, ou o `ultimo_fechamento_close` semanal já está abaixo de `ema89_fechada_atual`; **ou**
 - a `estrutura_tendencia` semanal deixou de ser de alta; **ou**
-- o preço está a menos de 1 ATR semanal da EMA89 semanal — use `atr14` do bloco semanal —, ou seja, prestes a testá-la.
+- `distancia_ema89_fechada_atr` do bloco semanal é menor que **1,0** — o preço está prestes a testar a média.
 
-Se nada disso valer, o semanal está intacto e a perda da média diária é **contexto, não deterioração**: não gere mensagem própria. Ela pode ser citada dentro de outro alerta que já tenha disparado por outro motivo.
+Se pelo menos uma dessas valer, o alerta é `[AMBOS]`: a média diária cedeu e o semanal está cedendo junto.
+
+Se nenhuma valer, o semanal está intacto — e então a perda da média diária é **tática, não estratégica**. Ela continua podendo virar mensagem, rotulada `[TÁTICO]`, desde que as duas confirmações adicionais independentes já exigidas acima estejam presentes. O texto deve dizer explicitamente que a estrutura semanal segue íntegra e que a tese de prazo longo não foi afetada. Nunca apresente esse caso como deterioração da tese.
 
 
 Se válido, use exatamente:
@@ -695,17 +716,28 @@ A EMA89 semanal cobre cerca de **1 ano e 8 meses**. É a única referência do r
 
 ### Leitura confirmada x provisória
 
-No bloco semanal, `posicao_vs_ema89` compara a média com o preço da semana **em formação**. Durante a semana inteira esse campo é provisório e pode mudar.
+No bloco semanal, `posicao_vs_ema89` compara a média com o preço da semana **em formação**. Durante a semana inteira esse campo é provisório e pode mudar. **Ele nunca confirma nada.**
 
-Para a leitura confirmada, compare `ultimo_fechamento_close` com `ema89`, os dois publicados no bloco semanal. **Só essa comparação vale para os alertas abaixo.**
+A leitura confirmada vem pronta no relatório, calculada só com semanas fechadas:
+
+- `ema89_fechada_atual` — a EMA89 na última semana fechada;
+- `ema89_fechada_anterior` — a EMA89 na semana fechada anterior;
+- `ema89_cruzamento_fechado` — `acima`, `abaixo` ou `nenhum`;
+- `distancia_ema89_fechada_atr` — distância entre o fechamento e a média, em ATR do próprio timeframe.
+
+**Só esses campos valem para os alertas abaixo.** Não reconstrua a comparação por conta própria.
 
 ### Condições comuns aos dois alertas macro
 
-1. A semana **fechada** anterior estava de um lado da EMA89 semanal e a semana fechada atual está do outro. Cruzamento intrassemanal não conta.
-2. A distância entre `ultimo_fechamento_close` e `ema89` é de pelo menos **0,25 ATR semanal** (`atr14` do bloco semanal). Sem essa margem, o preço apenas encostou na média, e o alerta alternaria toda semana.
+1. `ema89_cruzamento_fechado` do bloco semanal é `acima` ou `abaixo` — nunca `nenhum`. Esse campo já compara a semana fechada anterior com a atual usando a EMA89 correspondente a cada uma. Cruzamento intrassemanal não entra nele.
+2. `distancia_ema89_fechada_atr` do bloco semanal é de pelo menos **0,25**. Sem essa margem, o preço apenas encostou na média, e o alerta alternaria toda semana.
 3. A travessia ainda não foi comunicada.
 
-Cumpridas as três, dispare — mesmo que nenhuma outra regra tenha disparado. Estes alertas **têm precedência sobre os alertas de mercado**: se um deles couber, ele é a mensagem da execução.
+Cumpridas as três, dispare — mesmo que nenhuma outra regra tenha disparado. Estes alertas **têm precedência sobre os alertas de mercado**: se um deles couber, ele ocupa a vaga estratégica da execução.
+
+### Cruzou mas não confirmou
+
+Quando `ema89_cruzamento_fechado` for `acima` ou `abaixo` mas `distancia_ema89_fechada_atr` for **menor que 0,25**, o estado é **cruzou mas não confirmou**. Não é `nenhum` e não é alerta: é silêncio. Não invente um alerta intermediário nem antecipe o macro dizendo que "está prestes a". Se a semana seguinte fechar do lado novo com margem suficiente, o alerta dispara então.
 
 ### CONTEXTO MACRO ALTERADO — EMA89 SEMANAL PERDIDA NO FECHAMENTO
 
@@ -720,6 +752,7 @@ Use exatamente esse título quando a travessia for para cima, com a mesma estrut
 ### O que continua não sendo alerta
 
 - cruzamento intrassemanal, provisório ou não confirmado por fechamento;
+- `posicao_vs_ema89` semanal mudando de lado durante a semana;
 - o preço oscilando em torno da média sem a margem de 0,25 ATR;
 - a mesma travessia já comunicada;
 - a EMA89 semanal isoladamente, como razão para comprar ou realizar.
@@ -994,7 +1027,7 @@ Explique de forma curta:
 - por que a mudança parece estrutural;
 - se a ação sugerida é remover, rebaixar, substituir ou atualizar.
 
-Esse alerta de manutenção não conta no limite de uma mensagem de mercado.
+Esse alerta de manutenção não conta no limite de mensagens de mercado.
 
 Não gere automaticamente código, patch ou prompt de refatoração do monitor.
 
@@ -1003,6 +1036,18 @@ Não gere automaticamente código, patch ou prompt de refatoração do monitor.
 ## Formato obrigatório dos alertas
 
 Escreva em português comum.
+
+**Rotule o horizonte no início do título**, entre colchetes e em maiúsculas:
+
+- `[TÁTICO]` — afeta o horizonte de 2 a 6 semanas;
+- `[ESTRATÉGICO]` — afeta o horizonte de vários meses a mais de um ano;
+- `[AMBOS]` — o mesmo movimento afeta os dois.
+
+Exemplo: `[TÁTICO] PERDA DA EMA89 DIÁRIA — DETERIORAÇÃO`.
+
+O rótulo é um prefixo, não uma alteração do título: os nomes exatos dos alertas continuam obrigatórios e inalterados. O alerta de manutenção dos níveis manuais não é alerta de mercado e não leva rótulo.
+
+Em alerta `[TÁTICO]`, diga em uma linha o que o horizonte estratégico está fazendo — normalmente, que segue íntegro. Em `[ESTRATÉGICO]`, diga o mesmo do tático. É essa linha que impede o usuário de ler um alerta parcial como veredito geral.
 
 Mostre o **horário de Brasília primeiro** e o horário UTC entre parênteses.
 

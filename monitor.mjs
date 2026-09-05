@@ -3004,6 +3004,25 @@ function readPair(cfg, d, tf, opts = {}) {
   });
 
   const emaAtual = ema[i];
+  const emaAnterior = ema[j];
+  // Cruzamento por FECHAMENTO. Sao dois pontos de uma serie que o
+  // processo ja tem na memoria: nao ha calculo novo, chamada nova nem
+  // estado persistido. O relatorio publicava so ema[i], e sem ema[j]
+  // quem le nao conseguia decidir a travessia sem lembrar da execucao
+  // anterior -- justamente o que este projeto evita.
+  const ladoDe = (c, e) => (e === null ? null : c >= e ? "acima" : "abaixo");
+  const ladoAtual = ladoDe(closes[i], emaAtual);
+  const ladoAnterior = ladoDe(closes[j], emaAnterior);
+  const cruzamentoFechado =
+    ladoAtual && ladoAnterior && ladoAtual !== ladoAnterior
+      ? ladoAtual
+      : "nenhum";
+  // A margem anti-ruido de que o prompt depende, medida onde deve ser:
+  // entre o FECHAMENTO e a media, nunca com o preco vivo.
+  const distEmaAtr =
+    emaAtual === null || !(atr[i] > 0)
+      ? null
+      : Math.abs(closes[i] - emaAtual) / atr[i];
   const varAbertura = ((live.close - live.open) / live.open) * 100;
   const distEma =
     emaAtual === null ? null : ((live.close - emaAtual) / emaAtual) * 100;
@@ -3033,6 +3052,13 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(`adx14_fechado: ${num(adx[i], 2)}`);
   L.push(`ultimo_fechamento_data: ${fmtDia(times[i])}`);
   L.push(`ultimo_fechamento_close: ${num(closes[i], D)}`);
+  // Estes quatro tornam a travessia da EMA89 DETERMINISTICA a partir do
+  // relatorio: sem `ema89_fechada_anterior` nao da para saber se houve
+  // cruzamento sem depender da memoria de quem le.
+  L.push(`ema89_fechada_atual: ${num(emaAtual, D)}`);
+  L.push(`ema89_fechada_anterior: ${num(emaAnterior, D)}`);
+  L.push(`ema89_cruzamento_fechado: ${cruzamentoFechado}`);
+  L.push(`distancia_ema89_fechada_atr: ${num(distEmaAtr, 2)}`);
   // Em unidade de preco E em porcentagem. O percentual e' o que permite
   // comparar volatilidade entre pares e entre epocas -- 0,05 nao diz
   // nada sozinho, 1,2% diz.
