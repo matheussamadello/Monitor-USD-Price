@@ -34,7 +34,7 @@ Este arquivo é a fonte **AUTORITATIVA e completa** de instruções do USD Techn
 
 Não simplifique, não omita, não invente e não substitua regras por interpretação própria. Preserve os nomes EXATOS dos alertas, hierarquias, critérios de entrada e realização, regras de fusão/anti-spam, tratamento de EMA89, RSI, DMI/ADX, volume, divergências, padrões, estados de níveis, zonas automáticas, limites operacionais/estruturais, níveis manuais dinâmicos lidos do `relatorio.json`, revisão silenciosa de níveis, formato em português, Brasília primeiro + UTC, distinção `PROVISÓRIO` / `CONFIRMADO NO FECHAMENTO`, os rótulos de horizonte `[TÁTICO]` / `[ESTRATÉGICO]` / `[AMBOS]` e a regra final de silêncio.
 
-A fonte técnica continua sendo o `relatorio.json` indicado neste arquivo. Só envie mensagem quando as regras abaixo determinarem que existe mudança nova, material e operacionalmente útil, ou se o fallback operacional falhar; caso contrário, permaneça em silêncio.
+A fonte técnica continua sendo o `relatorio.json` indicado neste arquivo. Só envie mensagem quando as regras abaixo determinarem que existe mudança nova, material e operacionalmente útil, ou quando uma indisponibilidade operacional persistente atingir o limiar explícito definido no fallback; caso contrário, permaneça em silêncio.
 
 ### Fallback operacional de atualização do relatório
 
@@ -42,17 +42,21 @@ Antes da análise técnica, execute também este fallback operacional do própri
 
 1. Leia `docs/relatorio.json` do repositório `matheussamadello/Monitor-USD-Price` e confira o timestamp.
 2. Se o relatório estiver com mais de **90 minutos** de atraso em relação ao horário atual, consulte os GitHub Actions desse repositório e verifique o workflow `Monitor USD`.
-3. Se houver execução recente em estado `queued` ou `in_progress`, não force outra execução.
+3. Se houver execução recente em estado `queued` ou `in_progress`, não force outra execução. Isso indica que há tentativa de atualização em andamento e, por si só, **não é falha operacional nem motivo de alerta**.
 4. Se não houver execução em andamento e o relatório continuar desatualizado, reexecute o job `atualizar` da execução mais recente do workflow `Monitor USD` usando a ação de re-run do GitHub Actions. Faça isso sempre que o fallback for necessário e a integração permitir. Não edite o workflow para conseguir a reexecução. **Antes de reexecutar, consulte os jobs dessa execução mais recente naquele momento e obtenha o `job_id` atual do job `atualizar`. Nunca reutilize, memorize ou reaproveite um `job_id` obtido em fallback anterior. O `job_id` deve pertencer à tentativa atual (`run_attempt`) do run selecionado. Se o GitHub rejeitar o re-run por o job pertencer a tentativa anterior ou por o ID ter ficado obsoleto, consulte novamente os jobs do mesmo run e tente uma única vez com o novo `job_id`.**
 5. Depois da reexecução, volte a consultar `docs/relatorio.json` e use o relatório atualizado quando já estiver disponível. Se ainda houver execução `queued` ou `in_progress`, não force outra.
 6. Não altere código, `monitor.mjs`, `monitor.yml`, cron, níveis manuais, prompts, configuração do GitHub Pages ou qualquer outro arquivo. Não faça commits manuais nem refatorações como parte desse fallback.
-7. A correção operacional, por si só, não deve gerar alerta ao usuário. Só mencione o fallback se a reexecução falhar ou se não for possível corrigir a desatualização.
+7. **Falhas transitórias do fallback são silenciosas.** Se, em uma execução isolada, a integração não conseguir localizar com segurança o run/job atual, houver erro temporário de API/permissão, o re-run falhar mesmo após a única nova tentativa com `job_id` fresco, ou o relatório ainda não tiver sido renovado imediatamente após a tentativa, **não envie alerta operacional nessa primeira ocorrência**. Registre apenas internamente uma falha consecutiva do fallback e tente novamente na próxima execução.
+8. Considere como **falha consecutiva do fallback** somente uma execução em que o relatório continua com mais de 90 minutos de atraso **e** não existe job `queued`/`in_progress` capaz de explicar a espera **e** o agente não consegue restaurar um relatório fresco. Uma execução com job em andamento não incrementa esse contador.
+9. Só envie **um único alerta operacional curto** se essa condição persistir por **3 execuções consecutivas** do USD Technical Watch. O alerta deve dizer apenas que o relatório permanece desatualizado e que o fallback não conseguiu restaurá-lo após tentativas consecutivas; não transforme falha de integração isolada em diagnóstico de que o monitor está quebrado.
+10. Depois de enviar esse alerta operacional, **não o repita** enquanto a mesma indisponibilidade persistir. Assim que um relatório com atraso de no máximo 90 minutos voltar a ficar disponível, zere o contador e o estado de alerta operacional. Uma futura sequência independente poderá voltar a alertar somente após atingir novamente 3 falhas consecutivas.
+11. A correção operacional bem-sucedida, inclusive um re-run bem-sucedido, **nunca gera mensagem ao usuário por si só**.
 
 Monitore o relatório técnico de USD a cada execução usando como fonte principal `https://matheussamadello.github.io/Monitor-USD-Price/relatorio.json` e como fallback `https://matheussamadello.github.io/Monitor-USD-Price/`. Use anti-cache quando necessário.
 
 Só processe um `timestamp` **estritamente mais novo** que o maior timestamp já processado. Um timestamp novo sozinho **NÃO gera alerta**. Considere o maior timestamp já processado como baseline e somente mudanças posteriores realmente novas podem gerar alerta.
 
-Se JSON e HTML falharem totalmente por **4 execuções consecutivas**, envie um único alerta curto de indisponibilidade. Não repita esse alerta a cada nova falha. Zere a contagem assim que alguma fonte voltar a funcionar.
+Se JSON e HTML falharem totalmente por **4 execuções consecutivas**, envie um único alerta curto de indisponibilidade. Não repita esse alerta a cada nova falha. Zere a contagem assim que alguma fonte voltar a funcionar. Se um alerta operacional do fallback já estiver ativo para a mesma indisponibilidade, não envie um segundo alerta redundante.
 
 ### Objetivo geral
 
