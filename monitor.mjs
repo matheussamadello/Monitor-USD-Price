@@ -3770,10 +3770,12 @@ function pgTimeframe(titulo, b, dec) {
   L.push(pgLinha("Níveis manuais",
     `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
     sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
-  // So a porcentagem: o valor absoluto do ATR nao diz nada de relance --
-  // 0,0418 e' muito ou pouco dependendo do par. Continua publicado em
-  // atr14 no relatorio, para quem dimensiona stop e tamanho de posicao.
-  L.push(pgLinha("ATR(14)", `${pgNum(b.atr14_pct, 2)}%`));
+  // ATR NAO APARECE NO CARTAO. Ele continua sendo calculado e usado --
+  // dimensiona a largura das zonas automaticas, mede a obsolescencia dos
+  // niveis manuais e e' a unidade das margens do prompt (0,25 ATR na
+  // travessia semanal, 1,0 ATR na corroboracao da perda diaria) --, e
+  // continua publicado em atr14 e atr14_pct no relatorio. So nao ocupa
+  // linha no resumo: e' unidade de calculo, nao leitura de relance.
 
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
