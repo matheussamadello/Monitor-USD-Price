@@ -174,6 +174,14 @@ function emPedacos(rows) {
     { t: seg + 3 * DIA, o: meio, h: u.h, l: u.l, c: u.c },
   ]);
 }
+// Trecho de UM par dentro da linha "fonte:" do cabecalho. Procurar a
+// string inteira cravaria a ordem dos pares no teste, e a ordem e'
+// decisao de apresentacao -- ja mudou uma vez.
+function fonteDoPar(texto, par) {
+  const linha = (texto.match(/^fonte: .*$/m) || [""])[0];
+  const m = new RegExp(`${par.replace("/", "\\/")} (diario=\\S+ semanal=\\S+)`).exec(linha);
+  return m ? m[1] : null;
+}
 const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 
 // Extrai o bloco de UM par dentro de UMA secao. Com dois pares na
@@ -203,7 +211,7 @@ async function cenario(nome, opts, checa) {
 
 const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(!/FALHA:/.test(r.texto), "nenhum bloco em FALHA");
-  ok(/fonte: USD\/BRL diario=yahoo\/query1 semanal=yahoo\/query1/.test(r.texto),
+  ok(fonteDoPar(r.texto, "USD/BRL") === "diario=yahoo/query1 semanal=yahoo/query1",
     "cabecalho aponta o host primario do cambio");
   ok(/USDT\/BRL diario=binance semanal=binance/.test(r.texto),
     "cabecalho aponta a fonte do par de cripto");
@@ -243,7 +251,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
 // bloqueia o IP do runner, e o outro continua servindo.
 await cenario("host primario limitado (429)", { hostsFora: ["query1"] }, (r) => {
   ok(!/FALHA:/.test(r.texto), "o espelho assumiu, nenhum bloco em FALHA");
-  ok(/fonte: USD\/BRL diario=yahoo\/query2 semanal=yahoo\/query2/.test(r.texto),
+  ok(fonteDoPar(r.texto, "USD/BRL") === "diario=yahoo/query2 semanal=yahoo/query2",
     "cabecalho aponta o espelho");
   ok(!/NaN|undefined/.test(r.texto), "sem NaN/undefined no texto");
 });
@@ -252,7 +260,7 @@ await cenario("cascata inteira fora do ar", { hostsFora: ["query1", "query2"] },
   ok(/FALHA:/.test(r.texto), "bloco marcado como FALHA");
   ok(/yahoo\/query1: HTTP 429/.test(r.texto) && /yahoo\/query2: HTTP 502/.test(r.texto),
     "erro cita cada elo com seu proprio status");
-  ok(/fonte: USD\/BRL diario=indisponivel semanal=indisponivel/.test(r.texto),
+  ok(fonteDoPar(r.texto, "USD/BRL") === "diario=indisponivel semanal=indisponivel",
     "cabecalho registra indisponibilidade do cambio");
   ok(/USDT\/BRL diario=binance/.test(r.texto),
     "o par de cripto continua respondendo: as cascatas sao independentes");
@@ -578,6 +586,15 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/id="btn-tema"[^>]*aria-pressed="true"/.test(html), "o botao de tema sai marcado como ativo (noite e' o padrao)");
   ok(/<svg class="lua"/.test(html) && /<svg class="sol"/.test(html), "os dois icones do botao estao no HTML");
   ok(/aria-label="Alternar night mode"/.test(html), "o botao sem texto mantem nome acessivel");
+
+  // Ordem e cartoes: o USDT/BRL vem primeiro no relatorio e e' o unico
+  // com cartao; o USD/BRL fica so no relatorio completo, logo abaixo.
+  const secDia = r1.texto.split("========== GRAFICO DIARIO ==========")[1].split("==========")[0];
+  ok(secDia.indexOf("USDT/BRL") < secDia.indexOf("USD/BRL\n"),
+    "no relatorio o USDT/BRL vem antes do USD/BRL");
+  ok(/<h2>USDT\/BRL<\/h2>/.test(html), "o USDT/BRL tem cartao");
+  ok(!/<h2>USD\/BRL<\/h2>/.test(html), "o USD/BRL nao tem cartao");
+  ok(pre.includes("\nUSD/BRL\n"), "mas o USD/BRL continua inteiro no relatorio completo");
   ok(html.indexOf('localStorage.getItem("tema")') < html.indexOf("<body"),
     "o tema salvo e' aplicado ANTES do <body>, sem flash escuro");
 

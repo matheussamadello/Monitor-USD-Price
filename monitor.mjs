@@ -473,28 +473,16 @@ const NIVEIS_USDT = {
 
 // A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia
 // analitica, e o bloco diario dele e' o que a automacao externa le.
+// A ORDEM MANDA em duas coisas: em que sequencia os pares saem no
+// relatorio e, antes desta mudanca, na pagina. O USDT/BRL vem primeiro
+// porque e' o instrumento de EXECUCAO -- e' nele que se dolariza e
+// desdolariza, e' o unico com volume real e o unico cujo grafico vem da
+// mesma fonte do numero. O USD/BRL vem depois, como referencia.
+//
+// Isso e' ordem de APRESENTACAO, nao de analise: para o agente, o
+// prompt continua dizendo que a referencia macro e' o USD/BRL -- e' o
+// dolar de verdade, sem o premio que o USDT carrega.
 const PAIRS = [
-  {
-    key: "usd",
-    // O ativo monitorado e' o DOLAR; o real e' a moeda de cotacao. Por
-    // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
-    label: "USD/BRL",
-    par: "USDBRL=X",
-    // SEM GRAFICO, de proposito. Nas outras quatro fontes deste projeto
-    // o desenho vem da mesma origem do numero -- Kraken nos monitores de
-    // cripto, Binance no USDT/BRL. Aqui nao daria: o TradingView nao
-    // serve a serie do Yahoo, e as fontes que ele usa para USD/BRL foram
-    // sondadas e reprovadas (FX_IDC e' licenciado, OANDA e SAXO pedem
-    // conta, FXCM desativou a API, TVC e' composicao interna). Grafico de
-    // uma fonte ao lado de numero de outra convida a comparar duas
-    // coisas que nao sao a mesma. Preencher `grafico` aqui volta a
-    // liga-lo, se um dia a fonte bater.
-    fontes: FONTES_CAMBIO,
-    // 4 casas: o par se move em milesimos, e 2 casas apagariam a
-    // diferenca entre uma vela parada e uma vela de meio por cento.
-    dec: 4,
-    niveis: NIVEIS_USD,
-  },
   {
     key: "usdt",
     // O instrumento de EXECUCAO: e' nele que se dolariza e desdolariza
@@ -510,6 +498,33 @@ const PAIRS = [
     fontes: FONTES_CRIPTO,
     dec: 4,
     niveis: NIVEIS_USDT,
+  },
+  {
+    key: "usd",
+    // O ativo monitorado e' o DOLAR; o real e' a moeda de cotacao. Por
+    // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
+    label: "USD/BRL",
+    par: "USDBRL=X",
+    // SEM CARTAO no painel visual: fica so no relatorio completo, abaixo
+    // do USDT/BRL. Nao e' descarte -- a analise tecnica dele continua
+    // inteira, e o prompt continua tratando o USD/BRL como referencia
+    // macro. E' que o painel de cima existe para o que se olha rapido, e
+    // o que se olha rapido aqui e' o par de execucao.
+    semCartao: true,
+    // SEM GRAFICO, de proposito. Nas outras quatro fontes deste projeto
+    // o desenho vem da mesma origem do numero -- Kraken nos monitores de
+    // cripto, Binance no USDT/BRL. Aqui nao daria: o TradingView nao
+    // serve a serie do Yahoo, e as fontes que ele usa para USD/BRL foram
+    // sondadas e reprovadas (FX_IDC e' licenciado, OANDA e SAXO pedem
+    // conta, FXCM desativou a API, TVC e' composicao interna). Grafico de
+    // uma fonte ao lado de numero de outra convida a comparar duas
+    // coisas que nao sao a mesma. Preencher `grafico` aqui volta a
+    // liga-lo, se um dia a fonte bater.
+    fontes: FONTES_CAMBIO,
+    // 4 casas: o par se move em milesimos, e 2 casas apagariam a
+    // diferenca entre uma vela parada e uma vela de meio por cento.
+    dec: 4,
+    niveis: NIVEIS_USD,
   },
 ];
 
@@ -3511,7 +3526,11 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
         linhas: serieParaTrilho(usdtDiario),
         fonte: (brutos.diario.usdt || {}).fonte || "--",
       };
-  for (const l of blocoTrilho(trilho, usdDiario, PAIRS[0].dec)) blocks.push(l);
+  // Casas decimais do par de CAMBIO, buscadas pela chave: o trilho
+  // compara o USDT contra o dolar, e a posicao do par no array e
+  // ordem de apresentacao, nao identidade.
+  const decCambio = (PAIRS.find((c) => c.key === "usd") || { dec: 4 }).dec;
+  for (const l of blocoTrilho(trilho, usdDiario, decCambio)) blocks.push(l);
   blocks.push("");
 
   // Gatilhos do alerta continuam olhando SOMENTE o diario.
@@ -3798,7 +3817,10 @@ export function toHTML(text, dados) {
     '<svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
     "</button>" +
     "</div></header>\n" +
-    `<section class="pares">${PAIRS.map((c) => pgCartao(c, d)).join("")}</section>\n` +
+    // Par com semCartao fica so no relatorio completo, la embaixo.
+    `<section class="pares">${PAIRS.filter((c) => !c.semCartao)
+      .map((c) => pgCartao(c, d))
+      .join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----
     "<pre>" +

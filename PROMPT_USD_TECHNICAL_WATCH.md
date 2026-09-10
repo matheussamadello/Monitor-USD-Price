@@ -69,8 +69,10 @@ O objetivo prático é bilateral:
 
 O relatório traz **dois pares**, cada um com análise técnica completa e níveis próprios:
 
-- **USD/BRL** — referência analítica e macro, o dólar em si. Gatilhos com prefixo `usd_`.
-- **USDT/BRL** — instrumento de execução para dolarizar/desdolarizar rapidamente. Gatilhos com prefixo `usdt_`. É o único dos dois com **volume real**.
+- **USDT/BRL** — instrumento de execução para dolarizar/desdolarizar rapidamente. Gatilhos com prefixo `usdt_`. É o único dos dois com **volume real**. Sai primeiro no relatório.
+- **USD/BRL** — referência analítica e macro, o dólar em si. Gatilhos com prefixo `usd_`. Sai logo abaixo do USDT/BRL.
+
+A ordem em que os pares aparecem é de **apresentação**, e não de importância analítica: ela reflete qual deles se olha rápido na página, não qual manda na leitura. Não infira prioridade da posição — as regras abaixo é que dizem quem manda em quê.
 
 Como tratá-los:
 

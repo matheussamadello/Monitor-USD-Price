@@ -17,10 +17,12 @@ O projeto foi desenhado para acompanhamento de **swing trades e operações de p
 
 O monitor analisa **dois pares**, com o mesmo tratamento técnico completo — indicadores, estrutura de pivôs, divergências, padrões de candle, máquina de rompimento/reteste, zonas automáticas, níveis manuais e gatilhos:
 
-| Par | Papel | Fonte | Volume |
-| --- | --- | --- | --- |
-| **USD/BRL** | referência analítica — o dólar em si | Yahoo Finance | não existe |
-| **USDT/BRL** | instrumento de execução — é nele que se dolariza e desdolariza rápido | Binance → Mercado Bitcoin | real |
+| Par | Papel | Fonte | Volume | Na página |
+| --- | --- | --- | --- | --- |
+| **USDT/BRL** | instrumento de execução — é nele que se dolariza e desdolariza rápido | Binance → Mercado Bitcoin | real | cartão + gráfico |
+| **USD/BRL** | referência analítica — o dólar em si | Yahoo Finance | não existe | só no relatório completo |
+
+**A ordem é de apresentação, não de análise.** O USDT/BRL vem primeiro no relatório e é o único com cartão no painel porque é o instrumento de execução, o único com volume real e o único cujo gráfico vem da mesma fonte do número — é o que se olha rápido. O USD/BRL continua com a análise técnica inteira, logo abaixo, e para o agente ele continua sendo a **referência macro**: é o dólar de verdade, sem o prêmio que o USDT carrega. Quando os dois divergem, o prompt manda o USD/BRL decidir a leitura macro e o USDT/BRL decidir o preço de execução.
 
 Cada par tem os **seus** níveis manuais (`NIVEIS_USD` e `NIVEIS_USDT`), a sua cascata de fontes e o seu prefixo de gatilho (`usd_*` e `usdt_*`). Nada é derivado do outro — em particular, os níveis do USDT **não** são os do dólar somados de um prêmio fixo, porque o prêmio não é fixo: medido em 518 dias, foi de −2,10% a +3,60%. Um nível derivado estaria errado justamente nos dias em que o prêmio se mexe, que são os que importam para quem vai atravessar.
 
@@ -570,11 +572,13 @@ A página serve a dois leitores ao mesmo tempo, com prioridades opostas.
 
 **Tema.** Abre em *night mode* — fundo azul-noite, azul nos títulos e nas etiquetas. O botão no topo alterna para um tema claro, com fundo quase branco e texto quase preto, e a escolha fica salva no navegador. O tema claro **só redefine tokens de cor**: nenhuma regra de layout existe duas vezes, então os dois não têm como divergir de estrutura. Há um teste que compara os dois conjuntos de tokens e falha se alguém acrescentar uma cor no escuro e esquecer do claro — senão o tema claro herdaria uma cor de fundo escuro em silêncio.
 
-Para **você**: um cartão por par com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 em ATR, RSI, ADX com DI+/DI−, estrutura, situação dos níveis manuais e ATR —, mais os alertas técnicos como etiquetas. O que está em `deterioracao_tendencia` sai em vermelho; o resto, em azul. O carimbo de tempo no topo calcula sozinho, no navegador, há quanto tempo o relatório foi gerado, e muda de cor a partir de 90 minutos.
+Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 em ATR, RSI, ADX com DI+/DI−, estrutura, situação dos níveis manuais e ATR —, mais os alertas técnicos como etiquetas. O que está em `deterioracao_tendencia` sai em vermelho; o resto, em azul. O carimbo de tempo no topo calcula sozinho, no navegador, há quanto tempo o relatório foi gerado, e muda de cor a partir de 90 minutos.
 
 Para o **agente**: o relatório inteiro continua saindo *verbatim* dentro de um único `<pre>`, em texto puro, com o mesmo escape de sempre (`&` e `<`, nada mais). O prompt usa esta página como fallback quando o `relatorio.json` não responde, e quem lê procura linhas `campo: valor` no fonte — uma única `<span>` ali dentro quebraria isso, e quebraria justamente quando a fonte principal já estivesse fora do ar. Por isso o tema é moldura em volta do bloco, nunca dentro dele, e há um teste de fumaça que compara o `<pre>` byte a byte com o relatório e falha se aparecer qualquer tag lá.
 
 Os cartões **não** reparseiam o texto: eles leem o mesmo objeto de `relatorioParaJSON` que vira o `relatorio.json`, gerado uma vez só e passado para os dois. Dois leitores do mesmo objeto não têm como discordar.
+
+O USD/BRL não tem cartão: ele fica só no relatório completo, logo abaixo do USDT/BRL. Não é descarte — a análise técnica dele sai inteira, com os mesmos campos de sempre. É que o painel de cima existe para o que se olha rápido, e o que se olha rápido aqui é o par de execução. Tirar o cartão é uma linha na configuração do par (`semCartao: true`), como o gráfico.
 
 Só o **USDT/BRL** tem gráfico embutido, com `BINANCE:USDTBRL` — a mesma fonte primária do relatório. Ele é desenhado pelo TradingView e redesenhado quando o tema muda, porque mora num iframe e o tema dele é escolhido na criação do widget, não por CSS.
 
