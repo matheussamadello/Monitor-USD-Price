@@ -586,24 +586,29 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/id="btn-tema"[^>]*aria-pressed="true"/.test(html), "o botao de tema sai marcado como ativo (noite e' o padrao)");
   ok(/<svg class="lua"/.test(html) && /<svg class="sol"/.test(html), "os dois icones do botao estao no HTML");
   ok(/aria-label="Alternar night mode"/.test(html), "o botao sem texto mantem nome acessivel");
-
-  // Ordem e cartoes: o USDT/BRL vem primeiro no relatorio e e' o unico
-  // com cartao; o USD/BRL fica so no relatorio completo, logo abaixo.
-  const secDia = r1.texto.split("========== GRAFICO DIARIO ==========")[1].split("==========")[0];
-  ok(secDia.indexOf("USDT/BRL") < secDia.indexOf("USD/BRL\n"),
-    "no relatorio o USDT/BRL vem antes do USD/BRL");
-  ok(/<h2>USDT\/BRL<\/h2>/.test(html), "o USDT/BRL tem cartao");
-  ok(!/<h2>USD\/BRL<\/h2>/.test(html), "o USD/BRL nao tem cartao");
-  ok(pre.includes("\nUSD/BRL\n"), "mas o USD/BRL continua inteiro no relatorio completo");
   ok(html.indexOf('localStorage.getItem("tema")') < html.indexOf("<body"),
     "o tema salvo e' aplicado ANTES do <body>, sem flash escuro");
 
-  // Todo par com grafico tem nota, e a nota nao mente sobre a fonte.
+  // A ordem dos blocos no relatorio segue a ordem da configuracao, e o
+  // painel mostra so os pares com cartao. Par secundario continua
+  // inteiro no relatorio -- deixar de ter cartao nao e' deixar de sair.
+  const secDia = r1.texto.split("========== GRAFICO DIARIO ==========")[1].split("==========")[0];
+  const posicoes = PARES_TESTE.map((c) => secDia.indexOf(`\n${c.label}\n`));
+  ok(posicoes.every((v, i) => v >= 0 && (i === 0 || v > posicoes[i - 1])),
+    `os blocos saem na ordem da configuracao: ${PARES_TESTE.map((c) => c.label).join(" -> ")}`);
+
   for (const c of PARES_TESTE) {
-    if (!c.grafico) continue;
-    ok(typeof c.graficoNota === "string" && c.graficoNota.length > 20,
-      `${c.label}: grafico ${c.grafico} tem nota de fonte`);
-    ok(html.includes(`id="tv-${c.key}"`), `${c.label}: container do grafico na pagina`);
+    const temCartao = !c.semCartao;
+    ok(html.includes(`<h2>${c.label}</h2>`) === temCartao,
+      `${c.label}: ${temCartao ? "tem" : "NAO tem"} cartao no painel`);
+    ok(pre.includes(`\n${c.label}\n`), `${c.label}: sai inteiro no relatorio completo`);
+    if (c.grafico)
+      ok(typeof c.graficoNota === "string" && c.graficoNota.length > 20,
+        `${c.label}: grafico ${c.grafico} tem nota de fonte`);
+    // O grafico mora DENTRO do cartao: sem cartao nao pode sobrar
+    // container, nem widget apontando para um container que nao existe.
+    ok(html.includes(`id="tv-${c.key}"`) === Boolean(c.grafico && temCartao),
+      `${c.label}: container do grafico ${c.grafico && temCartao ? "presente" : "ausente"}, como deve`);
   }
 }
 
