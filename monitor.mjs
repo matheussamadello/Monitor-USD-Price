@@ -3727,10 +3727,24 @@ function pgTimeframe(titulo, b, dec) {
   const ema = b.ema89_fechada_atual;
   const acima = typeof fech === "number" && typeof ema === "number" ? fech >= ema : null;
   const cruz = b.ema89_cruzamento_fechado;
+  // Distancia em PORCENTAGEM no cartao, nao em ATR. Denominador e' a
+  // propria EMA, a mesma convencao do distancia_ema89_pct que o
+  // relatorio ja publica -- so que aqui com o FECHAMENTO no lugar do
+  // preco vivo, para o cartao nao voltar a misturar vela fechada com
+  // vela em formacao.
+  //
+  // Isto e' APRESENTACAO. O relatorio continua publicando
+  // distancia_ema89_fechada_atr, e o prompt continua decidindo por ela:
+  // 0,25 ATR de margem para a travessia semanal, 1,0 ATR para a
+  // corroboracao da perda diaria. ATR e' a unidade certa para comparar
+  // pares de volatilidades diferentes; a porcentagem e' a que se le de
+  // relance.
+  const distPct =
+    acima === null || !ema ? null : ((fech - ema) / ema) * 100;
   const emaTxt =
     acima === null
       ? "--"
-      : `${acima ? "acima" : "abaixo"}<small>${pgNum(b.distancia_ema89_fechada_atr, 2)} ATR</small>`;
+      : `${acima ? "acima" : "abaixo"}<small>${pgNum(Math.abs(distPct), 2)}%</small>`;
 
   const tend = b.estrutura_tendencia || "--";
   const sit = b.niveis_manuais_situacao || "--";
@@ -3756,7 +3770,10 @@ function pgTimeframe(titulo, b, dec) {
   L.push(pgLinha("Níveis manuais",
     `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
     sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
-  L.push(pgLinha("ATR(14)", `${pgNum(b.atr14, dec)}<small>${pgNum(b.atr14_pct, 2)}%</small>`));
+  // So a porcentagem: o valor absoluto do ATR nao diz nada de relance --
+  // 0,0418 e' muito ou pouco dependendo do par. Continua publicado em
+  // atr14 no relatorio, para quem dimensiona stop e tamanho de posicao.
+  L.push(pgLinha("ATR(14)", `${pgNum(b.atr14_pct, 2)}%`));
 
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
