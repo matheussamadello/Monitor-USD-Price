@@ -40,11 +40,14 @@ Os preços são publicados com **4 casas decimais**. Não é preciosismo: o USD/
 
 Câmbio não tem uma "bolsa oficial" com endpoint público equivalente ao da Kraken. O monitor usa **OHLC do Yahoo Finance** (`USDBRL=X`), buscado em cascata por dois hosts da provedora — `query1` e depois `query2` —, valendo o primeiro que responder.
 
-O cabeçalho do relatório sempre diz qual elo respondeu:
+O cabeçalho do relatório sempre diz qual elo respondeu, para cada par e cada timeframe, e qual era a cascata inteira — na ordem em que os pares saem no relatório, USDT/BRL primeiro:
 
 ```text
-fonte: OHLC de cambio (diario=yahoo/query1, semanal=yahoo/query1)
+fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
+fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 ```
+
+A cascata do USDT/BRL (Binance → Mercado Bitcoin) está descrita na seção do trilho de execução, mais abaixo.
 
 Quando a cascata inteira cai, o bloco do par sai marcado com `FALHA:` citando o erro de cada elo, e o estado persistido do dia anterior é preservado em vez de apagado.
 
@@ -610,7 +613,6 @@ Monitor-USD-Price/
 │   ├── index.txt
 │   └── relatorio.json
 ├── monitor.mjs
-├── teste-fumaca.mjs
 ├── teste-fumaca.mjs
 ├── README.md
 └── PROMPT_USD_TECHNICAL_WATCH.md
