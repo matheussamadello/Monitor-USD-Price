@@ -2259,10 +2259,6 @@ export function eventosRoleReversal(zona, closes) {
   return out;
 }
 
-export function detectarRoleReversalCron(zona, closes) {
-  return eventosRoleReversal(zona, closes).length > 0;
-}
-
 // Lado de aproximacao -> papel da zona. Preco vindo de cima significa
 // que a zona esta segurando por baixo: suporte.
 function papelPorLado(lado) {
