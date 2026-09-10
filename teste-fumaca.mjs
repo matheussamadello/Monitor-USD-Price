@@ -1,7 +1,7 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
-  build, relatorioParaJSON, toHTML, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
+  build, relatorioParaJSON, toHTML, PARES_TESTE, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
 } from "./monitor.mjs";
 
@@ -565,6 +565,27 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/<article class="par">/.test(html), "os cartoes de par foram gerados");
   ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
     "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
+
+  // TEMA. O claro so redefine tokens; se alguem acrescentar um token de
+  // cor no escuro e esquecer do claro, o tema claro herda uma cor de
+  // fundo escuro em silencio -- e ninguem percebe ate abrir a pagina.
+  const tokens = (bloco) => new Set((bloco.match(/--[a-z-]+(?=\s*:)/g) || []));
+  const escuro = tokens(html.split(":root{")[1].split("}")[0]);
+  const claro = tokens(html.split('html[data-tema="claro"]{')[1].split("}")[0]);
+  const faltando = [...escuro].filter((t) => !claro.has(t) && t !== "--mono" && t !== "--bg-x");
+  ok(escuro.size > 15, `o tema escuro define os tokens (${escuro.size})`);
+  ok(faltando.length === 0, `o tema claro cobre todos os tokens do escuro${faltando.length ? ": faltam " + faltando.join(", ") : ""}`);
+  ok(/id="btn-tema"[^>]*aria-pressed="true"/.test(html), "o botao de tema sai marcado como ativo (noite e' o padrao)");
+  ok(html.indexOf('localStorage.getItem("tema")') < html.indexOf("<body"),
+    "o tema salvo e' aplicado ANTES do <body>, sem flash escuro");
+
+  // Todo par com grafico tem nota, e a nota nao mente sobre a fonte.
+  for (const c of PARES_TESTE) {
+    if (!c.grafico) continue;
+    ok(typeof c.graficoNota === "string" && c.graficoNota.length > 20,
+      `${c.label}: grafico ${c.grafico} tem nota de fonte`);
+    ok(html.includes(`id="tv-${c.key}"`), `${c.label}: container do grafico na pagina`);
+  }
 }
 
 console.log("\n== estado entre execucoes ==");

@@ -480,6 +480,13 @@ const PAIRS = [
     // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
     label: "USD/BRL",
     par: "USDBRL=X",
+    // Unico par dos tres monitores em que o desenho NAO vem da mesma
+    // fonte do relatorio: o TradingView nao serve a serie do Yahoo, e
+    // o FX_IDC e' a cotacao de referencia mais proxima disponivel la.
+    // Por isso a nota abaixo avisa, em vez de dizer "mesma fonte".
+    grafico: "FX_IDC:USDBRL",
+    graficoNota:
+      "Desenho do TradingView com a série FX_IDC:USDBRL. Aqui, diferente dos pares de cripto, a fonte do gráfico NÃO é a do relatório, que usa o Yahoo Finance — pequenas diferenças de preço e de vela são esperadas.",
     fontes: FONTES_CAMBIO,
     // 4 casas: o par se move em milesimos, e 2 casas apagariam a
     // diferenca entre uma vela parada e uma vela de meio por cento.
@@ -494,6 +501,9 @@ const PAIRS = [
     // verdade, e todo o subsistema de volume funciona aqui.
     label: "USDT/BRL",
     par: "USDTBRL",
+    grafico: "BINANCE:USDTBRL",
+    graficoNota:
+      "Série da Binance (BINANCE:USDTBRL) desenhada pelo TradingView — a mesma fonte primária do relatório acima.",
     parMB: "USDT-BRL",
     fontes: FONTES_CRIPTO,
     dec: 4,
@@ -504,6 +514,9 @@ const PAIRS = [
 // Busca a configuracao de um par pelo rotulo publicado no relatorio.
 // Mesma forma nos tres monitores: e' o que permite ao parser do JSON
 // nao ter rotulo nenhum cravado no codigo.
+// Exportado para o teste conferir que todo par com grafico tem nota.
+export const PARES_TESTE = PAIRS;
+
 function parPorLabel(label) {
   return PAIRS.find((c) => c.label === label) || null;
 }
@@ -3539,36 +3552,63 @@ const TITULO_PAGINA = "Monitor USD/BRL";
 // ------------------------------------------------------------
 
 const PAGINA_CSS = `
+/* Tema NOITE e' o padrao. O claro so redefine tokens -- nenhuma regra
+   de layout aparece duas vezes, entao os dois temas nao tem como
+   divergir de estrutura, so de cor. */
 :root{
+  color-scheme:dark;
   --bg:#070a12; --painel:#0e1524; --painel2:#111a2c; --linha:#1b2740;
   --txt:#c5d1e6; --txt-forte:#e6edf8; --fraco:#6f7f9b;
-  --azul:#5aa9ff; --azul-claro:#8ec6ff; --azul-escuro:#1d3a5f;
+  --azul:#5aa9ff; --acento:#8ec6ff;
+  --chip-bg:rgba(90,169,255,.08); --chip-borda:#1d3a5f; --chip-txt:#8ec6ff;
+  --risco-bg:rgba(248,81,73,.09); --risco-borda:rgba(248,81,73,.30); --risco-txt:#ff8b84;
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
+  --pre-txt:#9fbde0; --sombra:none;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
+html[data-tema="claro"]{
+  color-scheme:light;
+  --bg:#eef2f8; --painel:#ffffff; --painel2:#f7f9fd; --linha:#d5dfed;
+  --txt:#1b2534; --txt-forte:#0a1220; --fraco:#5a6b85;
+  --azul:#1560c0; --acento:#0d4a94;
+  --chip-bg:rgba(21,96,192,.07); --chip-borda:#bcd4f0; --chip-txt:#0d4a94;
+  --risco-bg:rgba(192,54,44,.07); --risco-borda:rgba(192,54,44,.28); --risco-txt:#a3271f;
+  --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
+  --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
+}
 *,*::before,*::after{box-sizing:border-box}
-html{color-scheme:dark}
 body{margin:0;background:var(--bg);color:var(--txt);
   font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-font-smoothing:antialiased}
 a{color:var(--azul);text-decoration:none}
 a:hover{text-decoration:underline}
 .pagina{max-width:1120px;margin:0 auto;padding:28px 18px 72px}
-.topo{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;
+.topo{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
   padding-bottom:18px;margin-bottom:26px;border-bottom:1px solid var(--linha)}
 .topo h1{margin:0;font-size:20px;font-weight:600;color:var(--txt-forte);letter-spacing:.02em}
 .topo h1 b{color:var(--azul);font-weight:600}
-.carimbo{display:flex;gap:10px;align-items:center;font:12px/1.5 var(--mono);color:var(--fraco)}
+.carimbo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  font:12px/1.5 var(--mono);color:var(--fraco)}
 .idade{padding:2px 9px;border-radius:999px;border:1px solid var(--linha)}
-.idade.ok{color:var(--alta);border-color:rgba(63,185,80,.35)}
-.idade.aviso{color:var(--atencao);border-color:rgba(210,153,34,.35)}
-.idade.velho{color:var(--baixa);border-color:rgba(248,81,73,.35)}
+.idade.ok{color:var(--alta);border-color:var(--alta)}
+.idade.aviso{color:var(--atencao);border-color:var(--atencao)}
+.idade.velho{color:var(--baixa);border-color:var(--baixa)}
+.btn-tema{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  font:11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  background:var(--painel);border:1px solid var(--linha);border-radius:999px;
+  padding:7px 12px;color:var(--fraco);box-shadow:var(--sombra)}
+.btn-tema[aria-pressed="true"]{color:var(--acento);border-color:var(--chip-borda)}
+.btn-tema:hover{border-color:var(--acento)}
+.btn-tema:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+.pastilha{width:9px;height:9px;border-radius:50%;border:1px solid currentColor;
+  background:currentColor}
+.btn-tema[aria-pressed="false"] .pastilha{background:transparent}
 .pares{display:grid;gap:22px;margin-bottom:34px}
 .par{background:linear-gradient(180deg,var(--painel2),var(--painel));
-  border:1px solid var(--linha);border-radius:14px;overflow:hidden}
+  border:1px solid var(--linha);border-radius:14px;overflow:hidden;box-shadow:var(--sombra)}
 .par>header{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;
   justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--linha)}
-.par h2{margin:0;font:600 15px/1 var(--mono);letter-spacing:.05em;color:var(--azul-claro)}
+.par h2{margin:0;font:600 15px/1 var(--mono);letter-spacing:.05em;color:var(--acento)}
 .preco{font:600 24px/1 var(--mono);color:var(--txt-forte)}
 .tfs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--linha)}
 .tf{background:var(--painel);padding:16px 18px}
@@ -3582,13 +3622,13 @@ dl{margin:0;display:grid;gap:8px}
 .m dd.alta{color:var(--alta)}
 .m dd.baixa{color:var(--baixa)}
 .m dd.atencao{color:var(--atencao)}
-.m dd.evento{color:var(--azul-claro);font-weight:600}
+.m dd.evento{color:var(--acento);font-weight:600}
 .m dd.fraco{color:var(--fraco)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;
   padding-top:13px;border-top:1px dashed var(--linha)}
 .chip{font:11px/1 var(--mono);padding:5px 9px;border-radius:6px;
-  background:rgba(90,169,255,.08);border:1px solid var(--azul-escuro);color:var(--azul-claro)}
-.chip.risco{background:rgba(248,81,73,.09);border-color:rgba(248,81,73,.3);color:#ff8b84}
+  background:var(--chip-bg);border:1px solid var(--chip-borda);color:var(--chip-txt)}
+.chip.risco{background:var(--risco-bg);border-color:var(--risco-borda);color:var(--risco-txt)}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
 .grafico{border-top:1px solid var(--linha)}
@@ -3599,8 +3639,8 @@ dl{margin:0;display:grid;gap:8px}
 .relatorio h2{margin:0 0 12px;font:600 11px/1 var(--mono);letter-spacing:.14em;
   text-transform:uppercase;color:var(--fraco)}
 .relatorio pre{margin:0;padding:20px;border:1px solid var(--linha);border-radius:14px;
-  background:var(--painel);color:#9fbde0;font:13px/1.65 var(--mono);
-  white-space:pre-wrap;word-break:break-word}
+  background:var(--painel);color:var(--pre-txt);font:13px/1.65 var(--mono);
+  white-space:pre-wrap;word-break:break-word;box-shadow:var(--sombra)}
 .rodape{margin-top:26px;font:11px/1.7 var(--mono);color:var(--fraco)}
 @media(max-width:640px){
   .tfs{grid-template-columns:1fr}
@@ -3707,7 +3747,7 @@ function pgCartao(cfg, dados) {
       `<span class="tv-off">Gráfico indisponível — abra em ` +
       `<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(cfg.grafico)}" ` +
       `target="_blank" rel="noopener">${pgEsc(cfg.grafico)}</a>.</span></div>` +
-      `<p>Série da Kraken (${pgEsc(cfg.grafico)}) desenhada pelo TradingView — a mesma fonte do relatório acima.</p></div>`
+      `<p>${pgEsc(cfg.graficoNota || "")}</p></div>`
     : "";
   return (
     `<article class="par"><header><h2>${pgEsc(cfg.label)}</h2>` +
@@ -3738,10 +3778,17 @@ export function toHTML(text, dados) {
     '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
     `<title>${pgEsc(TITULO_PAGINA)}</title>\n` +
     `<style>${PAGINA_CSS}</style>\n` +
+    // Antes do <body>: se o tema claro estiver salvo, ele ja entra
+    // aplicado. Aplicar depois causaria um flash escuro a cada carga.
+    '<script>try{if(localStorage.getItem("tema")==="claro")' +
+    'document.documentElement.setAttribute("data-tema","claro")}catch(e){}</script>\n' +
     '<body>\n<div class="pagina">\n' +
     `<header class="topo"><h1>${pgMarca()}</h1>` +
     `<div class="carimbo"><time datetime="${pgEsc(iso)}">${pgEsc(ts)}</time>` +
-    `<span class="idade" id="idade" data-ts="${pgEsc(iso)}"></span></div></header>\n` +
+    `<span class="idade" id="idade" data-ts="${pgEsc(iso)}"></span>` +
+    '<button type="button" class="btn-tema" id="btn-tema" aria-pressed="true">' +
+    '<span class="pastilha" aria-hidden="true"></span>night mode</button>' +
+    "</div></header>\n" +
     `<section class="pares">${PAIRS.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----
@@ -3753,20 +3800,38 @@ export function toHTML(text, dados) {
     '<p class="rodape">Os cartões acima são um resumo. O relatório completo é a fonte, ' +
     "e sai igual em <a href=\"relatorio.json\">relatorio.json</a> e <a href=\"index.txt\">index.txt</a>.</p>\n" +
     "</div>\n" +
+    // Idade do relatorio calculada no navegador: o HTML e' estatico, so
+    // quem abre a pagina sabe que horas sao. 90 min e' o mesmo limiar
+    // que o fallback do prompt usa para considerar o relatorio velho.
     '<script>(function(){var e=document.getElementById("idade"),t=e&&e.getAttribute("data-ts");' +
     "if(!e||!t)return;var m=Math.round((Date.now()-Date.parse(t))/6e4);if(!isFinite(m))return;" +
     'e.textContent="há "+(m<60?m+" min":Math.floor(m/60)+"h"+String(m%60).padStart(2,"0"));' +
     'e.className="idade "+(m<=90?"ok":m<=240?"aviso":"velho");})();</script>\n' +
     (comGrafico.length
       ? '<script src="https://s3.tradingview.com/tv.js"></script>\n<script>' +
-        "if(window.TradingView){" +
+        // Redesenha em vez de so trocar CSS: o grafico mora num iframe do
+        // TradingView, e o tema dele e' escolhido na criacao do widget.
+        "window.desenharGraficos=function(tema){if(!window.TradingView)return;" +
         JSON.stringify(comGrafico.map((c) => ({ id: `tv-${c.key}`, s: c.grafico }))) +
-        ".forEach(function(g){new TradingView.widget({container_id:g.id,symbol:g.s," +
-        'interval:"D",theme:"dark",style:"1",locale:"br",timezone:"America/Sao_Paulo",' +
-        "autosize:true,allow_symbol_change:false,save_image:false," +
-        'studies:["RSI@tv-basicstudies"],backgroundColor:"#0e1524",gridColor:"rgba(93,109,140,0.14)"});});}' +
+        ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
+        "new TradingView.widget({container_id:g.id,symbol:g.s,interval:\"D\",theme:tema," +
+        'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
+        "allow_symbol_change:false,save_image:false,studies:[\"RSI@tv-basicstudies\"]," +
+        'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +
+        'gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};' +
         "</script>\n"
       : "") +
+    // Botao do tema. O <html> ja veio com data-tema aplicado pelo script
+    // do topo -- aqui so se liga o botao e se desenha o grafico no tema
+    // que ja esta valendo.
+    '<script>(function(){var r=document.documentElement,b=document.getElementById("btn-tema");' +
+    "function aplica(noite,salvar){if(noite)r.removeAttribute(\"data-tema\");" +
+    'else r.setAttribute("data-tema","claro");' +
+    'if(b)b.setAttribute("aria-pressed",noite?"true":"false");' +
+    'if(salvar){try{localStorage.setItem("tema",noite?"noite":"claro")}catch(e){}}' +
+    'if(window.desenharGraficos)window.desenharGraficos(noite?"dark":"light");}' +
+    'if(b)b.addEventListener("click",function(){aplica(r.hasAttribute("data-tema"),true)});' +
+    'aplica(!r.hasAttribute("data-tema"),false);})();</script>\n' +
     "</body>\n</html>\n"
   );
 }

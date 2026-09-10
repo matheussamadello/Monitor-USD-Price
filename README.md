@@ -566,7 +566,9 @@ docs/
 
 ### A página publicada (`index.html`)
 
-A página tem tema escuro e serve a dois leitores ao mesmo tempo, com prioridades opostas.
+A página serve a dois leitores ao mesmo tempo, com prioridades opostas.
+
+**Tema.** Abre em *night mode* — fundo azul-noite, azul nos títulos e nas etiquetas. O botão no topo alterna para um tema claro, com fundo quase branco e texto quase preto, e a escolha fica salva no navegador. O tema claro **só redefine tokens de cor**: nenhuma regra de layout existe duas vezes, então os dois não têm como divergir de estrutura. Há um teste que compara os dois conjuntos de tokens e falha se alguém acrescentar uma cor no escuro e esquecer do claro — senão o tema claro herdaria uma cor de fundo escuro em silêncio.
 
 Para **você**: um cartão por par com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 em ATR, RSI, ADX com DI+/DI−, estrutura, situação dos níveis manuais e ATR —, mais os alertas técnicos como etiquetas. O que está em `deterioracao_tendencia` sai em vermelho; o resto, em azul. O carimbo de tempo no topo calcula sozinho, no navegador, há quanto tempo o relatório foi gerado, e muda de cor a partir de 90 minutos.
 
@@ -574,7 +576,12 @@ Para o **agente**: o relatório inteiro continua saindo *verbatim* dentro de um 
 
 Os cartões **não** reparseiam o texto: eles leem o mesmo objeto de `relatorioParaJSON` que vira o `relatorio.json`, gerado uma vez só e passado para os dois. Dois leitores do mesmo objeto não têm como discordar.
 
-Nenhum par deste monitor tem gráfico embutido: o campo `grafico` da configuração está vazio nos dois. Ele existe e funciona — basta preencher com um símbolo do TradingView (`FX_IDC:USDBRL`, `BINANCE:USDTBRL`) para o gráfico aparecer, sem mexer em mais nada.
+Os dois pares têm gráfico embutido, desenhado pelo TradingView e redesenhado quando o tema muda — o gráfico mora num iframe e o tema dele é escolhido na criação do widget, não por CSS.
+
+A fonte do desenho difere entre os dois, e a nota embaixo de cada gráfico diz qual é:
+
+- **USDT/BRL** usa `BINANCE:USDTBRL`, a mesma fonte primária do relatório.
+- **USD/BRL** usa `FX_IDC:USDBRL`, que **não** é a fonte do relatório — o TradingView não serve a série do Yahoo Finance, e o FX_IDC é a cotação de referência mais próxima disponível lá. Pequenas diferenças de preço e de horário de vela são esperadas, e é por isso que a nota avisa em vez de dizer "mesma fonte". Este é o único par dos três monitores em que número e desenho vêm de lugares diferentes.
 
 Também pode ser criado `alerta.txt` na raiz quando surgem novos gatilhos internos. O workflow oficial, entretanto, faz `git add docs`, portanto esse arquivo não é publicado pelo processo automático atual.
 
