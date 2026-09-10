@@ -3518,14 +3518,259 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   };
 }
 
-function toHTML(text) {
+const TITULO_PAGINA = "Monitor USD/BRL";
+
+// ------------------------------------------------------------
+// Pagina publicada (docs/index.html)
+//
+// A REGRA QUE MANDA AQUI: o relatorio inteiro sai VERBATIM dentro de um
+// unico <pre>, texto puro, sem uma tag no meio e com o mesmo escape de
+// sempre (& e <, nada mais). O prompt usa esta pagina como FALLBACK
+// quando o relatorio.json nao responde, e quem le procura linhas
+// "campo: valor" no fonte -- qualquer <span> ali dentro quebraria isso.
+// Tema, cartoes e graficos sao moldura em volta desse bloco: se o CSS
+// nao carregar e o TradingView estiver fora do ar, o dado continua
+// inteiro e legivel.
+//
+// Os cartoes NAO reparseiam o texto. Eles leem o objeto de
+// relatorioParaJSON -- o mesmo que vira docs/relatorio.json, gerado uma
+// vez so e passado para os dois. Dois leitores do mesmo objeto nao tem
+// como discordar.
+// ------------------------------------------------------------
+
+const PAGINA_CSS = `
+:root{
+  --bg:#070a12; --painel:#0e1524; --painel2:#111a2c; --linha:#1b2740;
+  --txt:#c5d1e6; --txt-forte:#e6edf8; --fraco:#6f7f9b;
+  --azul:#5aa9ff; --azul-claro:#8ec6ff; --azul-escuro:#1d3a5f;
+  --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--azul);text-decoration:none}
+a:hover{text-decoration:underline}
+.pagina{max-width:1120px;margin:0 auto;padding:28px 18px 72px}
+.topo{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;
+  padding-bottom:18px;margin-bottom:26px;border-bottom:1px solid var(--linha)}
+.topo h1{margin:0;font-size:20px;font-weight:600;color:var(--txt-forte);letter-spacing:.02em}
+.topo h1 b{color:var(--azul);font-weight:600}
+.carimbo{display:flex;gap:10px;align-items:center;font:12px/1.5 var(--mono);color:var(--fraco)}
+.idade{padding:2px 9px;border-radius:999px;border:1px solid var(--linha)}
+.idade.ok{color:var(--alta);border-color:rgba(63,185,80,.35)}
+.idade.aviso{color:var(--atencao);border-color:rgba(210,153,34,.35)}
+.idade.velho{color:var(--baixa);border-color:rgba(248,81,73,.35)}
+.pares{display:grid;gap:22px;margin-bottom:34px}
+.par{background:linear-gradient(180deg,var(--painel2),var(--painel));
+  border:1px solid var(--linha);border-radius:14px;overflow:hidden}
+.par>header{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;
+  justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--linha)}
+.par h2{margin:0;font:600 15px/1 var(--mono);letter-spacing:.05em;color:var(--azul-claro)}
+.preco{font:600 24px/1 var(--mono);color:var(--txt-forte)}
+.tfs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--linha)}
+.tf{background:var(--painel);padding:16px 18px}
+.tf h3{margin:0 0 13px;font:600 11px/1 var(--mono);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fraco)}
+dl{margin:0;display:grid;gap:8px}
+.m{display:flex;justify-content:space-between;gap:14px;align-items:baseline}
+.m dt{color:var(--fraco);font-size:13px;white-space:nowrap}
+.m dd{margin:0;font:13px/1.4 var(--mono);color:var(--txt);text-align:right}
+.m dd small{color:var(--fraco);font-size:11px;margin-left:6px}
+.m dd.alta{color:var(--alta)}
+.m dd.baixa{color:var(--baixa)}
+.m dd.atencao{color:var(--atencao)}
+.m dd.evento{color:var(--azul-claro);font-weight:600}
+.m dd.fraco{color:var(--fraco)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;
+  padding-top:13px;border-top:1px dashed var(--linha)}
+.chip{font:11px/1 var(--mono);padding:5px 9px;border-radius:6px;
+  background:rgba(90,169,255,.08);border:1px solid var(--azul-escuro);color:var(--azul-claro)}
+.chip.risco{background:rgba(248,81,73,.09);border-color:rgba(248,81,73,.3);color:#ff8b84}
+.chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
+.falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
+.grafico{border-top:1px solid var(--linha)}
+.tv{height:460px;background:var(--painel);display:flex;align-items:center;justify-content:center}
+.tv .tv-off{padding:24px;text-align:center;font-size:13px;color:var(--fraco)}
+.grafico>p{margin:0;padding:11px 18px;border-top:1px solid var(--linha);
+  font:11px/1.5 var(--mono);color:var(--fraco)}
+.relatorio h2{margin:0 0 12px;font:600 11px/1 var(--mono);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fraco)}
+.relatorio pre{margin:0;padding:20px;border:1px solid var(--linha);border-radius:14px;
+  background:var(--painel);color:#9fbde0;font:13px/1.65 var(--mono);
+  white-space:pre-wrap;word-break:break-word}
+.rodape{margin-top:26px;font:11px/1.7 var(--mono);color:var(--fraco)}
+@media(max-width:640px){
+  .tfs{grid-template-columns:1fr}
+  .tv{height:340px}
+  .preco{font-size:20px}
+}
+`;
+
+function pgEsc(v) {
+  return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Milhar com ponto e decimal com virgula, na mao. toLocaleString
+// dependeria do ICU do runner; isto nao depende de nada.
+function pgNum(v, dec) {
+  if (typeof v !== "number" || !isFinite(v)) return "--";
+  const [inteiro, frac] = v.toFixed(dec).split(".");
+  const mil = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return frac ? `${mil},${frac}` : mil;
+}
+
+function pgLinha(rotulo, valor, classe) {
+  return `<div class="m"><dt>${pgEsc(rotulo)}</dt><dd class="${classe || ""}">${valor}</dd></div>`;
+}
+
+// Um item aparece UMA vez. alertas_tecnicos e deterioracao_tendencia se
+// sobrepoem de proposito -- a segunda e' sintese da primeira --, e
+// pintar a mesma string duas vezes em duas cores so confunde. Quem
+// esta nas duas sai como risco; quem so esta na sintese entra depois.
+function pgChips(alertas, deterioracao) {
+  const det = new Set(deterioracao || []);
+  const vistos = new Set();
+  const out = [];
+  for (const x of alertas || []) {
+    if (vistos.has(x)) continue;
+    vistos.add(x);
+    out.push(`<span class="chip${det.has(x) ? " risco" : ""}">${pgEsc(x)}</span>`);
+  }
+  for (const x of det) {
+    if (vistos.has(x)) continue;
+    vistos.add(x);
+    out.push(`<span class="chip risco">${pgEsc(x)}</span>`);
+  }
+  if (!out.length) return `<span class="chip vazio">nenhum</span>`;
+  return out.join("");
+}
+
+function pgTimeframe(titulo, b, dec) {
+  if (!b) return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">sem bloco</p></div>`;
+  if (b.falha)
+    return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">FALHA: ${pgEsc(b.falha)}</p></div>`;
+
+  // Lado da EMA89 pelo FECHAMENTO, nunca por posicao_vs_ema89 -- aquele
+  // campo compara a media fechada com o preco VIVO e muda durante o dia.
+  // E' a mesma comparacao que o prompt manda o agente fazer.
+  const fech = b.ultimo_fechamento_close;
+  const ema = b.ema89_fechada_atual;
+  const acima = typeof fech === "number" && typeof ema === "number" ? fech >= ema : null;
+  const cruz = b.ema89_cruzamento_fechado;
+  const emaTxt =
+    acima === null
+      ? "--"
+      : `${acima ? "acima" : "abaixo"}<small>${pgNum(b.distancia_ema89_fechada_atr, 2)} ATR</small>`;
+
+  const tend = b.estrutura_tendencia || "--";
+  const sit = b.niveis_manuais_situacao || "--";
+  const rsi = b.rsi14_fechado;
+  const diPlus = b.di_plus14_fechado;
+  const diMinus = b.di_minus14_fechado;
+
+  const L = [];
+  L.push(pgLinha("Último fechamento",
+    `${pgNum(fech, dec)}<small>${pgEsc(b.ultimo_fechamento_data || "")}</small>`));
+  L.push(pgLinha("EMA89 (fechado)", emaTxt, acima === null ? "" : acima ? "alta" : "baixa"));
+  if (cruz && cruz !== "nenhum")
+    L.push(pgLinha("Cruzou a EMA89", `${pgEsc(cruz)} no fechamento`, "evento"));
+  L.push(pgLinha("RSI(14)", pgNum(rsi, 1),
+    typeof rsi === "number" && (rsi >= 70 || rsi <= 30) ? "atencao" : ""));
+  L.push(pgLinha("ADX / DI",
+    `${pgNum(b.adx14_fechado, 1)}<small>+${pgNum(diPlus, 1)} / −${pgNum(diMinus, 1)}</small>`,
+    typeof diPlus === "number" && typeof diMinus === "number"
+      ? (diPlus > diMinus ? "alta" : "baixa")
+      : ""));
+  L.push(pgLinha("Estrutura", pgEsc(tend),
+    tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco"));
+  L.push(pgLinha("Níveis manuais",
+    `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
+    sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
+  L.push(pgLinha("ATR(14)", `${pgNum(b.atr14, dec)}<small>${pgNum(b.atr14_pct, 2)}%</small>`));
+
   return (
-    "<!doctype html>\n<meta charset=utf-8>\n<title>Monitor USD/BRL</title>\n" +
-    '<pre style="font:14px/1.5 ui-monospace,monospace;padding:1rem;white-space:pre-wrap">' +
-    text.replace(/&/g, "&amp;").replace(/</g, "&lt;") +
-    "</pre>\n"
+    `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
+    `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia)}</div>` +
+    `</div>`
   );
 }
+
+function pgCartao(cfg, dados) {
+  const dia = (dados.diario || {})[cfg.label];
+  const sem = (dados.semanal || {})[cfg.label];
+  const preco = dia && typeof dia.preco_atual === "number" ? pgNum(dia.preco_atual, cfg.dec) : "--";
+  const grafico = cfg.grafico
+    ? `<div class="grafico"><div class="tv" id="tv-${pgEsc(cfg.key)}">` +
+      `<span class="tv-off">Gráfico indisponível — abra em ` +
+      `<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(cfg.grafico)}" ` +
+      `target="_blank" rel="noopener">${pgEsc(cfg.grafico)}</a>.</span></div>` +
+      `<p>Série da Kraken (${pgEsc(cfg.grafico)}) desenhada pelo TradingView — a mesma fonte do relatório acima.</p></div>`
+    : "";
+  return (
+    `<article class="par"><header><h2>${pgEsc(cfg.label)}</h2>` +
+    `<div class="preco">${preco}</div></header>` +
+    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec)}${pgTimeframe("Semanal", sem, cfg.dec)}</div>` +
+    grafico +
+    `</article>`
+  );
+}
+
+// "Monitor BTC" -> "Monitor <b>BTC</b>": so a segunda palavra ganha o
+// azul, e um titulo de uma palavra so continua saindo inteiro.
+function pgMarca() {
+  const p = /^(\S+)\s+(.+)$/.exec(TITULO_PAGINA);
+  return p ? `${pgEsc(p[1])} <b>${pgEsc(p[2])}</b>` : pgEsc(TITULO_PAGINA);
+}
+
+export function toHTML(text, dados) {
+  const d = dados || { cabecalho: {}, diario: {}, semanal: {} };
+  const ts = String((d.cabecalho && d.cabecalho.timestamp) || "");
+  const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}) UTC$/.exec(ts);
+  const iso = m ? `${m[1]}T${m[2]}:00Z` : "";
+  const comGrafico = PAIRS.filter((c) => c.grafico);
+
+  return (
+    "<!doctype html>\n" +
+    '<html lang="pt-BR">\n<meta charset=utf-8>\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    `<title>${pgEsc(TITULO_PAGINA)}</title>\n` +
+    `<style>${PAGINA_CSS}</style>\n` +
+    '<body>\n<div class="pagina">\n' +
+    `<header class="topo"><h1>${pgMarca()}</h1>` +
+    `<div class="carimbo"><time datetime="${pgEsc(iso)}">${pgEsc(ts)}</time>` +
+    `<span class="idade" id="idade" data-ts="${pgEsc(iso)}"></span></div></header>\n` +
+    `<section class="pares">${PAIRS.map((c) => pgCartao(c, d)).join("")}</section>\n` +
+    '<section class="relatorio"><h2>Relatório completo</h2>\n' +
+    // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----
+    "<pre>" +
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;") +
+    "</pre>\n" +
+    // ---- fim do bloco lido pelo fallback ----
+    "</section>\n" +
+    '<p class="rodape">Os cartões acima são um resumo. O relatório completo é a fonte, ' +
+    "e sai igual em <a href=\"relatorio.json\">relatorio.json</a> e <a href=\"index.txt\">index.txt</a>.</p>\n" +
+    "</div>\n" +
+    '<script>(function(){var e=document.getElementById("idade"),t=e&&e.getAttribute("data-ts");' +
+    "if(!e||!t)return;var m=Math.round((Date.now()-Date.parse(t))/6e4);if(!isFinite(m))return;" +
+    'e.textContent="há "+(m<60?m+" min":Math.floor(m/60)+"h"+String(m%60).padStart(2,"0"));' +
+    'e.className="idade "+(m<=90?"ok":m<=240?"aviso":"velho");})();</script>\n' +
+    (comGrafico.length
+      ? '<script src="https://s3.tradingview.com/tv.js"></script>\n<script>' +
+        "if(window.TradingView){" +
+        JSON.stringify(comGrafico.map((c) => ({ id: `tv-${c.key}`, s: c.grafico }))) +
+        ".forEach(function(g){new TradingView.widget({container_id:g.id,symbol:g.s," +
+        'interval:"D",theme:"dark",style:"1",locale:"br",timezone:"America/Sao_Paulo",' +
+        "autosize:true,allow_symbol_change:false,save_image:false," +
+        'studies:["RSI@tv-basicstudies"],backgroundColor:"#0e1524",gridColor:"rgba(93,109,140,0.14)"});});}' +
+        "</script>\n"
+      : "") +
+    "</body>\n</html>\n"
+  );
+}
+
 
 // So executa quando chamado direto (nao durante os testes).
 // Compara o caminho REAL do arquivo em execucao com o deste modulo, em
@@ -3555,12 +3800,13 @@ if (executadoDireto) {
   const ativos = gatilhos.map((g) => g.id);
   const novos = gatilhos.filter((g) => !anteriores.includes(g.id));
 
-  writeFileSync("docs/index.html", toHTML(texto));
+  // UM parse so, servindo a pagina e o JSON. Antes a pagina nao lia
+  // nada e o JSON parseava por conta; agora os dois saem do mesmo
+  // objeto, e nao ha como o resumo da pagina discordar do relatorio.
+  const dadosJSON = relatorioParaJSON(texto, zonas);
+  writeFileSync("docs/index.html", toHTML(texto, dadosJSON));
   writeFileSync("docs/index.txt", texto + "\n");
-  writeFileSync(
-    "docs/relatorio.json",
-    JSON.stringify(relatorioParaJSON(texto, zonas), null, 2) + "\n"
-  );
+  writeFileSync("docs/relatorio.json", JSON.stringify(dadosJSON, null, 2) + "\n");
   writeFileSync("docs/.nojekyll", "");
   writeFileSync(
     "docs/estado.json",

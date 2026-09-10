@@ -564,6 +564,18 @@ docs/
 └── relatorio.json
 ```
 
+### A página publicada (`index.html`)
+
+A página tem tema escuro e serve a dois leitores ao mesmo tempo, com prioridades opostas.
+
+Para **você**: um cartão por par com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 em ATR, RSI, ADX com DI+/DI−, estrutura, situação dos níveis manuais e ATR —, mais os alertas técnicos como etiquetas. O que está em `deterioracao_tendencia` sai em vermelho; o resto, em azul. O carimbo de tempo no topo calcula sozinho, no navegador, há quanto tempo o relatório foi gerado, e muda de cor a partir de 90 minutos.
+
+Para o **agente**: o relatório inteiro continua saindo *verbatim* dentro de um único `<pre>`, em texto puro, com o mesmo escape de sempre (`&` e `<`, nada mais). O prompt usa esta página como fallback quando o `relatorio.json` não responde, e quem lê procura linhas `campo: valor` no fonte — uma única `<span>` ali dentro quebraria isso, e quebraria justamente quando a fonte principal já estivesse fora do ar. Por isso o tema é moldura em volta do bloco, nunca dentro dele, e há um teste de fumaça que compara o `<pre>` byte a byte com o relatório e falha se aparecer qualquer tag lá.
+
+Os cartões **não** reparseiam o texto: eles leem o mesmo objeto de `relatorioParaJSON` que vira o `relatorio.json`, gerado uma vez só e passado para os dois. Dois leitores do mesmo objeto não têm como discordar.
+
+Nenhum par deste monitor tem gráfico embutido: o campo `grafico` da configuração está vazio nos dois. Ele existe e funciona — basta preencher com um símbolo do TradingView (`FX_IDC:USDBRL`, `BINANCE:USDTBRL`) para o gráfico aparecer, sem mexer em mais nada.
+
 Também pode ser criado `alerta.txt` na raiz quando surgem novos gatilhos internos. O workflow oficial, entretanto, faz `git add docs`, portanto esse arquivo não é publicado pelo processo automático atual.
 
 ## Estrutura simplificada do repositório

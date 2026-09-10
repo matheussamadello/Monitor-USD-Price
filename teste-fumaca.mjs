@@ -1,7 +1,7 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
-  build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
+  build, relatorioParaJSON, toHTML, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
 } from "./monitor.mjs";
 
@@ -545,6 +545,26 @@ console.log("\n== perda de suporte: corpo, nao so fechamento ==");
   ok(!sinteses(ctx(fraco)).entrada.includes("rompimento_confirmado_por_fechamento"), "rompimento fraco NAO vira confluencia de entrada");
   const forte = alertasTecnicos(cfg, vela(551, 555), ind);
   ok(sinteses(ctx(forte)).entrada.includes("rompimento_confirmado_por_fechamento"), "rompimento forte continua virando");
+}
+
+console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
+{
+  // O prompt usa a pagina como FALLBACK quando o relatorio.json nao
+  // responde, e quem le procura linhas "campo: valor" no fonte. Tema,
+  // cartoes e grafico sao moldura: o <pre> tem que sair com o relatorio
+  // VERBATIM e sem uma tag no meio, ou o fallback quebra em silencio --
+  // e so quando a fonte principal ja estiver fora do ar.
+  const html = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  const pre = html.split("<pre>")[1].split("</pre>")[0];
+  const esperado = r1.texto.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+  ok(pre === esperado, "o <pre> traz o relatorio inteiro, byte a byte");
+  ok(!/<[a-zA-Z\/]/.test(pre), "nenhuma tag dentro do <pre>");
+  ok((pre.match(/^[a-z_0-9]+: /gm) || []).length > 50, "as linhas campo:valor continuam legiveis no fonte");
+  ok(!/NaN|undefined/.test(html), "sem NaN/undefined na pagina");
+  ok(/<article class="par">/.test(html), "os cartoes de par foram gerados");
+  ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
+    "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
 }
 
 console.log("\n== estado entre execucoes ==");
