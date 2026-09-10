@@ -3618,14 +3618,18 @@ a:hover{text-decoration:underline}
   width:34px;height:34px;padding:0;border-radius:50%;
   background:var(--painel);border:1px solid var(--linha);color:var(--fraco);
   box-shadow:var(--sombra)}
-.btn-tema[aria-pressed="true"]{color:var(--acento);border-color:var(--chip-borda)}
 .btn-tema:hover{color:var(--acento);border-color:var(--acento)}
 .btn-tema:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
-/* Os dois icones ficam no HTML e quem escolhe e' o CSS, olhando o
-   aria-pressed que o botao ja mantinha. Nao ha JS trocando desenho. */
+/* Os dois icones ficam no HTML e quem escolhe e' o CSS, pelo data-tema
+   do <html> -- que o script do topo ja pos antes de qualquer pintura.
+   Antes isso vinha do aria-pressed, que so e' corrigido por JS no fim
+   do body: com o padrao deixando de ser sempre noite, daria para ver o
+   icone errado por um instante. O aria-pressed continua existindo para
+   leitor de tela, agora sem papel visual. */
 .btn-tema svg{width:16px;height:16px;display:none}
-.btn-tema[aria-pressed="true"] .lua{display:block}
-.btn-tema[aria-pressed="false"] .sol{display:block}
+.btn-tema .lua{display:block}
+html[data-tema="claro"] .btn-tema .lua{display:none}
+html[data-tema="claro"] .btn-tema .sol{display:block}
 .pares{display:grid;gap:22px;margin-bottom:34px}
 .par{background:linear-gradient(180deg,var(--painel2),var(--painel));
   border:1px solid var(--linha);border-radius:14px;overflow:hidden;box-shadow:var(--sombra)}
@@ -3806,9 +3810,21 @@ export function toHTML(text, dados) {
     '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
     `<title>${pgEsc(TITULO_PAGINA)}</title>\n` +
     `<style>${PAGINA_CSS}</style>\n` +
-    // Antes do <body>: se o tema claro estiver salvo, ele ja entra
-    // aplicado. Aplicar depois causaria um flash escuro a cada carga.
-    '<script>try{if(localStorage.getItem("tema")==="claro")' +
+    // Antes do <body>, senao haveria um flash do tema errado a cada
+    // carga. A decisao, nesta ordem:
+    //
+    //   escolha salva no botao   manda, sempre
+    //   sem escolha              segue o prefers-color-scheme do SO
+    //   sem escolha e sem suporte a matchMedia   noite
+    //
+    // Nao ha regra por HORARIO de proposito: quem quer tema escuro a
+    // noite ja liga o agendamento automatico do proprio sistema, e o
+    // prefers-color-scheme entrega isso de graca. Uma regra de horario
+    // propria brigaria com quem escolheu claro de proposito, e faria a
+    // pagina mudar de cara sozinha conforme a hora de abrir -- que se le
+    // como defeito, nao como recurso.
+    '<script id="tema-inicial">try{var t=localStorage.getItem("tema");' +
+    'if(t==="claro"||(!t&&!matchMedia("(prefers-color-scheme: dark)").matches))' +
     'document.documentElement.setAttribute("data-tema","claro")}catch(e){}</script>\n' +
     '<body>\n<div class="pagina">\n' +
     `<header class="topo"><h1>${pgMarca()}</h1>` +
@@ -3864,6 +3880,13 @@ export function toHTML(text, dados) {
     'if(salvar){try{localStorage.setItem("tema",noite?"noite":"claro")}catch(e){}}' +
     'if(window.desenharGraficos)window.desenharGraficos(noite?"dark":"light");}' +
     'if(b)b.addEventListener("click",function(){aplica(r.hasAttribute("data-tema"),true)});' +
+    // Quem nunca clicou no botao segue o SO tambem enquanto a pagina
+    // esta aberta -- trocar o tema do sistema muda a pagina na hora.
+    // Quem clicou fica com a propria escolha e ignora o SO.
+    'try{var mq=matchMedia("(prefers-color-scheme: dark)");' +
+    'mq.addEventListener("change",function(e){var t=null;' +
+    'try{t=localStorage.getItem("tema")}catch(_){}' +
+    'if(!t)aplica(e.matches,false)})}catch(e){}' +
     'aplica(!r.hasAttribute("data-tema"),false);})();</script>\n' +
     "</body>\n</html>\n"
   );

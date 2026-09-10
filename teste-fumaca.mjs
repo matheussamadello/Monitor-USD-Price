@@ -583,7 +583,29 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   const faltando = [...escuro].filter((t) => !claro.has(t) && t !== "--mono" && t !== "--bg-x");
   ok(escuro.size > 15, `o tema escuro define os tokens (${escuro.size})`);
   ok(faltando.length === 0, `o tema claro cobre todos os tokens do escuro${faltando.length ? ": faltam " + faltando.join(", ") : ""}`);
-  ok(/id="btn-tema"[^>]*aria-pressed="true"/.test(html), "o botao de tema sai marcado como ativo (noite e' o padrao)");
+  // O script do topo decide o tema antes de qualquer pintura. Em vez de
+  // conferir o TEXTO dele, roda o script de verdade com localStorage e
+  // matchMedia falsos, nas combinacoes que importam.
+  const scriptTema = html.split('<script id="tema-inicial">')[1].split("</script>")[0];
+  const decidir = (salvo, soEscuro, matchMediaQuebrado) => {
+    let attr = null;
+    new Function("localStorage", "matchMedia", "document", scriptTema)(
+      { getItem: () => salvo },
+      matchMediaQuebrado
+        ? () => { throw new Error("sem suporte"); }
+        : () => ({ matches: soEscuro }),
+      { documentElement: { setAttribute: (k, v) => { if (k === "data-tema") attr = v; } } }
+    );
+    return attr === "claro" ? "claro" : "noite";
+  };
+  ok(decidir(null, true) === "noite", "sem escolha e SO escuro -> noite");
+  ok(decidir(null, false) === "claro", "sem escolha e SO claro -> claro");
+  ok(decidir("noite", false) === "noite", "escolha salva 'noite' vence o SO claro");
+  ok(decidir("claro", true) === "claro", "escolha salva 'claro' vence o SO escuro");
+  ok(decidir(null, false, true) === "noite", "sem matchMedia, cai em noite");
+  ok(/prefers-color-scheme/.test(scriptTema), "o padrao consulta o prefers-color-scheme");
+  ok(!/getHours|Date\(/.test(scriptTema), "e nao decide por horario");
+  ok(/id="btn-tema"/.test(html), "o botao de alternar continua na pagina");
   ok(/<svg class="lua"/.test(html) && /<svg class="sol"/.test(html), "os dois icones do botao estao no HTML");
   ok(/aria-label="Alternar night mode"/.test(html), "o botao sem texto mantem nome acessivel");
   ok(html.indexOf('localStorage.getItem("tema")') < html.indexOf("<body"),
