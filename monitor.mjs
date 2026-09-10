@@ -3880,16 +3880,21 @@ export function toHTML(text, dados) {
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
         "new TradingView.widget({container_id:g.id,symbol:g.s,interval:\"D\",theme:tema," +
         'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
-        // SO a EMA89, de proposito. O cartao cita a EMA89 e o desenho
-        // mostra a mesma linha (input length:89 confirmado no navegador).
-        // O RSI ficou de fora: com ele junto o embed polui, e quem quer
-        // RSI ou ADX escolhe um dos dois na hora, pelo proprio widget.
-        // Ja houve RSI aqui como string ao lado deste objeto e o widget
-        // descartou o RSI em silencio -- a ausencia agora e' escolha, nao
-        // acidente. A cor da EMA segue o tema.
+        // EMA89 e RSI(14) fixos; ADX/DMI fica de fora e se adiciona na
+        // hora, pelo proprio widget -- o padrao dele ja serve.
+        //
+        // O RSI vai como OBJETO, igual a EMA: como string ao lado de um
+        // objeto o widget o descartava em silencio. E pede a media movel
+        // do proprio RSI desligada (o TradingView a inclui por padrao e
+        // ela polui). Dois caminhos ao mesmo tempo, porque so o navegador
+        // confirma qual o widget honra: o input smoothingLine="None" e o
+        // override escondendo o plot da media. Se nenhum pegar, o RSI sai
+        // com a media e se desmarca a mao -- nao quebra nada.
         "allow_symbol_change:false,save_image:false," +
-        'studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}}],' +
-        'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0"},' +
+        'studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}},' +
+        '{id:"RSI@tv-basicstudies",inputs:{length:14,smoothingLine:"None"}}],' +
+        'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0",' +
+        '"relative strength index.smoothed ma.visible":false},' +
         'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +
         'gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};' +
         "</script>\n"
