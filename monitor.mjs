@@ -520,9 +520,33 @@ export function ancorarDia(epochSeconds, offsetSegundos = 0) {
   return Math.floor(Date.parse(`${dia}T00:00:00Z`) / 1000);
 }
 
-function montarSerie(linhas, { temVolume = false } = {}) {
+const SEMANA = 604800;
+
+// Segunda-feira 00:00 UTC da semana que contem o instante. A epoca
+// (1970-01-01) caiu numa quinta; a segunda anterior e' -3 dias.
+export function inicioSemana(epochSeconds) {
+  const desde = (((epochSeconds + 3 * 86400) % SEMANA) + SEMANA) % SEMANA;
+  return epochSeconds - desde;
+}
+
+function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
   // Uma entrada por instante, a ultima vence: o Yahoo repete a vela do
   // dia corrente a cada chamada e o Stooq pode repetir a borda.
+  //
+  // SEMANA EM PEDACOS. O Yahoo carimba a barra semanal EM ANDAMENTO com
+  // a data do dia, nao com a segunda-feira -- e as vezes manda dois
+  // pedacos da mesma semana: seg-qua carimbado na segunda e a quinta
+  // carimbada na quinta. Tratando cada carimbo como vela propria, a
+  // semana corrente saia como FECHADA com o fechamento de quarta e
+  // nascia uma "semana" de um dia. O filtro de amplitude zero abaixo
+  // nao pega: o pedaco tem amplitude, e' meio pregao de verdade.
+  //
+  // No semanal a chave passa a ser a segunda-feira da semana, e pedacos
+  // da mesma semana se fundem: abertura do primeiro, extremos do
+  // conjunto, fechamento do ultimo. E' o unico calendario embutido
+  // aqui, e e' o das tres fontes deste monitor -- para barra que ja vem
+  // ancorada na segunda (Binance, MB) a chave e' identidade e nada muda.
+  const chave = periodo === SEMANA ? inicioSemana : (t) => t;
   const porTempo = new Map();
   for (const l of linhas) {
     if (![l.open, l.high, l.low, l.close].every((v) => Number.isFinite(v))) continue;
@@ -539,7 +563,24 @@ function montarSerie(linhas, { temVolume = false } = {}) {
     // USDT/BRL sem UM pip de variacao nao existe, entao nao ha vela
     // legitima sendo descartada aqui.
     if (l.high === l.low) continue;
-    porTempo.set(l.time, l);
+    const k = chave(l.time);
+    const ant = porTempo.get(k);
+    if (!ant || ant.carimbo === l.time) {
+      // mesmo carimbo: repeticao da fonte, a ultima vence (como sempre)
+      porTempo.set(k, { ...l, time: k, carimbo: l.time });
+    } else {
+      const [primeiro, ultimo] = l.time > ant.carimbo ? [ant, l] : [l, ant];
+      porTempo.set(k, {
+        time: k,
+        carimbo: Math.max(ant.carimbo, l.time),
+        open: primeiro.open,
+        high: Math.max(ant.high, l.high),
+        low: Math.min(ant.low, l.low),
+        close: ultimo.close,
+        volume: (ant.volume || 0) + (l.volume || 0),
+        trades: (ant.trades || 0) + (l.trades || 0),
+      });
+    }
   }
   const rows = [...porTempo.values()]
     .sort((a, b) => a.time - b.time)
@@ -577,7 +618,7 @@ function montarSerie(linhas, { temVolume = false } = {}) {
   };
 }
 
-export function parseYahoo(texto) {
+export function parseYahoo(texto, tf) {
   const json = JSON.parse(texto);
   const erro = json && json.chart && json.chart.error;
   if (erro) throw new Error("Yahoo: " + (erro.description || erro.code || "erro"));
@@ -597,10 +638,10 @@ export function parseYahoo(texto) {
       close: Number(q.close && q.close[i]),
     });
   }
-  return montarSerie(linhas);
+  return montarSerie(linhas, { periodo: tf && tf.segundos });
 }
 
-export function parseBinance(texto) {
+export function parseBinance(texto, tf) {
   const k = JSON.parse(texto);
   if (!Array.isArray(k)) throw new Error("Binance: resposta nao e' lista de klines");
   return montarSerie(
@@ -615,11 +656,11 @@ export function parseBinance(texto) {
       volume: Number(x[5]),
       trades: Number(x[8]),
     })),
-    { temVolume: true }
+    { temVolume: true, periodo: tf && tf.segundos }
   );
 }
 
-export function parseMercadoBitcoin(texto) {
+export function parseMercadoBitcoin(texto, tf) {
   const j = JSON.parse(texto);
   if (!Array.isArray(j.t)) throw new Error("Mercado Bitcoin: resposta sem series");
   return montarSerie(
@@ -631,7 +672,7 @@ export function parseMercadoBitcoin(texto) {
       close: Number(j.c[i]),
       volume: Number(j.v[i]),
     })),
-    { temVolume: true }
+    { temVolume: true, periodo: tf && tf.segundos }
   );
 }
 
@@ -647,7 +688,7 @@ export async function buscarSerie(fetchImpl, cfg, tf) {
         headers: { "User-Agent": "usd-monitor/1.0" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const parsed = fonte.parse(await res.text());
+      const parsed = fonte.parse(await res.text(), tf);
       return { ok: true, parsed, fonte: fonte.nome };
     } catch (err) {
       erros.push(`${fonte.nome}: ${err.message}`);

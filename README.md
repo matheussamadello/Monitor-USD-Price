@@ -90,6 +90,14 @@ O **diário** é o timeframe principal para timing de pullbacks, rompimentos, re
 
 O **semanal** funciona principalmente como contexto e filtro estrutural: ajuda a identificar se um sinal diário está alinhado, neutro ou em conflito com a estrutura maior. O relatório também calcula os mesmos indicadores principais no semanal e distingue os valores da vela semanal fechada dos valores provisórios da semana em formação.
 
+### A semana em pedaços
+
+O Yahoo tem um segundo defeito de carimbo, só no semanal: a barra da semana **em andamento** vem carimbada com a data do dia, não com a segunda-feira — e às vezes vem em dois pedaços, um "segunda a quarta" carimbado na segunda e um "quinta até agora" carimbado na quinta. Cada carimbo virava uma vela própria: a semana corrente saía como **fechada** com o fechamento de quarta, e nascia uma "semana" de um dia. O filtro da vela-fantasma não pega isso, porque o pedaço tem amplitude — é meio pregão de verdade.
+
+Foi flagrado em 2026-09-10, quinta, com `ultimo_fechamento_data: 2026-09-07` no semanal e uma `candle_atual_data: 2026-09-10`. O histórico mostrou que vinha oscilando desde terça, e a máquina de estados já tinha registrado um rompimento semanal de 5,13 sobre um fechamento que não existiu.
+
+No semanal, `montarSerie` passou a agrupar as barras pela **segunda-feira da semana** (`inicioSemana`) e a fundir pedaços da mesma semana: abertura do primeiro, extremos do conjunto, fechamento do último. É o único calendário embutido no monitor, e é o das três fontes; para barra que já vem ancorada na segunda (Binance, Mercado Bitcoin) a chave é identidade e nada muda. O diário não é afetado. `fracao_periodo_decorrida` do semanal, que era medida a partir do carimbo errado, passa a ser medida da segunda.
+
 ## Trilho de execução (USDT/BRL)
 
 O par **analisado** é USD/BRL e continua sendo. Este bloco responde a outra pergunta: quando a leitura técnica disser que é hora de dolarizar ou desdolarizar, **quanto custa atravessar de fato**, e o pedágio está caro ou barato hoje?

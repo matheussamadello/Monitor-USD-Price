@@ -2,7 +2,7 @@
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
   build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
-  situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses,
+  situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -161,6 +161,19 @@ function comFantasma(rows, recuar) {
     { t: ancorarDia(Math.floor(Date.now() / 1000)), o: ult.c, h: ult.c, l: ult.c, c: ult.c },
   ]);
 }
+// A semana corrente chega em DOIS pedacos, como o Yahoo faz: seg-qua
+// carimbado na segunda e a quinta carimbada na quinta. Juntos, os dois
+// reconstroem exatamente a ultima barra da serie original.
+function emPedacos(rows) {
+  const reais = rows.slice(0, -1);
+  const u = rows[rows.length - 1];
+  const seg = inicioSemana(u.t);
+  const meio = (u.o + u.c) / 2;
+  return reais.concat([
+    { t: seg, o: u.o, h: Math.max(u.o, meio) + 0.001, l: Math.min(u.o, meio) - 0.001, c: meio },
+    { t: seg + 3 * DIA, o: meio, h: u.h, l: u.l, c: u.c },
+  ]);
+}
 const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 
 // Extrai o bloco de UM par dentro de UMA secao. Com dois pares na
@@ -266,6 +279,44 @@ await cenario("vela-fantasma de fim de semana", {
   ok(!/candle_atual_var_pct_desde_abertura: 0\.00\b/.test(r.texto),
     "preco atual nao e' o ultimo preco repetido nas quatro pontas");
 });
+
+await cenario("semana em pedacos (Yahoo semanal)", {
+  // Caso real de 2026-09-10, quinta: o Yahoo mandou a semana corrente
+  // em DOIS pedacos -- seg-qua carimbado na segunda (07/09) e a quinta
+  // carimbada na quinta (10/09). Cada carimbo virava vela propria: a
+  // semana corrente saia como fechada com o fechamento de quarta, e
+  // nascia uma "semana" de um dia. O filtro de amplitude zero nao pega,
+  // porque o pedaco tem amplitude.
+  series: { "1d": diario, "1wk": emPedacos(semanal) },
+}, (r) => {
+  const ult = semanal[semanal.length - 1];
+  const seg = inicioSemana(ult.t);
+  const segAnterior = inicioSemana(semanal[semanal.length - 2].t);
+  const usdSem = blocoDoPar(r.texto, "GRAFICO SEMANAL", "USD/BRL");
+  ok(!/FALHA:/.test(r.texto), "relatorio sai inteiro");
+  ok(new RegExp(`candle_atual_data: ${dia(seg)}`).test(usdSem),
+    "a vela semanal viva e' UMA, ancorada na segunda-feira");
+  ok(!new RegExp(`candle_fechado_1: data=${dia(seg)}`).test(usdSem),
+    "a semana corrente NAO aparece como fechada");
+  ok(new RegExp(`ultimo_fechamento_data: ${dia(segAnterior)}`).test(usdSem),
+    "a ultima fechada e' a semana anterior");
+  ok(new RegExp(`candle_atual_open: ${ult.o.toFixed(4)}`).test(usdSem),
+    "abertura da viva e' a do primeiro pedaco");
+  ok(new RegExp(`candle_atual_close_provisorio: ${ult.c.toFixed(4)}`).test(usdSem),
+    "fechamento provisorio e' o do ultimo pedaco");
+  const usdtSem = blocoDoPar(r.texto, "GRAFICO SEMANAL", "USDT/BRL");
+  ok(/candle_atual_data: \d{4}-\d{2}-\d{2}/.test(usdtSem), "o par de cripto (Binance, ja ancorado) continua normal");
+});
+
+console.log("\n== inicioSemana ==");
+{
+  const d = (s) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 1000);
+  ok(inicioSemana(d("2026-09-07")) === d("2026-09-07"), "segunda e' ela mesma");
+  ok(inicioSemana(d("2026-09-10")) === d("2026-09-07"), "quinta cai na segunda da semana");
+  ok(inicioSemana(d("2026-09-13")) === d("2026-09-07"), "domingo ainda e' a semana da segunda anterior");
+  ok(inicioSemana(d("2026-09-14")) === d("2026-09-14"), "segunda seguinte comeca semana nova");
+  ok(inicioSemana(d("1970-01-01")) === d("1969-12-29"), "funciona antes da epoca (modulo negativo)");
+}
 
 await cenario("trilho de execucao (USDT/BRL)", {}, (r) => {
   ok(/^========== TRILHO DE EXECUCAO ==========$/m.test(r.texto), "secao propria no relatorio");
