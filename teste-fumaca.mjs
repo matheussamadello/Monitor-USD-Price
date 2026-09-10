@@ -619,6 +619,8 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   // So faz sentido onde ha widget (par com cartao e grafico).
   if (/s3\.tradingview\.com\/tv\.js/.test(html))
     ok(/MAExp@tv-basicstudies[^}]*length:89/.test(html), "o widget do TradingView pede a EMA de periodo 89");
+  if (/s3\.tradingview\.com\/tv\.js/.test(html))
+    ok(!/RSI@tv-basicstudies/.test(html), "e nao pede o RSI: a ausencia dele no embed e' escolha, nao acidente");
   ok(!/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>[^<]*<small>[^<]*ATR</.test(html),
     "cartao nao mostra mais a distancia da EMA89 em ATR");
   ok(/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>(acima|abaixo)<small>[\d.,]+%<\/small>/.test(html),

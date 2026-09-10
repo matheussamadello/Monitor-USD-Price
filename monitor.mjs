@@ -3880,13 +3880,15 @@ export function toHTML(text, dados) {
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
         "new TradingView.widget({container_id:g.id,symbol:g.s,interval:\"D\",theme:tema," +
         'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
-        // EMA89 no grafico, para o desenho mostrar a linha que o cartao
-        // cita. O periodo vai como input do estudo -- e' a forma que a
-        // documentacao do widget descreve para inputs, mas nao da' para
-        // testar daqui: se o TradingView ignorar, o grafico continua
-        // saindo, so sem a linha. A cor segue o tema.
+        // SO a EMA89, de proposito. O cartao cita a EMA89 e o desenho
+        // mostra a mesma linha (input length:89 confirmado no navegador).
+        // O RSI ficou de fora: com ele junto o embed polui, e quem quer
+        // RSI ou ADX escolhe um dos dois na hora, pelo proprio widget.
+        // Ja houve RSI aqui como string ao lado deste objeto e o widget
+        // descartou o RSI em silencio -- a ausencia agora e' escolha, nao
+        // acidente. A cor da EMA segue o tema.
         "allow_symbol_change:false,save_image:false," +
-        'studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}},"RSI@tv-basicstudies"],' +
+        'studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}}],' +
         'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0"},' +
         'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +
         'gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};' +
