@@ -3593,16 +3593,18 @@ a:hover{text-decoration:underline}
 .idade.ok{color:var(--alta);border-color:var(--alta)}
 .idade.aviso{color:var(--atencao);border-color:var(--atencao)}
 .idade.velho{color:var(--baixa);border-color:var(--baixa)}
-.btn-tema{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
-  font:11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
-  background:var(--painel);border:1px solid var(--linha);border-radius:999px;
-  padding:7px 12px;color:var(--fraco);box-shadow:var(--sombra)}
+.btn-tema{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  width:34px;height:34px;padding:0;border-radius:50%;
+  background:var(--painel);border:1px solid var(--linha);color:var(--fraco);
+  box-shadow:var(--sombra)}
 .btn-tema[aria-pressed="true"]{color:var(--acento);border-color:var(--chip-borda)}
-.btn-tema:hover{border-color:var(--acento)}
+.btn-tema:hover{color:var(--acento);border-color:var(--acento)}
 .btn-tema:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
-.pastilha{width:9px;height:9px;border-radius:50%;border:1px solid currentColor;
-  background:currentColor}
-.btn-tema[aria-pressed="false"] .pastilha{background:transparent}
+/* Os dois icones ficam no HTML e quem escolhe e' o CSS, olhando o
+   aria-pressed que o botao ja mantinha. Nao ha JS trocando desenho. */
+.btn-tema svg{width:16px;height:16px;display:none}
+.btn-tema[aria-pressed="true"] .lua{display:block}
+.btn-tema[aria-pressed="false"] .sol{display:block}
 .pares{display:grid;gap:22px;margin-bottom:34px}
 .par{background:linear-gradient(180deg,var(--painel2),var(--painel));
   border:1px solid var(--linha);border-radius:14px;overflow:hidden;box-shadow:var(--sombra)}
@@ -3786,8 +3788,13 @@ export function toHTML(text, dados) {
     `<header class="topo"><h1>${pgMarca()}</h1>` +
     `<div class="carimbo"><time datetime="${pgEsc(iso)}">${pgEsc(ts)}</time>` +
     `<span class="idade" id="idade" data-ts="${pgEsc(iso)}"></span>` +
-    '<button type="button" class="btn-tema" id="btn-tema" aria-pressed="true">' +
-    '<span class="pastilha" aria-hidden="true"></span>night mode</button>' +
+    // Sem texto no botao: entra o par lua/sol, que e' o icone de fato
+    // usado para este controle. Como o rotulo visivel sumiu, o nome do
+    // botao passa a viver no aria-label e no title.
+    '<button type="button" class="btn-tema" id="btn-tema" aria-pressed="true" ' +
+    'title="Alternar night mode" aria-label="Alternar night mode">' +
+    '<svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
+    "</button>" +
     "</div></header>\n" +
     `<section class="pares">${PAIRS.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +

@@ -576,6 +576,8 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(escuro.size > 15, `o tema escuro define os tokens (${escuro.size})`);
   ok(faltando.length === 0, `o tema claro cobre todos os tokens do escuro${faltando.length ? ": faltam " + faltando.join(", ") : ""}`);
   ok(/id="btn-tema"[^>]*aria-pressed="true"/.test(html), "o botao de tema sai marcado como ativo (noite e' o padrao)");
+  ok(/<svg class="lua"/.test(html) && /<svg class="sol"/.test(html), "os dois icones do botao estao no HTML");
+  ok(/aria-label="Alternar night mode"/.test(html), "o botao sem texto mantem nome acessivel");
   ok(html.indexOf('localStorage.getItem("tema")') < html.indexOf("<body"),
     "o tema salvo e' aplicado ANTES do <body>, sem flash escuro");
 
