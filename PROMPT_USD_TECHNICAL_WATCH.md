@@ -87,7 +87,8 @@ A direção importa e é fácil de inverter por engano:
 - preço **subindo** = dólar se valorizando frente ao real;
 - preço **caindo** = real se fortalecendo;
 - `rompimento_confirmado_*` = o respectivo par rompendo **para cima**;
-- `perda_suporte_confirmada_*` = o respectivo par perdendo suporte.
+- `perda_suporte_confirmada_*` = o respectivo par perdendo suporte;
+- `rompimento_confirmado_fraco_*` / `perda_suporte_confirmada_fraca_*` = só o fechamento passou, o corpo não — encostada, não travessia.
 
 Por isso "comprar" aqui significa **comprar dólar pagando em real**, e "realizar" significa **vender dólar de volta para real**. Não inverta.
 
@@ -863,6 +864,12 @@ Quando publicados, interprete os estados da máquina de rompimento/reteste do re
 - `afastado`: não alerta sozinho.
 
 Não transforme cada mudança descritiva de estado em mensagem.
+
+### Perda de suporte e rompimento: forte x fraco
+
+`rompimento_confirmado_X` e `perda_suporte_confirmada_X` exigem que o **corpo inteiro** da vela fechada esteja além do nível. Quando só o fechamento passou e o corpo ficou em cima do nível, o relatório publica `rompimento_confirmado_fraco_X` ou `perda_suporte_confirmada_fraca_X`.
+
+A versão fraca é encostada, não travessia. Ela **não alimenta `deterioracao_tendencia` nem `confluencia_entrada`**, e sozinha não justifica alerta — leia-a como um `toque_suporte_intradiario_X` / `rompimento_intradiario_X` que por acaso aconteceu no fechamento. Se a vela seguinte fechar com o corpo além do nível, a versão forte aparece e aí vale a regra normal.
 
 ---
 

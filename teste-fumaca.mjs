@@ -2,7 +2,7 @@
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
   build, relatorioParaJSON, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
-  situacaoNiveis, atualizarEstadoNivel,
+  situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -452,6 +452,49 @@ ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_27_5_35",
   "cada par publica as SUAS faixas manuais");
 ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_25_5_36",
   "as faixas do cambio nao foram trocadas pelas do cripto");
+
+console.log("\n== perda de suporte: corpo, nao so fechamento ==");
+{
+  // Caso real do XMR/USD em 2026-09-08: abriu 519,23 e fechou 499,77 com
+  // suporte em 500. Fechou 0,05% abaixo, corpo inteiro em cima do nivel.
+  // Saia como perda CONFIRMADA e alimentava deterioracao_tendencia; a
+  // maquina de estados, que olha o corpo, dizia sem_registro. A
+  // resistencia ja tinha a distincao forte/fraco; o suporte nao.
+  const cfg = { niveis: { faixas: [], suporte: 500, suporteLabel: "500", resistencia: 550, resistenciaLabel: "550" } };
+  const ind = {
+    rsi: null, adx: null, adxAnt: null, diPlus: null, diMinus: null, crossUp: false, crossDown: false,
+    divergencias: [], estruturaEventos: [], estruturaTendencia: null, volume: null,
+    enfraquecimento: [], padroes: [], contextoTrio: null, mudancasNivel: [],
+  };
+  const vela = (open, close) => ({
+    live: { close, high: Math.max(open, close), low: Math.min(open, close) },
+    opens: [open], closes: [close],
+  });
+  const ctx = (alertas) => ({
+    alertas, estrutura: { tendencia: null }, estruturaEventos: [], divergencias: [], vol: null,
+    enfraquecimento: [], fraqueza: [], rsiFech: null, rsiAnt: null, diPlus: null, diMinus: null,
+    estadosNivel: [],
+  });
+
+  const encostou = alertasTecnicos(cfg, vela(519.23, 499.77), ind);
+  ok(encostou.includes("perda_suporte_confirmada_fraca_500"), "fechamento abaixo com corpo em cima e' perda FRACA");
+  ok(!encostou.includes("perda_suporte_confirmada_500"), "e NAO e' perda confirmada");
+  ok(sinteses(ctx(encostou)).deterioracao === "nenhuma", "perda fraca nao alimenta deterioracao_tendencia");
+  ok(sinteses(ctx(encostou)).riscos.includes("suporte_sob_pressao"), "mas continua como risco: suporte sob pressao");
+
+  const perdeu = alertasTecnicos(cfg, vela(498, 495), ind);
+  ok(perdeu.includes("perda_suporte_confirmada_500"), "corpo inteiro abaixo e' perda confirmada");
+  ok(sinteses(ctx(perdeu)).deterioracao.includes("perda_de_suporte_confirmada"), "e essa sim alimenta deterioracao");
+
+  // A resistencia ja distinguia, mas a sintese por prefixo ignorava a
+  // distincao: rompimento_confirmado_fraco_X comecava com
+  // rompimento_confirmado e virava confluencia de entrada.
+  const fraco = alertasTecnicos(cfg, vela(545, 552), ind);
+  ok(fraco.includes("rompimento_confirmado_fraco_550"), "rompimento com corpo em baixo e' fraco");
+  ok(!sinteses(ctx(fraco)).entrada.includes("rompimento_confirmado_por_fechamento"), "rompimento fraco NAO vira confluencia de entrada");
+  const forte = alertasTecnicos(cfg, vela(551, 555), ind);
+  ok(sinteses(ctx(forte)).entrada.includes("rompimento_confirmado_por_fechamento"), "rompimento forte continua virando");
+}
 
 console.log("\n== estado entre execucoes ==");
 const r2 = await build(fakeFetch(), { niveis: r1.estadoNiveis, zonas: r1.zonasEstado, contadoresZona: r1.contadoresZona });

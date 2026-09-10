@@ -394,6 +394,14 @@ A distância é medida em ATR, e não em porcentagem, de propósito. Cinco por c
 
 `obsoleto` não é alerta de mercado: é aviso de manutenção. Significa que os níveis descrevem um regime que ficou para trás e precisam de revisão.
 
+### Perda de suporte: forte x fraca
+
+`rompimento_confirmado_X` só sai quando o **corpo inteiro** da vela fechada está acima da resistência; se só o fechamento passou, sai `rompimento_confirmado_fraco_X`. O suporte não tinha essa distinção: qualquer fechamento abaixo, por qualquer margem, virava `perda_suporte_confirmada_X` e entrava em `deterioracao_tendencia`.
+
+O caso que expôs isso foi o XMR/USD em 2026-09-08: abriu 519,23 e fechou 499,77 com suporte em 500. Fechou 0,23 abaixo — menos de um centésimo de ATR — com o corpo inteiro em cima do nível. Saía como perda confirmada enquanto a máquina de estados, que olha o corpo, dizia `sem_registro`.
+
+Agora o suporte espelha a resistência: `perda_suporte_confirmada_X` exige o corpo abaixo; só o fechamento abaixo vira `perda_suporte_confirmada_fraca_X`. A versão fraca continua contando como `suporte_sob_pressao` em `riscos_tecnicos`, mas não entra em `deterioracao_tendencia`. A síntese também passou a ignorar a versão fraca do rompimento em `confluencia_entrada`, que antes escapava por causa do prefixo.
+
 ## Máquina de estados de rompimento e reteste
 
 Os níveis pontuais possuem estado persistente, avaliado sobre a **última vela fechada**, para evitar oscilações intradiárias da máquina de estados.
