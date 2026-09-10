@@ -576,12 +576,9 @@ Para o **agente**: o relatório inteiro continua saindo *verbatim* dentro de um 
 
 Os cartões **não** reparseiam o texto: eles leem o mesmo objeto de `relatorioParaJSON` que vira o `relatorio.json`, gerado uma vez só e passado para os dois. Dois leitores do mesmo objeto não têm como discordar.
 
-Os dois pares têm gráfico embutido, desenhado pelo TradingView e redesenhado quando o tema muda — o gráfico mora num iframe e o tema dele é escolhido na criação do widget, não por CSS.
+Só o **USDT/BRL** tem gráfico embutido, com `BINANCE:USDTBRL` — a mesma fonte primária do relatório. Ele é desenhado pelo TradingView e redesenhado quando o tema muda, porque mora num iframe e o tema dele é escolhido na criação do widget, não por CSS.
 
-A fonte do desenho difere entre os dois, e a nota embaixo de cada gráfico diz qual é:
-
-- **USDT/BRL** usa `BINANCE:USDTBRL`, a mesma fonte primária do relatório.
-- **USD/BRL** usa `FX_IDC:USDBRL`, que **não** é a fonte do relatório — o TradingView não serve a série do Yahoo Finance, e o FX_IDC é a cotação de referência mais próxima disponível lá. Pequenas diferenças de preço e de horário de vela são esperadas, e é por isso que a nota avisa em vez de dizer "mesma fonte". Este é o único par dos três monitores em que número e desenho vêm de lugares diferentes.
+O **USD/BRL não tem gráfico**, de propósito. Em todos os outros pares do projeto o desenho vem da mesma origem do número — Kraken nos monitores de cripto, Binance no USDT/BRL. Aqui não daria: o TradingView não serve a série do Yahoo Finance, e as fontes que ele usa para USD/BRL foram sondadas e reprovadas (FX_IDC é licenciado, OANDA e SAXO pedem conta na corretora, FXCM desativou a API, TVC é composição interna). Um gráfico de uma fonte ao lado de um número de outra convida a comparar duas coisas que não são a mesma, e a diferença apareceria justamente nos detalhes que importam — o fechamento e os extremos da vela. Preencher `grafico` na configuração do par volta a ligá-lo, se um dia houver fonte que bata.
 
 Também pode ser criado `alerta.txt` na raiz quando surgem novos gatilhos internos. O workflow oficial, entretanto, faz `git add docs`, portanto esse arquivo não é publicado pelo processo automático atual.
 

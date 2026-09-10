@@ -480,13 +480,15 @@ const PAIRS = [
     // isso o par se escreve USD/BRL e o preco sobe quando o dolar sobe.
     label: "USD/BRL",
     par: "USDBRL=X",
-    // Unico par dos tres monitores em que o desenho NAO vem da mesma
-    // fonte do relatorio: o TradingView nao serve a serie do Yahoo, e
-    // o FX_IDC e' a cotacao de referencia mais proxima disponivel la.
-    // Por isso a nota abaixo avisa, em vez de dizer "mesma fonte".
-    grafico: "FX_IDC:USDBRL",
-    graficoNota:
-      "Desenho do TradingView com a série FX_IDC:USDBRL. Aqui, diferente dos pares de cripto, a fonte do gráfico NÃO é a do relatório, que usa o Yahoo Finance — pequenas diferenças de preço e de vela são esperadas.",
+    // SEM GRAFICO, de proposito. Nas outras quatro fontes deste projeto
+    // o desenho vem da mesma origem do numero -- Kraken nos monitores de
+    // cripto, Binance no USDT/BRL. Aqui nao daria: o TradingView nao
+    // serve a serie do Yahoo, e as fontes que ele usa para USD/BRL foram
+    // sondadas e reprovadas (FX_IDC e' licenciado, OANDA e SAXO pedem
+    // conta, FXCM desativou a API, TVC e' composicao interna). Grafico de
+    // uma fonte ao lado de numero de outra convida a comparar duas
+    // coisas que nao sao a mesma. Preencher `grafico` aqui volta a
+    // liga-lo, se um dia a fonte bater.
     fontes: FONTES_CAMBIO,
     // 4 casas: o par se move em milesimos, e 2 casas apagariam a
     // diferenca entre uma vela parada e uma vela de meio por cento.
