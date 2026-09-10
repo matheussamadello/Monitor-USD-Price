@@ -3756,7 +3756,7 @@ function pgTimeframe(titulo, b, dec) {
     L.push(pgLinha("Cruzou a EMA89", `${pgEsc(cruz)} no fechamento`, "evento"));
   L.push(pgLinha("RSI(14)", pgNum(rsi, 1),
     typeof rsi === "number" && (rsi >= 70 || rsi <= 30) ? "atencao" : ""));
-  L.push(pgLinha("ADX / DI",
+  L.push(pgLinha("ADX / DI (14)",
     `${pgNum(b.adx14_fechado, 1)}<small>+${pgNum(diPlus, 1)} / −${pgNum(diMinus, 1)}</small>`,
     typeof diPlus === "number" && typeof diMinus === "number"
       ? (diPlus > diMinus ? "alta" : "baixa")

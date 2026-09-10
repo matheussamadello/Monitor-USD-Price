@@ -615,6 +615,7 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/^distancia_ema89_fechada_atr: [\d.]+$/m.test(r1.texto),
     "relatorio segue publicando a distancia da EMA89 em ATR");
   ok(!/<dt>ATR\(14\)<\/dt>/.test(html), "o cartao nao tem mais linha de ATR");
+  ok(/<dt>ADX \/ DI \(14\)<\/dt>/.test(html), "a linha de ADX/DI declara o periodo (14)");
   ok(!/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>[^<]*<small>[^<]*ATR</.test(html),
     "cartao nao mostra mais a distancia da EMA89 em ATR");
   ok(/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>(acima|abaixo)<small>[\d.,]+%<\/small>/.test(html),
