@@ -3972,8 +3972,9 @@ export function toHTML(text, dados) {
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
         "new TradingView.widget({container_id:g.id,symbol:g.s,interval:iv,theme:tema," +
         'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
-        // EMA89 e RSI(14) fixos; ADX/DMI fica de fora e se adiciona na
-        // hora, pelo proprio widget -- o padrao dele ja serve.
+        // EMA89 e RSI carregados no widget; o periodo do RSI acompanha
+        // o timeframe selecionado. ADX/DMI fica de fora e se adiciona
+        // na hora, pelo proprio widget -- o padrao dele ja serve.
         //
         // O RSI vai como OBJETO, igual a EMA: como string ao lado de um
         // objeto o widget o descartava em silencio. E pede a media movel
