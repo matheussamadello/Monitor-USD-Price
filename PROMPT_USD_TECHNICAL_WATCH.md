@@ -1052,7 +1052,7 @@ Escreva em português comum.
 
 **Rotule o horizonte no início do título**, entre colchetes e em maiúsculas:
 
-- `[TÁTICO]` — afeta o horizonte de 2 a 6 semanas;
+- `[TÁTICO]` — afeta o horizonte de 1 a 6 semanas;
 - `[ESTRATÉGICO]` — afeta o horizonte de vários meses a mais de um ano;
 - `[AMBOS]` — o mesmo movimento afeta os dois.
 
