@@ -1409,6 +1409,7 @@ export function alertasTecnicos(cfg, d, ind) {
   for (const [lo, hi, nome] of nv.faixas || []) {
     if (p >= lo && p <= hi) a.push(nome);
   }
+
   // Rompimento: intradiario vs confirmado
   if (nv.resistencia !== null && nv.resistencia !== undefined) {
     const R = nv.resistencia;

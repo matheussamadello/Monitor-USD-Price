@@ -112,7 +112,7 @@ Leia, quando disponíveis no relatório:
 - RSI (o período vem em `rsi_length` e difere por timeframe);
 - DI+;
 - DI−;
-- ADX;
+- ADX (os períodos vêm em `dmi_di_length` e `dmi_adx_smoothing` e também diferem por timeframe);
 - valores fechados e provisórios;
 - candles e anatomia das velas;
 - volume, **somente no USDT/BRL**;
