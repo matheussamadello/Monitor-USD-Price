@@ -1129,6 +1129,26 @@ Inclua apenas métricas que ajudam a explicar a mudança. Não despeje todo o JS
 
 ---
 
+## Rodapé de registro
+
+Termine **todo** alerta enviado com uma última linha neste formato exato, e nada depois dela:
+
+```
+REGISTRO | <data-hora UTC ISO> | <par> | <TÁTICO|ESTRATÉGICO|AMBOS> | <motivo curto em snake_case> | preco=<fechamento usado>
+```
+
+Exemplo:
+
+```
+REGISTRO | 2026-09-11T17:00Z | BTC/USD | TÁTICO | perda_ema89_diaria | preco=77679.10
+```
+
+Serve para quem recebe o alerta poder guardá-lo e, mais tarde, comparar o que foi enviado com o que o preço fez depois. Uma linha por alerta, mesmo quando o alerta fala de dois pares: nesse caso, uma linha para cada.
+
+Não comente essa linha, não a explique e não a inclua quando você decidir **não** enviar alerta.
+
+---
+
 ## Regra final de silêncio
 
 Se não houver uma mudança **realmente nova, material e operacionalmente útil** desde o último alerta, permaneça em silêncio.

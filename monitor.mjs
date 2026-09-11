@@ -19,7 +19,7 @@
 // "alertas_tecnicos:".
 // ============================================================
 
-import { writeFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
+import { writeFileSync, appendFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const PERIOD = 14;
@@ -3551,6 +3551,99 @@ function avaliarGatilhos(dados) {
 // Montagem da pagina
 // ------------------------------------------------------------
 
+// ------------------------------------------------------------
+// HISTORICO: o substrato para medir, um dia, o que este monitor acerta.
+//
+// Nada aqui muda o relatorio nem dispara alerta. E' so um registro
+// append-only do que o monitor PUBLICOU, vela fechada a vela fechada.
+//
+// Por que ele existe: os alertas nao saem daqui. Quem decide alertar e'
+// o agente no ChatGPT, que le o prompt e resolve por conta propria --
+// e o monitor nao tem como ver essa decisao. O que o monitor VE, e pode
+// registrar com precisao, sao as CONDICOES que ele publicou e o preco
+// de cada fechamento. Com isso da' para responder depois a pergunta que
+// interessa: cada condicao foi seguida de que movimento? Sem esse
+// registro, qualquer ajuste de limiar continua sendo chute, porque
+// nenhum parametro deste projeto foi medido contra resultado.
+//
+// Uma entrada por (par, timeframe) sempre que a VELA FECHADA muda ou
+// qualquer condicao muda. Rodadas de hora em hora sobre a mesma vela
+// fechada nao repetem linha: a assinatura filtra.
+export function entradaHistorico(par, tfKey, bloco, agora) {
+  if (!bloco || bloco.falha) return null;
+  const lista = (x) => (Array.isArray(x) ? x : []);
+  const fech = bloco.ultimo_fechamento_close;
+  const ema = bloco.ema89_fechada_atual;
+  return {
+    em: agora,
+    par,
+    tf: tfKey,
+    vela: bloco.ultimo_fechamento_data || null,
+    fech: typeof fech === "number" ? fech : null,
+    atr: typeof bloco.atr14 === "number" ? bloco.atr14 : null,
+    rsi: bloco.rsi_fechado,
+    adx: bloco.adx_fechado,
+    di: [bloco.di_plus_fechado, bloco.di_minus_fechado],
+    estrutura: bloco.estrutura_tendencia || null,
+    rotulo: bloco.estrutura_preco || null,
+    ema89_lado:
+      typeof fech === "number" && typeof ema === "number"
+        ? fech >= ema
+          ? "acima"
+          : "abaixo"
+        : null,
+    ema89_cruz: bloco.ema89_cruzamento_fechado || null,
+    ema89_dist_atr: bloco.distancia_ema89_fechada_atr,
+    alertas: lista(bloco.alertas_tecnicos),
+    deterioracao: lista(bloco.deterioracao_tendencia),
+    conf_entrada: lista(bloco.confluencia_entrada),
+    conf_pullback: lista(bloco.confluencia_pullback),
+    riscos: lista(bloco.riscos_tecnicos),
+    niveis_mud: lista(bloco.niveis_mudancas_nesta_vela),
+    niveis_sit: bloco.niveis_manuais_situacao || null,
+    niveis_alin: bloco.niveis_manuais_alinhamento || null,
+  };
+}
+
+// A assinatura NAO inclui "em": e' o que distingue uma condicao nova de
+// uma reexecucao sobre a mesma vela. Inclui a vela fechada, entao todo
+// fechamento gera linha mesmo sem nenhuma condicao -- e' dessa serie de
+// precos que sairao os retornos futuros da analise.
+export function assinaturaHistorico(e) {
+  return [
+    e.vela,
+    e.estrutura,
+    e.ema89_cruz,
+    e.ema89_lado,
+    e.alertas.join("|"),
+    e.deterioracao.join("|"),
+    e.conf_entrada.join("|"),
+    e.conf_pullback.join("|"),
+    e.riscos.join("|"),
+    e.niveis_mud.join("|"),
+    e.niveis_sit,
+    e.niveis_alin,
+  ].join("~");
+}
+
+export function registrarHistorico(dadosJSON, assinaturasAnt = {}, agora = new Date().toISOString()) {
+  const entradas = [];
+  const assinaturas = { ...assinaturasAnt };
+  for (const tf of TIMEFRAMES) {
+    const porPar = (dadosJSON && dadosJSON[tf.key]) || {};
+    for (const par of Object.keys(porPar)) {
+      const e = entradaHistorico(par, tf.key, porPar[par], agora);
+      if (!e) continue;
+      const chave = `${par}|${tf.key}`;
+      const assin = assinaturaHistorico(e);
+      if (assinaturas[chave] === assin) continue;
+      assinaturas[chave] = assin;
+      entradas.push(e);
+    }
+  }
+  return { entradas, assinaturas };
+}
+
 export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   const blocks = [];
   const dados = {};
@@ -4177,6 +4270,16 @@ if (executadoDireto) {
   writeFileSync("docs/index.txt", texto + "\n");
   writeFileSync("docs/relatorio.json", JSON.stringify(dadosJSON, null, 2) + "\n");
   writeFileSync("docs/.nojekyll", "");
+
+  // Historico append-only. Le as assinaturas do estado anterior para nao
+  // repetir linha a cada execucao horaria sobre a mesma vela fechada.
+  const hist = registrarHistorico(dadosJSON, estadoPrev.historicoAssinaturas || {});
+  if (hist.entradas.length) {
+    appendFileSync(
+      "docs/historico.jsonl",
+      hist.entradas.map((e) => JSON.stringify(e)).join("\n") + "\n"
+    );
+  }
   writeFileSync(
     "docs/estado.json",
     JSON.stringify(
@@ -4186,6 +4289,7 @@ if (executadoDireto) {
         niveis: estadoNiveis,
         zonas: zonasEstado,
         contadoresZona,
+        historicoAssinaturas: hist.assinaturas,
       },
       null,
       2

@@ -4,6 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
+  registrarHistorico, entradaHistorico, assinaturaHistorico,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1035,6 +1036,45 @@ console.log("\n== maquina de estados: a tolerancia acompanha a volatilidade do p
   const calmoLonge = atualizarEstadoNivel(anterior, { ...ctx(0.4), vela: vela(101) });
   ok(!volatilLonge.afastado && calmoLonge.afastado,
     "e o mesmo desvio de 1,0 so conta como afastamento no par calmo");
+}
+
+console.log("\n== historico: o substrato para medir o que o monitor acerta ==");
+{
+  // O historico nao decide nada e nao altera o relatorio. Ele grava o
+  // que foi PUBLICADO, para um dia dar para responder se cada condicao
+  // foi seguida de algum movimento.
+  const jsonHist = relatorioParaJSON(r1.texto, r1.zonas);
+  const primeira = registrarHistorico(jsonHist, {}, "2026-01-01T00:00:00Z");
+  ok(primeira.entradas.length > 0, "a primeira execucao grava uma entrada por par e timeframe");
+  ok(primeira.entradas.every((e) => e.par && e.tf && e.vela),
+    "toda entrada sabe de que par, timeframe e vela fechada ela fala");
+  ok(primeira.entradas.every((e) => typeof e.fech === "number" && e.fech > 0),
+    "toda entrada carrega o preco do fechamento: e' dele que sai o retorno futuro");
+
+  // Rodando de hora em hora sobre a MESMA vela fechada, nada muda: sem
+  // isso o arquivo cresceria 24 linhas por dia dizendo a mesma coisa.
+  const repetida = registrarHistorico(jsonHist, primeira.assinaturas, "2026-01-01T01:00:00Z");
+  ok(repetida.entradas.length === 0,
+    "reexecucao sobre a mesma vela fechada nao grava linha nova");
+
+  // Mas qualquer condicao nova volta a gravar, na mesma vela.
+  const mexido = JSON.parse(JSON.stringify(jsonHist));
+  const parAlvo = Object.keys(mexido.diario)[0];
+  mexido.diario[parAlvo].alertas_tecnicos = ["condicao_inventada_para_o_teste"];
+  const terceira = registrarHistorico(mexido, primeira.assinaturas, "2026-01-01T02:00:00Z");
+  ok(terceira.entradas.length === 1 && terceira.entradas[0].par === parAlvo,
+    "uma condicao nova na mesma vela grava linha, e so do par que mudou");
+
+  // A assinatura ignora o horario, senao toda execucao pareceria nova.
+  const bloco = jsonHist.diario[parAlvo];
+  const a1 = assinaturaHistorico(entradaHistorico(parAlvo, "diario", bloco, "2026-01-01T00:00:00Z"));
+  const a2 = assinaturaHistorico(entradaHistorico(parAlvo, "diario", bloco, "2026-06-30T23:00:00Z"));
+  ok(a1 === a2, "a assinatura nao depende do horario da execucao");
+
+  // Bloco em falha nao entra: registrar uma falha de fonte como se fosse
+  // leitura de mercado contaminaria a medicao depois.
+  ok(entradaHistorico("X/Y", "diario", { falha: "fonte fora do ar" }, "2026-01-01T00:00:00Z") === null,
+    "bloco em FALHA nao vira entrada de historico");
 }
 
 console.log("\n== estado entre execucoes ==");

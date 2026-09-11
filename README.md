@@ -668,14 +668,46 @@ Monitor-USD-Price/
 ├── docs/
 │   ├── .nojekyll
 │   ├── estado.json
+│   ├── historico.jsonl
 │   ├── index.html
 │   ├── index.txt
 │   └── relatorio.json
 ├── monitor.mjs
 ├── teste-fumaca.mjs
+├── analisar-historico.mjs
 ├── README.md
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
+
+## Histórico: o substrato para medir
+
+Nenhum parâmetro deste projeto foi validado contra resultado. Os períodos, os limiares, os pesos do score das zonas: tudo foi escolhido por raciocínio, e raciocínio bem argumentado continua sendo palpite até alguém medir. `docs/historico.jsonl` existe para que um dia seja possível medir.
+
+É um arquivo **append-only**, uma linha JSON por entrada, versionado junto com o resto. Ele não altera o relatório, não dispara nada e não é lido por nenhuma decisão do monitor.
+
+**Por que registra condição, e não alerta.** Os alertas não saem daqui. Quem decide alertar é o agente no ChatGPT, que lê o prompt e resolve sozinho, e o monitor não tem como ver essa decisão. O que o monitor vê, e pode registrar com precisão, são as condições que ele publicou e o preço de cada fechamento. Isso basta para a pergunta que importa: cada condição foi seguida de que movimento?
+
+Grava uma linha por par e timeframe sempre que a **vela fechada** muda ou qualquer condição muda. Execuções horárias sobre a mesma vela fechada não repetem linha, porque a assinatura que decide isso ignora o horário. Como a vela entra na assinatura, todo fechamento gera linha mesmo sem condição nenhuma, e é dessa série de preços que saem os retornos futuros. Bloco em falha não vira entrada: registrar uma queda de fonte como se fosse leitura de mercado contaminaria a medição depois.
+
+Cada linha traz a vela, o fechamento, o ATR, RSI, ADX com DI+/DI−, estrutura, lado e cruzamento da EMA89, os alertas técnicos, deterioração, confluências, riscos, mudanças de nível e a situação e o alinhamento das faixas manuais.
+
+### Como medir
+
+```bash
+node analisar-historico.mjs 10
+```
+
+O argumento é o horizonte em velas fechadas. O script junta cada condição ao que o preço fez depois e imprime, por condição, a quantidade de amostras, o retorno mediano **em ATR** e a fração de vezes em que subiu. Em ATR, e não em porcentagem, pelo mesmo motivo do resto do projeto: 3% é muito num par de câmbio e pouco num de cripto, e uma tabela que mistura os dois não quer dizer nada.
+
+A linha `TODAS AS VELAS (referência)` é o que o par fez em toda vela do período. **É contra ela que se compara, não contra zero.** Uma condição que não bate a referência não está acrescentando informação, por melhor que pareça o número absoluto. Condições com menos de cinco amostras são omitidas.
+
+Vale rodar em mais de um horizonte. Uma condição útil deveria continuar útil em 5 e em 20 velas; uma que só funciona num horizonte específico é ruído que encontrou um número.
+
+**Não espere resposta nos primeiros meses.** Detectar uma vantagem pequena contra a volatilidade diária exige muitas amostras, e o script prefere dizer que não sabe a inventar conclusão com uma dúzia de casos.
+
+### O que o histórico não alcança
+
+Ele não sabe o que o agente escolheu enviar. Se você quiser medir isso também, o prompt pede que cada alerta termine numa linha compacta de registro; basta colar essas linhas em `alertas-enviados.jsonl` na raiz. Sem isso, dá para saber quais condições têm valor, mas não se o agente está encaminhando as certas.
 
 ## Teste de fumaça
 
