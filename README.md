@@ -4,7 +4,7 @@ Monitor técnico automatizado de **USD/BRL** que coleta candles de câmbio, calc
 
 É o terceiro monitor da mesma família — depois de [Monitor-BTC-Price](https://github.com/matheussamadello/Monitor-BTC-Price) e [Monitor-XMR-Price](https://github.com/matheussamadello/Monitor-XMR-Price) — e reaproveita a mesma engenharia: mesmos indicadores, mesma máquina de estados de rompimento/reteste, mesmas zonas automáticas, mesmo formato de `relatorio.json`.
 
-Este monitor é voltado a **swing trades com horizonte mínimo aproximado de uma semana** e a **position trades**, não a operações de curto prazo ou day trade. O gráfico diário é a referência principal de timing e o semanal, o filtro de contexto estrutural.
+Este monitor é voltado a **swing trades de médio prazo** e **position trades**, com ênfase em **acumulação, realização parcial e decisões de prazo mais longo**. O gráfico diário é a referência principal de timing e o semanal, o filtro de contexto estrutural. Não é destinado a operações de curto prazo ou day trade.
 
 ## Links públicos
 
