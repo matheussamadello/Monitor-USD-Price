@@ -1105,9 +1105,9 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   // A faixa nascia apoiada na media longa (prioridade 3) e nos
   // indicadores (prioridade 5), pulando os niveis, que sao o primeiro
   // item. Estar dentro de uma faixa e' o fato mais decisivo da tela.
-  ok(ondeNosNiveis("atual", 0, "faixa_78k_80k", "alinhado") === "dentro de uma das suas faixas",
+  ok(ondeNosNiveis("atual", 0, "faixa_78k_80k", "alinhado") === "dentro de uma faixa manual",
     "distancia zero quer dizer DENTRO da faixa");
-  ok(/região de suporte/.test(ondeNosNiveis("atual", 0, "regiao_suporte_64k_66k", "alinhado")),
+  ok(/região de suporte manual/.test(ondeNosNiveis("atual", 0, "regiao_suporte_64k_66k", "alinhado")),
     "faixa de suporte e' nomeada como tal");
   ok(/encostando/.test(ondeNosNiveis("atual", 0.4, "faixa_78k_80k", "alinhado")),
     "perto mas fora da faixa: encostando");

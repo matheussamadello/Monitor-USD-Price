@@ -4099,20 +4099,22 @@ const ADX_FORTE = 25;
 // pulando o 1. Estar dentro de uma faixa e' o fato mais decisivo da
 // tela para quem escolhe entre comprar mais e converter.
 //
-// Sai em palavras, sem jargao, e diz "suas faixas" porque e' o que sao:
-// niveis escolhidos a mao, nao calculados.
+// Sai em palavras, sem jargao, e diz "faixa manual" porque e' o termo
+// que o resto do projeto usa: niveis escolhidos a mao, nao calculados.
 export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento) {
   if (!situacao || situacao === "indefinida") return null;
   const ehSuporte = typeof faixa === "string" && /suporte/.test(faixa);
   let texto;
   if (situacao === "obsoleto") {
-    texto = "longe das suas faixas";
+    texto = "longe das faixas manuais";
   } else if (typeof distAtr === "number" && distAtr <= 0) {
-    texto = ehSuporte ? "dentro da sua região de suporte" : "dentro de uma das suas faixas";
+    texto = ehSuporte
+      ? "dentro da região de suporte manual"
+      : "dentro de uma faixa manual";
   } else if (situacao === "atual") {
-    texto = "encostando numa das suas faixas";
+    texto = "encostando numa faixa manual";
   } else {
-    texto = "perto de uma das suas faixas";
+    texto = "perto de uma faixa manual";
   }
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
   // Cita-la no lugar de destaque sem dizer isso seria dar peso a um

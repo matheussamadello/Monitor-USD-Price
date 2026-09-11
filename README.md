@@ -706,7 +706,7 @@ Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria
 
 **A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
 
-- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro de uma das suas faixas`, `dentro da sua região de suporte`, `encostando`, `perto` ou `longe das suas faixas`, e diz "suas" porque são níveis escolhidos à mão, não calculados;
+- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro de uma faixa manual`, `dentro da região de suporte manual`, `encostando`, `perto` ou `longe das faixas manuais`, no mesmo vocabulário que o resto do projeto usa para níveis escolhidos à mão;
 - uma faixa que as zonas observadas não corroboram é citada **com a ressalva** `(que o mercado não vem respeitando)`. Dar destaque a um nível desalinhado sem avisar seria pior que omiti-lo;
 - a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
 - o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
