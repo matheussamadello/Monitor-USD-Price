@@ -249,7 +249,7 @@ No uso do relatório por agentes externos, a EMA89 diária pode funcionar como s
 
 O mesmo relatório atende dois horizontes de swing, sem nenhum campo novo no JSON:
 
-- **tático**, de 2 a 6 semanas, em que o diário pesa mais;
+- **tático**, de 1 a 6 semanas, em que o diário pesa mais;
 - **estratégico**, de vários meses a mais de um ano, em que o semanal pesa mais.
 
 A separação vive no prompt, não no monitor: `monitor.mjs` publica fatos de mercado e não sabe qual é o horizonte de quem lê. Divergência entre os dois — semanal íntegro e diário cedendo — é o estado normal de um pullback, não erro de dados.

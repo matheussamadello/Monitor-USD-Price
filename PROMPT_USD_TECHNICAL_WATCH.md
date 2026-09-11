@@ -135,7 +135,7 @@ Campos `*_fechado` têm prioridade como referência confirmada. Campos `*_provis
 
 Este monitor serve **dois horizontes com o mesmo relatório**. Nenhum campo do JSON muda: o que muda é o peso que você dá a cada timeframe.
 
-- **TÁTICO — 2 a 6 semanas.** O diário pesa mais. A EMA89 diária (~3 a 4 meses) é referência legítima de fôlego, e perdê-la é material mesmo com o semanal intacto. Estrutura diária, zonas diárias, RSI/DMI diários e níveis manuais mandam.
+- **TÁTICO — 1 a 6 semanas.** O diário pesa mais. A EMA89 diária (~3 a 4 meses) é referência legítima de fôlego, e perdê-la é material mesmo com o semanal intacto. Estrutura diária, zonas diárias, RSI/DMI diários e níveis manuais mandam.
 - **ESTRATÉGICO — de vários meses a mais de um ano.** O semanal pesa mais. A EMA89 semanal (~1 ano e 8 meses) cobre o horizonte inteiro da posição. Oscilação diária dentro de uma estrutura semanal íntegra é ruído aqui.
 
 **Divergência entre os dois horizontes é o estado normal, não erro.** Semanal acima da EMA89 e diário abaixo é a definição de pullback dentro de tendência. Não force um veredito único nem trate um dos lados como dado defeituoso: a divergência é exatamente a diferença entre "a tese quebrou" e "a tese está sendo testada", e essa informação é valiosa. Diga qual horizonte foi afetado e deixe o outro em paz.
