@@ -121,6 +121,7 @@ Leia, quando disponíveis no relatório:
 - padrões;
 - `niveis_manuais`;
 - `niveis_mudancas_nesta_vela`;
+- `niveis_manuais_alinhamento`;
 - `confluencia_entrada`;
 - `confluencia_pullback`;
 - `riscos_tecnicos`;
@@ -697,7 +698,7 @@ Fechamento marginalmente abaixo com indicadores neutros ou melhorando = teste in
 **Corroboração semanal obrigatória.** O horizonte deste monitor é de swing longo — meses a mais de um ano — e a EMA89 diária cobre cerca de três a quatro meses. Uma correção normal dentro de uma tese de um ano derruba a média diária sem encostar na tese. Por isso, a perda da média diária nunca é deterioração da tese por si só. Antes de escrever, confira o semanal: é ele que decide o rótulo do alerta. Verifique estas três:
 
 - `ema89_cruzamento_fechado` do bloco semanal é `abaixo`, ou o `ultimo_fechamento_close` semanal já está abaixo de `ema89_fechada_atual`; **ou**
-- a `estrutura_tendencia` semanal deixou de ser de alta; **ou**
+- a `estrutura_tendencia` semanal é `baixa`, ou o `estrutura_ultimo_fundo` semanal é `LL`; **ou**
 - `distancia_ema89_fechada_atr` do bloco semanal é menor que **1,0** — o preço está prestes a testar a média.
 
 Se pelo menos uma dessas valer, o alerta é `[AMBOS]`: a média diária cedeu e o semanal está cedendo junto.
@@ -850,6 +851,24 @@ Leituras típicas:
 Cruzamentos provisórios exigem cautela.
 
 Não trate ADX como sinal de compra/venda independente.
+
+---
+
+## Estrutura de mercado
+
+`estrutura_tendencia` tem **cinco** valores, e três deles já saíram todos como `lateral_indefinida`. Não trate os dois laterais como a mesma coisa:
+
+- `alta` — topo mais alto e fundo mais alto;
+- `baixa` — topo mais baixo e fundo mais baixo;
+- `lateral_contracao` — topo mais baixo com fundo **mais alto**. O range aperta. Não é deterioração: o fundo está subindo. Costuma preceder movimento, e é contexto para esperar rompimento, não para reduzir posição;
+- `lateral_expansao` — topo mais alto **e** fundo mais baixo. O range abre. É o oposto de lateral: volatilidade crescente, com as duas pontas se afastando. Exige margem maior, não menor;
+- `indefinida` — não há pivôs suficientes para declarar estrutura. É **ausência de dado**, não um estado de mercado. Nunca a converta em veredito nem a descreva como lateralização.
+
+`estrutura_preco` traz o rótulo cru (`HH_HL`, `LH_LL`, `LH_HL`, `HH_LL`, `indefinida`) e sempre concorda com o campo acima.
+
+`pivos_fractal` diz em que escala a estrutura foi medida, e **difere por timeframe**. Um pivô só existe depois que as velas de confirmação à direita fecharam, então a estrutura nunca usa a vela em formação.
+
+Estrutura não é sinal isolado. Uma mudança de `alta` para `lateral_contracao` não é motivo de alerta por si só.
 
 ---
 
@@ -1010,6 +1029,13 @@ Se a cascata inteira de uma fonte técnica falhar, trate como indisponibilidade 
 Em toda execução, avalie silenciosamente se resistências, suportes pontuais e faixas publicadas em `niveis_manuais` **de cada par** continuam úteis.
 
 Use o JSON como fonte de verdade da configuração atual.
+
+Dois campos diferentes medem coisas diferentes, e é fácil confundi-los:
+
+- `niveis_manuais_situacao` mede a distância do **preço** até a faixa mais próxima, em ATR. Diz se os níveis ainda cercam o preço;
+- `niveis_manuais_alinhamento` mede se as faixas ainda caem **onde o mercado de fato reage**, comparando cada uma com as zonas automáticas observadas. Sai como `alinhado`, `parcial`, `desalinhado` ou `indefinido`, com a contagem em `niveis_manuais_faixas_corroboradas`.
+
+Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, mas deslocada da região que o mercado respeita. É justamente o caso que mais merece revisão, e o único dos dois campos que enxerga isso é o alinhamento.
 
 Não alerte só porque:
 

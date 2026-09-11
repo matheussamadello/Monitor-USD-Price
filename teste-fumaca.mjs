@@ -3,6 +3,7 @@
 import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
+  acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -864,6 +865,176 @@ console.log("\n== RSI: o relatorio declara o periodo usado ==");
   const rsiDe = (t) => (/rsi_fechado: ([\d.]+)/.exec(t) || [])[1];
   ok(rsiDe(diaBloco) !== rsiDe(semBloco),
     "diario e semanal publicam RSI distintos: os periodos nao se misturam");
+}
+
+// ------------------------------------------------------------
+// Estrutura de mercado: rotulos e eventos
+// ------------------------------------------------------------
+console.log("\n== estrutura: os quatro estados tem nomes distintos ==");
+{
+  // Zigue-zague com pernas longas o bastante para cada virada ser um
+  // extremo local estrito, e pivos 2/2 para o teste nao depender do
+  // fractal configurado por timeframe.
+  const zig = (pontos, porPerna = 6) => {
+    const v = [];
+    for (let i = 0; i < pontos.length - 1; i++)
+      for (let k = 0; k < porPerna; k++)
+        v.push(pontos[i] + ((pontos[i + 1] - pontos[i]) * k) / porPerna);
+    v.push(pontos[pontos.length - 1]);
+    return { highs: v.map((x) => x + 0.5), lows: v.map((x) => x - 0.5) };
+  };
+  const rotulo = (pontos) => {
+    const z = zig(pontos);
+    return classificarEstrutura(z.highs, z.lows, acharPivos(z.highs, z.lows, 2, 2));
+  };
+  const alta = rotulo([90, 80, 100, 88, 130, 110]);
+  const baixa = rotulo([140, 90, 130, 70, 100, 85]);
+  const contr = rotulo([140, 60, 130, 70, 100, 85]);
+  const expan = rotulo([105, 95, 110, 60, 130, 110]);
+  ok(alta.tendencia === "alta" && alta.rotulo === "HH_HL", "HH + HL = alta");
+  ok(baixa.tendencia === "baixa" && baixa.rotulo === "LH_LL", "LH + LL = baixa");
+  // Antes os tres casos abaixo saiam todos como "lateral_indefinida".
+  ok(contr.tendencia === "lateral_contracao" && contr.rotulo === "LH_HL",
+    "LH + HL = contracao, nao 'lateral' generica: o fundo esta SUBINDO");
+  ok(expan.tendencia === "lateral_expansao" && expan.rotulo === "HH_LL",
+    "HH + LL = expansao: o range ABRE, que e' o oposto de lateral");
+  const curta = { highs: [10, 11, 12, 11, 10], lows: [9, 10, 11, 10, 9] };
+  const semDados = classificarEstrutura(curta.highs, curta.lows, acharPivos(curta.highs, curta.lows, 2, 2));
+  ok(semDados.tendencia === "indefinida",
+    "sem pivos suficientes o rotulo e' 'indefinida': ausencia de dado nao vira estado de mercado");
+  ok(new Set([alta, baixa, contr, expan, semDados].map((x) => x.tendencia)).size === 5,
+    "os cinco casos produzem cinco rotulos diferentes");
+}
+
+console.log("\n== estrutura: os eventos nao prometem o que nao aconteceu ==");
+{
+  const comFundos = (v) => {
+    const highs = [], lows = [], teto = Math.max(...v) * 2;
+    for (const x of v) for (const y of [teto, teto, x, teto, teto]) { highs.push(y + 1); lows.push(y); }
+    return mudancaEstrutura(highs, lows, acharPivos(highs, lows, 2, 2));
+  };
+  const comTopos = (v) => {
+    const highs = [], lows = [], chao = Math.min(...v) / 2;
+    for (const x of v) for (const y of [chao, chao, x, chao, chao]) { highs.push(y); lows.push(y - 1); }
+    return mudancaEstrutura(highs, lows, acharPivos(highs, lows, 2, 2));
+  };
+  ok(comFundos([100, 110, 95]).includes("perda_estrutura_alta_novo_LL"),
+    "fundo 95 abaixo do 100 inicial: ha LL de verdade, o evento sai");
+  ok(!comFundos([100, 110, 105]).includes("perda_estrutura_alta_novo_LL"),
+    "fundo 105 acima do 100 inicial: NAO ha LL, e o evento nao sai");
+  ok(comTopos([110, 100, 120]).includes("novo_HH_apos_topo_mais_baixo"),
+    "topo 120 acima do 110 inicial: ha HH de verdade, o evento sai");
+  ok(!comTopos([110, 100, 105]).includes("novo_HH_apos_topo_mais_baixo"),
+    "topo 105 abaixo do 110 inicial: NAO ha HH, e o evento nao sai");
+  ok(comFundos([110, 100, 105]).includes("novo_HL_apos_fundo_mais_baixo"),
+    "o evento de fundo mais alto continua saindo");
+  ok(comTopos([100, 130, 120]).includes("topo_mais_baixo_apos_HH"),
+    "o evento de topo mais baixo continua saindo");
+}
+
+console.log("\n== pivos: o fractal e' por timeframe e o relatorio declara qual usou ==");
+{
+  const dia = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+  const sem = TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
+  ok(dia.pivos.esq === dia.pivos.dir && sem.pivos.esq === sem.pivos.dir,
+    "os dois lados do fractal sao iguais em cada timeframe");
+  ok(dia.pivos.esq > sem.pivos.esq,
+    `o diario usa fractal mais largo que o semanal (${dia.pivos.esq} contra ${sem.pivos.esq}): ` +
+    "cada vela semanal ja cobre uma semana");
+  // O mesmo motivo do RSI e do DMI: a perna minima do diario tem de
+  // caber num swing de 1 a 6 semanas, nao em tres dias.
+  ok(dia.pivos.esq + dia.pivos.dir >= 10,
+    "o fractal diario exige ao menos 10 velas por perna, a escala de um swing");
+  // Serie com ruido de vela a vela por cima de uma onda maior: e'
+  // exatamente o ruido que o fractal largo tem de descartar.
+  let semente = 7;
+  const ale = () => ((semente = (semente * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const zig = [];
+  for (let i = 0; i < 400; i++) zig.push(100 + Math.sin(i / 19) * 20 + (ale() - 0.5) * 6);
+  const h = zig.map((x) => x + 0.5), l = zig.map((x) => x - 0.5);
+  const largo = acharPivos(h, l, dia.pivos.esq, dia.pivos.dir);
+  const estreito = acharPivos(h, l, 2, 2);
+  const nLargo = largo.altos.length + largo.baixos.length;
+  const nEstreito = estreito.altos.length + estreito.baixos.length;
+  ok(nLargo < nEstreito,
+    `o fractal mais largo marca menos pivos na mesma serie (${nLargo} contra ${nEstreito}): ` +
+    "e' isso que corta o ruido");
+}
+
+console.log("\n== niveis manuais: o relatorio avisa quando a faixa sai de onde o mercado reage ==");
+{
+  const zonaEm = (lo, hi) => ({ limites_operacionais: { inferior: lo, superior: hi } });
+  const niveis = { faixas: [[100, 110, "a"], [200, 210, "b"]] };
+  const casado = alinhamentoNiveis(niveis, [zonaEm(101, 109), zonaEm(201, 209)]);
+  ok(casado.situacao === "alinhado" && casado.corroboradas === 2,
+    "as duas faixas caem sobre zonas observadas: alinhado");
+  const meio = alinhamentoNiveis(niveis, [zonaEm(101, 109), zonaEm(400, 410)]);
+  ok(meio.situacao === "parcial" && meio.corroboradas === 1,
+    "so uma faixa corroborada: parcial");
+  // O caso que nada apontava antes: a faixa pode estar perto do preco e
+  // mesmo assim deslocada da regiao em que o mercado de fato reage.
+  const fora = alinhamentoNiveis(niveis, [zonaEm(300, 310), zonaEm(400, 410)]);
+  ok(fora.situacao === "desalinhado" && fora.corroboradas === 0,
+    "nenhuma faixa corroborada: desalinhado, mesmo com os numeros ainda na configuracao");
+  ok(alinhamentoNiveis(niveis, []).situacao === "indefinido",
+    "sem zonas para comparar, o campo diz indefinido em vez de inventar veredito");
+}
+
+console.log("\n== maquina de estados: um rompimento vira noticia UMA vez ==");
+{
+  const DIA = 86400;
+  const base = { nivel: 80000, direcao: "alta", tolAtr: 0.25, resetAtr: 1.5, atr: 2200, maxCandles: 30, segundos: DIA };
+  const roda = (precoDe, n) => {
+    let estado = null; const novos = []; const estados = [];
+    for (let i = 0; i < n; i++) {
+      const preco = precoDe(i);
+      const vela = { open: preco - 50, high: preco + 80, low: preco - 120, close: preco, time: 1700000000 + i * DIA };
+      const antes = estado;
+      const depois = atualizarEstadoNivel(antes, { ...base, vela });
+      if (depois && !antes && depois.estado === "rompido") novos.push(i);
+      if (depois && antes && depois.estado !== antes.estado) estados.push(`${i}:${depois.estado}`);
+      estado = depois;
+    }
+    return { novos, estados, estado };
+  };
+  // Rompeu e o preco foi embora, sem nunca voltar. Antes o registro era
+  // APAGADO por inatividade e renascia em "rompido" na vela seguinte, o
+  // que o relatorio anuncia como rompimento novo: 7 anuncios em 200 dias.
+  const embora = roda((i) => (i === 0 ? 80600 : 95000), 200);
+  ok(embora.novos.length === 1,
+    `rompimento anunciado uma unica vez em 200 velas (foram ${embora.novos.length})`);
+  ok(embora.estado && embora.estado.estado === "arquivado",
+    "o nivel abandonado termina arquivado, nao apagado");
+  // Arquivado nao e' o fim: se o preco VOLTA a encostar, o ciclo recomeca.
+  const volta = roda((i) => (i === 0 ? 80600 : i < 120 ? 95000 : 80100), 200);
+  ok(volta.novos.length === 1, "voltar ao nivel nao conta como rompimento novo");
+  ok(volta.estados.some((x) => x.endsWith(":em_reteste")),
+    "o nivel dormente acorda em reteste quando o preco volta a encostar");
+}
+
+console.log("\n== maquina de estados: a tolerancia acompanha a volatilidade do par ==");
+{
+  const DIA = 86400;
+  const vela = (c) => ({ open: c, high: c + 1, low: c - 1, close: c, time: 1700000000 });
+  const ctx = (atr) => ({
+    nivel: 100, direcao: "alta", tolAtr: 0.25, resetAtr: 1.5, atr,
+    maxCandles: 30, segundos: DIA,
+  });
+  // Mesmo desvio do nivel (0,4), dois regimes de volatilidade: com ATR
+  // grande o preco ainda esta "na zona"; com ATR pequeno, ja rompeu.
+  const anterior = { estado: "rompido", direcao: "alta", historico: [], ultimoContato: 1700000000 - DIA, dataRompimento: 1700000000 - DIA };
+  const volatil = atualizarEstadoNivel(anterior, { ...ctx(4), vela: vela(100.4) });
+  const calmo = atualizarEstadoNivel(anterior, { ...ctx(0.4), vela: vela(100.4) });
+  ok(volatil.estado === "em_reteste",
+    "num par volatil, 0,4 acima do nivel ainda e' toque: 0,4 < 0,25 x 4");
+  ok(calmo.estado !== "em_reteste",
+    "num par calmo, o mesmo 0,4 ja esta fora da zona: 0,4 > 0,25 x 0,4");
+  // O afastamento segue a mesma regra: 1,0 de desvio nao e' nada num par
+  // que anda 4 por vela, e ja e' 2,5 ATR num que anda 0,4.
+  const volatilLonge = atualizarEstadoNivel(anterior, { ...ctx(4), vela: vela(101) });
+  const calmoLonge = atualizarEstadoNivel(anterior, { ...ctx(0.4), vela: vela(101) });
+  ok(!volatilLonge.afastado && calmoLonge.afastado,
+    "e o mesmo desvio de 1,0 so conta como afastamento no par calmo");
 }
 
 console.log("\n== estado entre execucoes ==");

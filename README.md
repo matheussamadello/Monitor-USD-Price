@@ -344,7 +344,24 @@ Internamente aparecem classificações como HH, HL, LH e LL, que correspondem a:
 - LH = topo mais baixo;
 - LL = fundo mais baixo.
 
-Essas classificações são usadas para reconhecer estrutura de alta, estrutura de baixa e combinações transicionais/indefinidas.
+**O fractal é por timeframe**, pelo mesmo motivo do RSI e do DMI, e o relatório declara qual usou em `pivos_fractal`:
+
+| Timeframe | Fractal | Velas mínimas por perna |
+| --- | --- | --- |
+| Diário | 5/5 | 10 |
+| Semanal | 2/2 | 4, que são 4 semanas |
+
+Até 2026-09-11 os dois usavam 2/2, que era o único parâmetro de análise nunca desacelerado quando o monitor assumiu horizonte de swing e position. Um fractal 2/2 no diário marca pivô a cada três velas: medido em 720 velas de série **sem tendência nenhuma**, a `estrutura_tendencia` publicada virava de alta para baixa e de volta 98 vezes, cerca de uma a cada sete dias. Com 5/5 são 43 viradas e a perna mínima passa a ter sete velas, que é a escala de um swing de 1 a 6 semanas. Havia um dano colateral: o detector de divergências exige cinco velas entre os dois pivôs, e com pivôs a cada três velas ele se recusava a avaliar em 30% das leituras. O semanal fica em 2/2 porque cada vela já cobre uma semana, e alongar ali faria o pivô só existir dez semanas depois.
+
+`estrutura_tendencia` tem **cinco** valores, não três:
+
+- `alta` — HH + HL;
+- `baixa` — LH + LL;
+- `lateral_contracao` — LH + HL, o range aperta com o fundo subindo;
+- `lateral_expansao` — HH + LL, o range abre pelas duas pontas;
+- `indefinida` — não há pivôs suficientes para declarar estrutura.
+
+Antes, os três últimos saíam todos como `lateral_indefinida`. Isso juntava duas situações opostas, contração e expansão, e chamava de lateral um mercado cujo range está **abrindo**. Pior, afirmava um estado de mercado quando o que havia era ausência de dado. A distinção não é acadêmica: o prompt usa a estrutura semanal como uma das condições que promovem um alerta tático a estratégico, e um semanal fazendo fundo mais alto contava como deterioração da tese de prazo longo.
 
 ### Divergências
 
@@ -428,12 +445,18 @@ Agora o relatório publica, por par e por timeframe:
 | `niveis_manuais_situacao` | `atual`, `monitorar` ou `obsoleto` |
 | `niveis_manuais_distancia_atr` | distância do **último fechamento** até a faixa manual mais próxima, em ATR |
 | `niveis_manuais_faixa_mais_proxima` | qual faixa é essa |
+| `niveis_manuais_alinhamento` | `alinhado`, `parcial`, `desalinhado` ou `indefinido` |
+| `niveis_manuais_faixas_corroboradas` | quantas faixas caem sobre uma zona automática |
 
 Os cortes são **1 ATR** e **3 ATR**: dentro de uma faixa ou a menos de 1 ATR dela é `atual`; entre 1 e 3 é `monitorar`; além de 3 é `obsoleto`.
 
 As duas pontas da conta usam **vela fechada** — o fechamento e o ATR. A primeira versão passava o preço da vela em formação, o que misturava provisório com confirmado num híbrido sem significado limpo, e contrariava a convenção do próprio monitor, em que o que alimenta decisão usa vela fechada. E este campo alimenta uma: a revisão dos níveis manuais. O custo é uma vela de latência, irrelevante para um sinal cujo caso de origem levou 19 dias para ser notado.
 
 A distância é medida em ATR, e não em porcentagem, de propósito. Cinco por cento é muito num par de câmbio e pouco num de cripto, enquanto "três vezes a volatilidade diária" quer dizer a mesma coisa em qualquer um — um limiar só serve para os três monitores, sem recalibragem.
+
+**Situação e alinhamento medem coisas diferentes.** A situação mede a distância do preço; o alinhamento mede se as faixas continuam caindo onde o mercado de fato reage, comparando cada uma com as zonas automáticas pelo mesmo critério de sobreposição usado nas confluências. Os dois podem discordar, e é justamente a discordância que interessa: uma faixa pode estar a 0,66 ATR do preço, portanto `atual`, e mesmo assim estar deslocada da região que o mercado respeita.
+
+Era o caso do monitor de BTC quando este campo foi criado. Nenhuma das três faixas manuais atingia o limite de sobreposição em nenhum dos dois timeframes, e as duas do diário ficavam logo abaixo dele porque estavam cerca de 1.500 dólares abaixo de onde o mercado reagia: a zona automática de score 99 ficava em 79.536 a 81.093, contra a faixa configurada de 78.000 a 80.000. Nada no relatório dizia isso, porque o único campo que olhava as faixas media distância até o preço. O sinal existia por zona, em `confluencia_faixa_manual`, mas nunca era somado.
 
 `obsoleto` não é alerta de mercado: é aviso de manutenção. Significa que os níveis descrevem um regime que ficou para trás e precisam de revisão.
 
@@ -461,6 +484,10 @@ Os principais estados implementados são:
 O registro marca `afastado` sempre que o preço estiver além da distância de reset do nível, **em qualquer estado**. Isso já foi diferente: a marcação só valia ao encerrar um ciclo de reteste, então um nível rompido semanas antes e deixado 29% para trás continuava publicando `afastado: nao`, e quem lesse concluía que o preço ainda estava por perto. O encerramento do ciclo — voltar de `reteste_confirmado` ou `recuperado` para `rompido` — continua restrito aos dois estados em que faz sentido. Estados inativos podem ser arquivados sem apagar o histórico do ciclo.
 
 A máquina diferencia um critério sensível, que apenas arma um `rompimento_candidato`, de um critério mais rigoroso usado para classificar `rompido`.
+
+**A tolerância e a distância de reset são medidas em ATR**, como todo o resto do projeto: 0,25 ATR de largura em torno do nível e 1,5 ATR para encerrar o ciclo. Eram percentuais fixos, e um percentual fixo vale coisas diferentes em cada ativo. Com 0,5%, a janela de reteste valia 0,077 ATR no XMR/USD e 0,592 ATR no USDT/BRL, quase oito vezes mais larga: num par ela era dez vezes mais estreita que uma zona automática e no outro quase do tamanho de uma zona inteira, de modo que `reteste_confirmado` queria dizer coisas diferentes em cada lugar. O reset do USDT/BRL chegava a 3,55 ATR, além dos 3 ATR em que os níveis já são declarados obsoletos, então o ciclo praticamente nunca reiniciava. O monitor de câmbio já tinha os números cortados pela metade à mão para contornar isso; medidos em ATR, aqueles valores ajustados davam 0,23 a 0,30 ATR e 1,36 a 1,78 ATR, quase exatamente os valores que agora valem para qualquer par sem ajuste por fonte.
+
+**Um nível abandonado é arquivado, nunca apagado.** Quando passa da janela de inatividade sem contato, o registro vira `arquivado` e fica dormente; se o preço voltar a encostar, ele acorda e o ciclo recomeça em reteste. Antes o registro era apagado quando ainda não tinha histórico, e na vela seguinte o nível nascia do zero em `rompido` — que o relatório anuncia como rompimento novo. Uma resistência rompida com o preço indo embora reanunciava o mesmo rompimento a cada 32 velas diárias, indefinidamente: sete anúncios em duzentos dias, contra o que o prompt promete, que um rompimento vira notícia uma vez só.
 
 ## Zonas automáticas de suporte e resistência
 

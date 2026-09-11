@@ -46,6 +46,14 @@ const TIMEFRAMES = [
     // 28/42) -- e' dele que se espera a leitura de momentum, perda de
     // forca e retomada.
     rsi: { length: 21 },
+    // Pivos por timeframe, pelo mesmo motivo do RSI e do DMI. Um fractal
+    // 2/2 marca pivo a cada ~3 velas: a estrutura publicada virava de
+    // alta para baixa e de volta a cada ~7 dias mesmo em serie SEM
+    // tendencia nenhuma, e a separacao minima do detector de
+    // divergencias (5 velas) recusava ~30% das leituras porque os dois
+    // ultimos pivos estavam perto demais. Com 5/5 a perna minima passa a
+    // ter ~7 velas, que e' a escala de um swing de 1 a 6 semanas.
+    pivos: { esq: 5, dir: 5 },
     // A automacao externa le a linha "eventos:" do bloco diario.
     // Por isso o semanal usa um nome diferente, para nunca colidir.
     campoEventos: "eventos",
@@ -64,6 +72,11 @@ const TIMEFRAMES = [
     // 14 no semanal: leitura estrutural de momentum, e a mesma relacao
     // de responsividade contra o DMI semanal (14 contra 14/21).
     rsi: { length: 14 },
+    // O semanal continua em 2/2: cada vela ja e' uma semana, entao 2/2
+    // exige duas semanas de confirmacao de cada lado. Alongar aqui
+    // levaria o pivo a so existir dez semanas depois e deixaria o
+    // timeframe sem pivo nenhum na janela util.
+    pivos: { esq: 2, dir: 2 },
     campoEventos: "eventos_semanal",
   },
 ];
@@ -1033,7 +1046,7 @@ function classificarContextoCorvosComFraqueza(ctx, forca = []) {
 // A estrutura HH/HL/LH/LL CONFIRMA ou CONTRADIZ a leitura da janela de
 // 10 velas. Nao substitui: os dois campos convivem no relatorio.
 function confirmacaoEstrutural(ctx, tendencia) {
-  if (!tendencia || tendencia === "lateral_indefinida") return "neutro";
+  if (tendencia !== "alta" && tendencia !== "baixa") return "neutro";
   const ctxBaixa = ctx.includes("queda") || ctx.includes("regiao_baixa");
   const ctxAlta = ctx.includes("alta");
   if (ctxBaixa && tendencia === "baixa") return "confirma";
@@ -1156,9 +1169,21 @@ export function classificarEstrutura(highs, lows, pivos) {
         : "LL"
       : null;
 
-  let tendencia = "lateral_indefinida";
+  // Quatro configuracoes reais, nao tres. Antes, contracao, expansao e
+  // FALTA DE DADOS saiam todas como "lateral_indefinida":
+  //   - LH_HL e' contracao: o range aperta, fundo mais alto. Nao e'
+  //     deterioracao, e costuma preceder movimento.
+  //   - HH_LL e' expansao: topo mais alto E fundo mais baixo ao mesmo
+  //     tempo. O range ABRE -- o oposto de lateral.
+  //   - sem dois pivos de cada tipo nao ha estrutura nenhuma a declarar,
+  //     e afirmar "lateral" ali era publicar ausencia de dado como
+  //     estado de mercado.
+  let tendencia;
   if (topo === "HH" && fundo === "HL") tendencia = "alta";
   else if (topo === "LH" && fundo === "LL") tendencia = "baixa";
+  else if (topo === "LH" && fundo === "HL") tendencia = "lateral_contracao";
+  else if (topo === "HH" && fundo === "LL") tendencia = "lateral_expansao";
+  else tendencia = "indefinida";
 
   const rotulo = topo && fundo ? `${topo}_${fundo}` : "indefinida";
   return { topo, fundo, rotulo, tendencia };
@@ -1171,12 +1196,17 @@ export function mudancaEstrutura(highs, lows, pivos) {
   const eventos = [];
   if (baixos.length >= 3) {
     const [a, b, c] = baixos.slice(-3).map((p) => lows[p]);
-    if (b > a && c < b) eventos.push("perda_estrutura_alta_novo_LL");
+    // O nome promete um fundo mais baixo, entao a condicao compara com
+    // o PRIMEIRO fundo, nao so com o do meio: 100 -> 110 -> 105 tem
+    // c < b, mas 105 segue acima de 100 e nao ha LL nenhum ali.
+    if (b > a && c < a) eventos.push("perda_estrutura_alta_novo_LL");
     if (b < a && c > b) eventos.push("novo_HL_apos_fundo_mais_baixo");
   }
   if (altos.length >= 3) {
     const [a, b, c] = altos.slice(-3).map((p) => highs[p]);
-    if (b < a && c > b) eventos.push("novo_HH_apos_topo_mais_baixo");
+    // Mesma correcao, espelhada: 110 -> 100 -> 105 tem c > b, mas 105
+    // esta abaixo de 110 e nao e' topo novo.
+    if (b < a && c > a) eventos.push("novo_HH_apos_topo_mais_baixo");
     if (b > a && c < b) eventos.push("topo_mais_baixo_apos_HH");
   }
   return eventos;
@@ -1532,13 +1562,21 @@ export function alertasTecnicos(cfg, d, ind) {
 // "sem rompimento confirmado" e "estado: rompido" ao mesmo tempo.
 // ------------------------------------------------------------
 
-// Metade dos valores dos monitores de cripto, de proposito. Um dia de
-// USD/BRL anda tipicamente 0,3%-0,8%; com a tolerancia de 0,5% do BTC,
-// quase toda vela cairia "na zona" do nivel e a maquina de estados
-// ficaria presa em em_reteste. E com 3% de afastamento o ciclo
-// praticamente nunca encerraria.
-const RETEST_TOLERANCE_PCT = 0.25; // largura da zona em torno do nivel
-const RETEST_RESET_DISTANCE_PCT = 1.5; // afastamento que encerra o ciclo
+// Em ATR, como todo o resto do projeto, e agora IGUAL nos tres
+// monitores. Antes era percentual fixo, e um percentual vale coisas
+// diferentes em cada ativo: os 0,5%/3% dos monitores de cripto valiam
+// 0,592 ATR e 3,55 ATR no USDT/BRL, tao largos que quase toda vela caia
+// "na zona" e o ciclo nunca encerrava. A saida tinha sido cortar os
+// numeros pela metade so aqui, o que corrigia este monitor e deixava a
+// unidade errada. Medidos em ATR, aqueles 0,25%/1,5% ajustados a mao
+// davam 0,23-0,30 ATR e 1,36-1,78 ATR -- praticamente os valores
+// abaixo, que agora valem para qualquer par sem ajuste por fonte.
+const RETEST_TOLERANCIA_ATR = 0.25; // largura da zona em torno do nivel
+const RETEST_RESET_ATR = 1.5; // afastamento que encerra o ciclo
+// Usados so enquanto nao ha ATR (serie curta demais); sao os valores
+// antigos deste monitor, para o comportamento nao mudar nesse canto.
+const RETEST_TOLERANCIA_PCT_FALLBACK = 0.25;
+const RETEST_RESET_PCT_FALLBACK = 1.5;
 const HISTORICO_MAX = 5;
 
 export function chaveNivel(parKey, tfKey, nivel) {
@@ -1547,8 +1585,14 @@ export function chaveNivel(parKey, tfKey, nivel) {
 
 // Devolve o novo registro (ou null para descartar).
 export function atualizarEstadoNivel(anterior, ctx) {
-  const { nivel, direcao, vela, tolPct, resetPct, maxCandles, segundos } = ctx;
-  const tol = Math.abs(nivel) * (tolPct / 100);
+  const { nivel, direcao, vela, tolAtr, resetAtr, atr, maxCandles, segundos } = ctx;
+  const temAtr = atr > 0;
+  const tol = temAtr
+    ? atr * tolAtr
+    : Math.abs(nivel) * (RETEST_TOLERANCIA_PCT_FALLBACK / 100);
+  const limiteReset = temAtr
+    ? atr * resetAtr
+    : Math.abs(nivel) * (RETEST_RESET_PCT_FALLBACK / 100);
   const alta = direcao === "alta";
 
   const acima = vela.close > nivel + tol;
@@ -1590,13 +1634,38 @@ export function atualizarEstadoNivel(anterior, ctx) {
   }
 
   const e = { ...anterior, historico: [...(anterior.historico || [])] };
-  if (e.estado === "arquivado") return e;
 
-  // descarte operacional por inatividade
+  // Registro DORMENTE. Enquanto o preco estiver longe, fica parado e nao
+  // anuncia nada. Quando o preco VOLTA a encostar no nivel, o ciclo
+  // recomeca do estado operacional e o switch abaixo trata esta mesma
+  // vela -- um nivel rompido ha meses que e' reencostado esta sendo
+  // retestado, e e' isso que o relatorio deve dizer.
+  if (e.estado === "arquivado") {
+    if (!(naZona || penetrou)) return e;
+    e.estado = "rompido";
+    e.ultimoContato = vela.time;
+    if (!e.dataRompimento) e.dataRompimento = vela.time;
+  }
+
+  // Descarte operacional por inatividade: ARQUIVA, nunca apaga.
+  // Devolver null apagava o registro, e na vela seguinte o nivel nascia
+  // do zero em "rompido" -- que o relatorio anuncia como rompimento
+  // NOVO. Um nivel rompido e deixado para tras reanunciava o mesmo
+  // rompimento a cada maxCandles velas, indefinidamente: com o preco
+  // parado longe, 7 anuncios em 200 dias. O prompt promete o contrario,
+  // que um rompimento vira noticia uma vez so.
   const velasSemContato = (vela.time - (e.ultimoContato || e.dataRompimento)) / segundos;
   if (velasSemContato > maxCandles) {
-    if (!e.historico.length) return null;
-    return { estado: "arquivado", historico: e.historico };
+    return {
+      estado: "arquivado",
+      direcao: e.direcao,
+      precoRompimento: e.precoRompimento,
+      dataRompimento: e.dataRompimento,
+      ultimoContato: e.ultimoContato,
+      atualizado: vela.time,
+      afastado: true,
+      historico: e.historico,
+    };
   }
 
   e.atualizado = vela.time;
@@ -1646,13 +1715,13 @@ export function atualizarEstadoNivel(anterior, ctx) {
   // deixado muito para tras seguia publicando afastado: nao -- quem
   // lesse concluiria que o preco ainda estava por perto. Agora vale em
   // qualquer estado.
-  const distPct = (Math.abs(vela.close - nivel) / Math.abs(nivel)) * 100;
-  e.afastado = distPct > resetPct;
+  const dist = Math.abs(vela.close - nivel);
+  e.afastado = dist > limiteReset;
   // O encerramento do ciclo continua valendo so para os dois estados em
   // que ele faz sentido: um reteste confirmado ou uma recuperacao que o
   // preco deixou para tras voltam a ser simplesmente "rompido".
   if (
-    distPct > resetPct &&
+    dist > limiteReset &&
     (e.estado === "reteste_confirmado" || e.estado === "recuperado")
   ) {
     e.estado = "rompido";
@@ -1682,6 +1751,41 @@ export function atualizarEstadoNivel(anterior, ctx) {
 
 const NIVEIS_ATUAL_ATR = 1; // ate aqui, os niveis cercam o preco
 const NIVEIS_OBSOLETO_ATR = 3; // alem daqui, o preco vive noutro lugar
+
+// A situacao mede a distancia do PRECO. Ela nao ve, e nao tem como ver,
+// se a faixa continua caindo onde o mercado de fato reage: uma faixa
+// pode estar a 0,66 ATR do preco (portanto "atual") e mesmo assim estar
+// deslocada da regiao que as zonas automaticas encontram. Era o caso do
+// BTC quando isto foi escrito -- as faixas manuais estavam ~1.500 abaixo
+// da zona de score 99, e nada no relatorio dizia isso. Esta funcao
+// fecha essa lacuna: compara cada faixa manual com as zonas observadas,
+// pelo mesmo criterio de sobreposicao usado nas confluencias.
+export function alinhamentoNiveis(niveis, zonas) {
+  const faixas = (niveis && niveis.faixas) || [];
+  const zs = zonas || [];
+  if (!faixas.length || !zs.length) {
+    return { situacao: "indefinido", corroboradas: 0, total: faixas.length };
+  }
+  let corroboradas = 0;
+  for (const [lo, hi] of faixas) {
+    const bate = zs.some((z) => {
+      const L = z.limites_operacionais;
+      if (!L) return false;
+      return (
+        sobreposicaoFrac({ inferior: lo, superior: hi }, L) >=
+        CONFLUENCIA_SOBREPOSICAO_MIN
+      );
+    });
+    if (bate) corroboradas++;
+  }
+  const situacao =
+    corroboradas === faixas.length
+      ? "alinhado"
+      : corroboradas === 0
+      ? "desalinhado"
+      : "parcial";
+  return { situacao, corroboradas, total: faixas.length };
+}
 
 export function situacaoNiveis(niveis, preco, atr) {
   const faixas = (niveis && niveis.faixas) || [];
@@ -2967,7 +3071,7 @@ function readPair(cfg, d, tf, opts = {}) {
 
 
   // --- pivos, estrutura, divergencias e volume (SO velas fechadas) ---
-  const pivos = acharPivos(highs, lows);
+  const pivos = acharPivos(highs, lows, tf.pivos.esq, tf.pivos.dir);
   const estrutura = classificarEstrutura(highs, lows, pivos);
   const estruturaEventos = mudancaEstrutura(highs, lows, pivos);
   const divergencias = detectarDivergencias(highs, lows, rsi, pivos);
@@ -3027,8 +3131,9 @@ function readPair(cfg, d, tf, opts = {}) {
       nivel: nv.nivel,
       direcao: nv.direcao,
       vela: velaFechada,
-      tolPct: RETEST_TOLERANCE_PCT,
-      resetPct: RETEST_RESET_DISTANCE_PCT,
+      tolAtr: RETEST_TOLERANCIA_ATR,
+      resetAtr: RETEST_RESET_ATR,
+      atr: atr[i],
       maxCandles: tf.retestMaxCandles,
       segundos: tf.segundos,
     });
@@ -3242,6 +3347,11 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(`niveis_manuais_situacao: ${sitNiveis.situacao}`);
   L.push(`niveis_manuais_faixa_mais_proxima: ${sitNiveis.faixa || "--"}`);
   L.push(`niveis_manuais_distancia_atr: ${num(sitNiveis.distanciaAtr, 2)}`);
+  const alinNiveis = alinhamentoNiveis(cfg.niveis, zonasAutomaticas);
+  L.push(`niveis_manuais_alinhamento: ${alinNiveis.situacao}`);
+  L.push(
+    `niveis_manuais_faixas_corroboradas: ${alinNiveis.corroboradas} de ${alinNiveis.total}`
+  );
 
   // ---- periodo e volume ----
   L.push("");
@@ -3287,6 +3397,10 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(
     `estrutura_eventos: ${estruturaEventos.length ? estruturaEventos.join(", ") : "nenhum"}`
   );
+  // O relatorio declara o fractal usado, como ja faz com RSI e DMI: o
+  // numero muda por timeframe e quem le a estrutura precisa saber em que
+  // escala ela foi medida.
+  L.push(`pivos_fractal: ${tf.pivos.esq}/${tf.pivos.dir}`);
   L.push(`pivos_topos_recentes: ${descrevePivos(pivos.altos, highs, times, D)}`);
   L.push(`pivos_fundos_recentes: ${descrevePivos(pivos.baixos, lows, times, D)}`);
 
