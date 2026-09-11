@@ -51,10 +51,12 @@ function retorno(par, tf, vela, atr) {
   return (serie[i + HORIZONTE][1] - serie[i][1]) / atr;
 }
 
-// Cada condicao publicada vira uma linha da tabela.
+// Cada condicao publicada vira uma linha da tabela. O par faz parte da
+// chave: XMR/USD e XMR/BTC, por exemplo, sao mercados diferentes e nao
+// podem compartilhar a mesma amostra so porque publicaram o mesmo nome.
 const balde = new Map();
 const anota = (nome, par, tf, r) => {
-  const k = `${tf} | ${nome}`;
+  const k = `${par} | ${tf} | ${nome}`;
   if (!balde.has(k)) balde.set(k, []);
   balde.get(k).push(r);
 };
@@ -82,10 +84,12 @@ console.log(`Historico: ${entradas.length} entradas, ${ordenadas.size} series.`)
 console.log(`Horizonte: ${HORIZONTE} velas fechadas. Retorno em ATR da vela do sinal.`);
 console.log(`Sem futuro suficiente para medir: ${semFuturo} entradas.\n`);
 
-const base = balde.get(
-  [...balde.keys()].find((k) => k.endsWith("TODAS AS VELAS (referencia)")) || ""
+// Agora ha uma referencia independente por par e timeframe. Basta que
+// ao menos uma delas tenha amostra suficiente para a tabela ser util.
+const temBase = [...balde.entries()].some(
+  ([k, v]) => k.endsWith("TODAS AS VELAS (referencia)") && v.length >= MIN_AMOSTRAS
 );
-if (!base || base.length < MIN_AMOSTRAS) {
+if (!temBase) {
   console.log("Ainda nao ha amostras suficientes para dizer nada.");
   console.log("Isto e' esperado: o registro acabou de comecar. Volte a rodar");
   console.log("depois de alguns meses de historico.");
@@ -114,12 +118,12 @@ for (const l of linhasTab) {
   );
 }
 console.log(
-  "\nCompare cada linha com a de referencia, nao com zero: ela e' o que o par"
+  "\nCompare cada linha com a referencia do MESMO par e timeframe, nao com zero:"
 );
 console.log(
-  "fez em TODAS as velas. Uma condicao que nao bate a referencia nao esta"
+  "ela e' o que aquele mercado fez em TODAS as velas. Uma condicao que nao"
 );
-console.log("acrescentando informacao, por melhor que seja o numero absoluto.");
+console.log("bate a propria referencia nao acrescenta informacao, por melhor que pareca o numero absoluto.");
 console.log(
   `\nCom menos de ${MIN_AMOSTRAS} amostras a condicao e' omitida: nao da' para concluir nada.`
 );
