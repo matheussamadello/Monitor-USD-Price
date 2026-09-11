@@ -943,10 +943,10 @@ console.log("\n== pivos: o fractal e' por timeframe e o relatorio declara qual u
     `o diario usa fractal mais largo que o semanal (${dia.pivos.esq} contra ${sem.pivos.esq}): ` +
     "cada vela semanal ja cobre uma semana");
   // O 5/5 amplia a janela local e exige cinco velas fechadas a direita
-// antes de confirmar um pivo candidato. Isso filtra ruido, mas NAO
-// define uma distancia minima fixa entre pivos consecutivos.
-ok(dia.pivos.esq === 5 && dia.pivos.dir === 5,
-  "o fractal diario usa 5 velas de cada lado e confirma apos 5 velas a direita");
+  // antes de confirmar um pivo candidato. Isso filtra ruido, mas NAO
+  // define uma distancia minima fixa entre pivos consecutivos.
+  ok(dia.pivos.esq === 5 && dia.pivos.dir === 5,
+    "o fractal diario usa 5 velas de cada lado e confirma apos 5 velas a direita");
   // Serie com ruido de vela a vela por cima de uma onda maior: e'
   // exatamente o ruido que o fractal largo tem de descartar.
   let semente = 7;

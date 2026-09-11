@@ -47,11 +47,11 @@ const TIMEFRAMES = [
     // forca e retomada.
     rsi: { length: 21 },
     // Pivos por timeframe, pelo mesmo motivo do RSI e do DMI. Um fractal
-// 5/5 usa cinco velas de contexto de cada lado e so confirma o pivo
-// depois que as cinco velas a direita fecham. A janela local mais
-// larga reduziu as viradas de estrutura em serie sem tendencia e
-// tambem as divergencias recusadas por pivos proximos. Isso nao cria
-// uma "perna minima" fixa entre pivos consecutivos.
+    // 5/5 usa cinco velas de contexto de cada lado e so confirma o pivo
+    // depois que as cinco velas a direita fecham. A janela local mais
+    // larga reduziu as viradas de estrutura em serie sem tendencia e
+    // tambem as divergencias recusadas por pivos proximos. Isso nao cria
+    // uma "perna minima" fixa entre pivos consecutivos.
     pivos: { esq: 5, dir: 5 },
     // A automacao externa le a linha "eventos:" do bloco diario.
     // Por isso o semanal usa um nome diferente, para nunca colidir.
@@ -72,10 +72,10 @@ const TIMEFRAMES = [
     // de responsividade contra o DMI semanal (14 contra 14/21).
     rsi: { length: 14 },
     // O semanal continua em 2/2: cada vela ja e' uma semana. O candidato
-// usa duas velas de contexto a esquerda e so e' confirmado depois
-// que duas velas semanais a direita fecham. Levar a 5/5 adicionaria
-// cinco semanas de confirmacao a direita, atraso excessivo para a
-// janela util deste monitor.
+    // usa duas velas de contexto a esquerda e so e' confirmado depois
+    // que duas velas semanais a direita fecham. Levar a 5/5 adicionaria
+    // cinco semanas de confirmacao a direita, atraso excessivo para a
+    // janela util deste monitor.
     pivos: { esq: 2, dir: 2 },
     campoEventos: "eventos_semanal",
   },
