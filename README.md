@@ -695,7 +695,16 @@ A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso
 
 Nenhuma regra nova de mercado nasce aí. O corte de 1 ATR é o mesmo que o monitor já usa para separar perto de longe na obsolescência dos níveis, e 70 é a referência de RSI que o prompt usa em todo lugar. Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria mentira. E uma alta longe da média sem RSI esticado não vira alarme, porque alta saudável é o estado normal de uma tendência.
 
-**A linha mostra os números que a produziram**, ao lado do rótulo. É o que permite conferir a leitura sem ler o resto da página: se o rótulo disser "esticado" e a razão disser 3,05 ATR acima com RSI 72, dá para julgar por conta própria se concorda.
+**A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
+
+- a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
+- o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
+- o RSI vira `momentum esticado`, `normal` ou `muito fraco`, sem o número;
+- a estrutura sai da linha. Quando ela muda o veredito, isso já aparece no próprio rótulo.
+
+O ATR continua sendo o que **decide**, e continua inteiro no relatório abaixo, para o agente e para quem consome os campos. Ele só não aparece aqui.
+
+Um efeito colateral que confunde à primeira vista: `bem abaixo (−2,9%)` no dólar e `bem acima (+54,2%)` no Monero podem aparecer lado a lado. Está certo. Perto e longe são medidos contra o quanto **cada par** costuma oscilar, então 3% já é bastante no câmbio e é pouco numa cripto. A nota ao pé da faixa diz isso em uma linha.
 
 Ela **descreve enquadramento, não recomenda operação e não gera alerta**. É contexto que muda de estado poucas vezes por ano, e é essa lentidão que a torna útil para horizonte longo.
 

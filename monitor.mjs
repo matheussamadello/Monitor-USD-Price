@@ -4084,7 +4084,7 @@ function pgTimeframe(titulo, b, dec) {
 // obsolescencia dos niveis, e 70/30 e' o par de referencia do RSI em
 // todo o prompt.
 export function leituraLonga(sem) {
-  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponivel" };
+  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponível" };
   if (!sem || sem.falha) return nada;
   const fech = sem.ultimo_fechamento_close;
   const ema = sem.ema89_fechada_atual;
@@ -4094,12 +4094,6 @@ export function leituraLonga(sem) {
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 
   const abaixo = fech < ema;
-  const partes = [
-    `semanal ${num(dist, 2)} ATR ${abaixo ? "abaixo" : "acima"} da EMA89`,
-    typeof rsi === "number" ? `RSI ${num(rsi, 0)}` : null,
-    estrutura ? `estrutura ${estrutura}` : null,
-  ].filter(Boolean);
-  const razao = partes.join(", ");
 
   // LONGE e' 1 ATR, o mesmo corte que o monitor ja usa para separar
   // perto de longe na obsolescencia dos niveis. Sem esse piso, estar
@@ -4107,27 +4101,57 @@ export function leituraLonga(sem) {
   // como "barato", que e' falso e e' o tipo de exagero que faz alguem
   // parar de confiar no painel.
   const LONGE_ATR = 1;
-  if (dist < LONGE_ATR) {
-    return { classe: "neutro", rotulo: "na media longa", razao };
+  const longe = dist >= LONGE_ATR;
+
+  // A RAZAO NAO USA JARGAO. Quem le esta linha nao sabe o que e' ATR, e
+  // um numero em unidade que a pessoa nao entende nao deixa a leitura
+  // conferivel -- que era a unica razao de existir da razao.
+  //
+  // A distancia sai em PORCENTAGEM, que qualquer um entende, e a regra
+  // dos 1 ATR vira a palavra "bem" (bem acima / bem abaixo) contra
+  // "perto". Assim a palavra carrega o criterio e o numero carrega o
+  // tamanho, sem precisar explicar a unidade.
+  //
+  // O ATR continua sendo o que decide, internamente, e continua inteiro
+  // no relatorio para quem consome os campos: aqui ele so nao aparece.
+  const pct = ((fech - ema) / ema) * 100;
+  // pgNum e nao num: esta linha e' para o olho humano, entao virgula
+  // decimal. O relatorio continua com ponto, para quem parseia.
+  const quanto = `${pct >= 0 ? "+" : "−"}${pgNum(Math.abs(pct), 1)}%`;
+  const forca =
+    typeof rsi !== "number"
+      ? null
+      : rsi >= 70
+      ? "momentum esticado"
+      : rsi <= 30
+      ? "momentum muito fraco"
+      : "momentum normal";
+  const onde = longe
+    ? `bem ${abaixo ? "abaixo" : "acima"} da média longa (${quanto})`
+    : `perto da média longa (${quanto})`;
+  const razao = [onde, forca].filter(Boolean).join(", ");
+
+  if (!longe) {
+    return { classe: "neutro", rotulo: "na média longa", razao };
   }
   // ABAIXO da media longa e sem tendencia de baixa instalada: e' a
   // faixa em que acumular historicamente custa menos. "Historicamente
   // custa menos" nao e' "vai subir".
   if (abaixo && estrutura !== "baixa") {
-    return { classe: "acumular", rotulo: "barato ante a media longa", razao };
+    return { classe: "acumular", rotulo: "barato ante a média longa", razao };
   }
   // ABAIXO mas com a estrutura semanal ja de baixa: barato e caindo sao
   // coisas diferentes, e juntar as duas num so rotulo seria mentira.
   if (abaixo) {
-    return { classe: "atencao", rotulo: "barato, mas em tendencia de baixa", razao };
+    return { classe: "atencao", rotulo: "barato, mas em tendência de baixa", razao };
   }
   // ACIMA e longe, com momentum esticado: e' a faixa em que comprar mais
   // historicamente custa caro, e em que gastar cripto doi menos. Exige as
   // duas coisas, para uma alta saudavel nao virar alarme.
   if (typeof rsi === "number" && rsi >= 70) {
-    return { classe: "esticado", rotulo: "esticado ante a media longa", razao };
+    return { classe: "esticado", rotulo: "esticado ante a média longa", razao };
   }
-  return { classe: "neutro", rotulo: "acima da media, sem esticamento", razao };
+  return { classe: "neutro", rotulo: "acima da média, sem esticamento", razao };
 }
 
 function pgLeitura(cfg, dados) {
@@ -4233,10 +4257,13 @@ export function toHTML(text, dados) {
     // "e dai?" sem exigir leitura do resto da pagina.
     `<section class="leituras"><h2>Contexto longo</h2>` +
     comCartao.map((c) => pgLeitura(c, d)).join("") +
-    `<p class="nota">Onde o preco fechou em relacao a EMA89 do timeframe ` +
-    `<b>semanal</b>, com a estrutura e o RSI do mesmo bloco. Descreve ` +
-    `enquadramento de prazo longo, nao recomenda operacao e nao gera alerta.` +
-    `</p></section>\n` +
+    `<p class="nota">Compara o fechamento da semana com a <b>média longa</b>, ` +
+    `que é a média das últimas 89 semanas, cerca de um ano e oito meses. ` +
+    `Diz onde o preço está nessa escala, e só nela. Não é recomendação, ` +
+    `não gera alerta e não serve para decidir hora do dia. <b>Perto</b> e ` +
+    `<b>bem longe</b> levam em conta o quanto cada par costuma oscilar, ` +
+    `por isso 3% já é bastante no dólar e é pouco numa cripto. Os campos ` +
+    `técnicos completos ficam no relatório abaixo.</p></section>\n` +
     `<section class="pares">${comCartao.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----

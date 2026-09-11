@@ -1059,15 +1059,25 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     "longe acima mas SEM esticamento nao vira alarme: alta saudavel e' normal");
   // O exagero que esta regra existe para evitar.
   const emCima = leituraLonga(bloco(99, 100, 0.15, 50, "lateral_contracao"));
-  ok(emCima.classe === "neutro" && emCima.rotulo === "na media longa",
+  ok(emCima.classe === "neutro" && emCima.rotulo === "na média longa",
     "0,15 ATR da media e' ESTAR na media, e nao vira 'barato'");
   ok(leituraLonga({ falha: "fonte fora do ar" }).classe === "neutro",
     "bloco em falha nao inventa leitura");
   ok(leituraLonga(null).classe === "neutro", "bloco ausente nao quebra");
   // A razao tem de mostrar os numeros que produziram o rotulo: e' o que
   // torna a linha conferivel por quem nao le o resto da pagina.
-  ok(/ATR/.test(barato.razao) && /RSI/.test(barato.razao) && /estrutura/.test(barato.razao),
-    "a razao publica distancia em ATR, RSI e estrutura, para poder ser conferida");
+  // A razao existe para a leitura ser conferivel por quem NAO sabe
+  // analise tecnica. Numero em unidade que a pessoa nao entende nao
+  // confere nada, entao nenhum jargao pode vazar para esta linha.
+  const todas = [barato, caindo, esticado, subindoSaudavel, emCima];
+  ok(todas.every((x) => !/ATR|RSI|EMA|lateral_|_HL|_LL|HH_|LH_/.test(x.razao)),
+    "nenhum jargao tecnico aparece na razao: nem ATR, nem RSI, nem EMA");
+  ok(todas.every((x) => /%/.test(x.razao)),
+    "a distancia sai em porcentagem, que dispensa explicacao");
+  ok(/bem abaixo/.test(barato.razao) && /perto/.test(emCima.razao),
+    "o criterio de 1 ATR vira palavra: 'bem abaixo' contra 'perto'");
+  ok(/esticado/.test(esticado.razao) && /normal/.test(subindoSaudavel.razao),
+    "o RSI vira momentum em palavras, com o numero fora da linha");
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
   ok(pag.includes('class="leituras"') && /class="leitura /.test(pag),
     "a faixa de contexto longo aparece na pagina");
