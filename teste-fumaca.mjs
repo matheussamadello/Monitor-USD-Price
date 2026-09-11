@@ -633,14 +633,77 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   if (/s3\.tradingview\.com\/tv\.js/.test(html)) {
     ok(/\{id:"RSI@tv-basicstudies",inputs:\{[^}]*smoothingLine:"None"/.test(html),
       "pede o RSI como objeto, com a media do RSI desligada");
-    // O grafico abre no diario: o RSI dele tem de bater com o do cartao
-    // diario, e a EMA com a do relatorio. Derivado, nunca cravado.
+    // O grafico abre no diario e troca para o semanal pelos botoes. Em
+    // cada intervalo o RSI tem de bater com o do cartao daquele
+    // timeframe. Derivado, nunca cravado: a tabela sai da configuracao.
     const diarioTf = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
-    ok(html.includes(`{id:"RSI@tv-basicstudies",inputs:{length:${diarioTf.rsi.length},`),
-      `o RSI do grafico usa o periodo do diario (${diarioTf.rsi.length})`);
+    const semanalTf = TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
+    ok(html.includes(
+      `window.rsiPorIntervalo={"D":${diarioTf.rsi.length},"W":${semanalTf.rsi.length}}`),
+      `a tabela do grafico casa D com o RSI do diario (${diarioTf.rsi.length}) ` +
+      `e W com o do semanal (${semanalTf.rsi.length})`);
+    ok(html.includes('{id:"RSI@tv-basicstudies",inputs:{length:rsi,'),
+      "e o widget le o RSI dessa tabela, em vez de um periodo cravado");
+    ok(/interval:iv,/.test(html) && /var iv=window\.intervaloGrafico,rsi=window\.rsiPorIntervalo\[iv\]/.test(html),
+      "intervalo e RSI saem da mesma variavel: nao tem como um andar sem o outro");
+    ok(/data-tf="D"/.test(html) && /data-tf="W"/.test(html),
+      "a barra do grafico oferece os dois timeframes");
     ok(/\{id:"MAExp@tv-basicstudies",inputs:\{length:89\}\}/.test(html),
       "e a EMA do grafico usa 89, como o relatorio");
     ok(!/"RSI@tv-basicstudies"\s*[\]}]/.test(html), "e nunca como string solta, que o widget descartava");
+  }
+
+  // O script do widget e' montado por concatenacao de strings: um erro
+  // de digitacao so apareceria no navegador. Entao roda de verdade, com
+  // TradingView e DOM falsos, e confere o que o widget recebeu.
+  if (/s3\.tradingview\.com\/tv\.js/.test(html)) {
+    const scriptTv = html.split("window.rsiPorIntervalo=")[1].split("</script>")[0];
+    const pedidos = [];
+    const botoes = ["D", "W"].map((tf) => ({
+      tf,
+      pressed: tf === "D" ? "true" : "false",
+      classList: { contains: (c) => c === "tv-tf" },
+      getAttribute: (k) => (k === "data-tf" ? tf : null),
+      setAttribute: (k, v) => { if (k === "aria-pressed") botoes.find((b) => b.tf === tf).pressed = v; },
+    }));
+    const doc = {
+      getElementById: (id) => ({ id, innerHTML: "" }),
+      querySelectorAll: () => botoes,
+    };
+    const TradingViewFalso = { widget: function (o) { pedidos.push(o); } };
+    const janela = { TradingView: TradingViewFalso };
+    // O script usa "TradingView" solto, que no navegador resolve pelo
+    // objeto global; aqui entra como parametro.
+    new Function("window", "document", "TradingView", "window.rsiPorIntervalo=" + scriptTv)(
+      janela, doc, TradingViewFalso);
+
+    const diaTf = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+    const semTf = TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
+    const rsiDe = (o) => o.studies.find((e) => e.id === "RSI@tv-basicstudies").inputs.length;
+
+    janela.desenharGraficos("dark");
+    ok(pedidos.length > 0 && pedidos.every((o) => o.interval === "D"),
+      "ao abrir, o widget pede o diario");
+    ok(pedidos.every((o) => rsiDe(o) === diaTf.rsi.length),
+      `e o RSI dele e' o do cartao diario (${diaTf.rsi.length})`);
+
+    pedidos.length = 0;
+    janela.desenharGraficos("dark", "W");
+    ok(pedidos.length > 0 && pedidos.every((o) => o.interval === "W"),
+      "trocando para semanal, o widget pede o semanal");
+    ok(pedidos.every((o) => rsiDe(o) === semTf.rsi.length),
+      `e o RSI acompanha, virando o do cartao semanal (${semTf.rsi.length})`);
+    ok(botoes.find((b) => b.tf === "W").pressed === "true" &&
+      botoes.find((b) => b.tf === "D").pressed === "false",
+      "e a barra marca qual timeframe esta valendo");
+
+    pedidos.length = 0;
+    janela.desenharGraficos("light");
+    ok(pedidos.every((o) => o.interval === "W" && rsiDe(o) === semTf.rsi.length),
+      "trocar o TEMA nao devolve o grafico para o diario");
+    ok(pedidos.every((o) => o.studies.some(
+      (e) => e.id === "MAExp@tv-basicstudies" && e.inputs.length === 89)),
+      "e a EMA89 continua nos dois intervalos, por nao ser por timeframe");
   }
   ok(!/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>[^<]*<small>[^<]*ATR</.test(html),
     "cartao nao mostra mais a distancia da EMA89 em ATR");

@@ -3711,6 +3711,11 @@ dl{margin:0;display:grid;gap:8px}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
 .grafico{border-top:1px solid var(--linha)}
+.tv-barra{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--linha)}
+.tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
+  background:none;border:1px solid var(--linha);color:var(--fraco)}
+.tv-tf[aria-pressed="true"]{background:var(--chip-bg);border-color:var(--chip-borda);
+  color:var(--chip-txt)}
 .tv{height:460px;background:var(--painel);display:flex;align-items:center;justify-content:center}
 .tv .tv-off{padding:24px;text-align:center;font-size:13px;color:var(--fraco)}
 .grafico>p{margin:0;padding:11px 18px;border-top:1px solid var(--linha);
@@ -3846,8 +3851,17 @@ function pgCartao(cfg, dados) {
   const dia = (dados.diario || {})[cfg.label];
   const sem = (dados.semanal || {})[cfg.label];
   const preco = dia && typeof dia.preco_atual === "number" ? pgNum(dia.preco_atual, cfg.dec) : "--";
+  // Os botoes mudam o timeframe do DESENHO. Sao nossos, e nao da barra
+  // do TradingView: o widget publico roda num iframe de outra origem e
+  // nao avisa quando alguem troca o intervalo por dentro dele, entao so
+  // por aqui da' para levar o RSI junto.
   const grafico = cfg.grafico
-    ? `<div class="grafico"><div class="tv" id="tv-${pgEsc(cfg.key)}">` +
+    ? `<div class="grafico"><div class="tv-barra" role="group" ` +
+      `aria-label="Timeframe do gráfico"><button type="button" class="tv-tf" ` +
+      `data-tf="D" aria-pressed="true">Diário</button>` +
+      `<button type="button" class="tv-tf" data-tf="W" aria-pressed="false">` +
+      `Semanal</button></div>` +
+      `<div class="tv" id="tv-${pgEsc(cfg.key)}">` +
       `<span class="tv-off">Gráfico indisponível — abra em ` +
       `<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(cfg.grafico)}" ` +
       `target="_blank" rel="noopener">${pgEsc(cfg.grafico)}</a>.</span></div>` +
@@ -3880,11 +3894,14 @@ export function toHTML(text, dados) {
   // ha como sobrar um widget apontando para um container inexistente.
   const comCartao = PAIRS.filter((c) => !c.semCartao);
   const comGrafico = comCartao.filter((c) => c.grafico);
-  // O grafico embutido abre no DIARIO; o RSI dele tem de ser o mesmo que
-  // o cartao diario publica, senao o desenho contradiz o numero ao lado.
-  const rsiDoGrafico = (
-    TIMEFRAMES.find((t) => t.key === "diario") || { rsi: { length: PERIOD } }
-  ).rsi.length;
+  // O grafico abre no diario e troca para o semanal pelos botoes acima
+  // dele. Em cada intervalo o RSI do desenho tem de ser o mesmo que o
+  // cartao daquele timeframe publica, senao o desenho contradiz o numero
+  // ao lado. DERIVADO da configuracao: mudar tf.rsi.length move o
+  // desenho junto, sem ninguem lembrar de vir aqui.
+  const rsiDoTf = (chave) =>
+    (TIMEFRAMES.find((t) => t.key === chave) || { rsi: { length: PERIOD } }).rsi.length;
+  const rsiPorIntervalo = { D: rsiDoTf("diario"), W: rsiDoTf("semanal") };
 
   return (
     "<!doctype html>\n" +
@@ -3942,10 +3959,18 @@ export function toHTML(text, dados) {
       ? '<script src="https://s3.tradingview.com/tv.js"></script>\n<script>' +
         // Redesenha em vez de so trocar CSS: o grafico mora num iframe do
         // TradingView, e o tema dele e' escolhido na criacao do widget.
-        "window.desenharGraficos=function(tema){if(!window.TradingView)return;" +
+        // Intervalo e RSI andam juntos: quem troca o intervalo passa o
+        // novo, quem so troca o tema reaproveita o que ja esta valendo.
+        `window.rsiPorIntervalo=${JSON.stringify(rsiPorIntervalo)};` +
+        'window.intervaloGrafico="D";' +
+        "window.desenharGraficos=function(tema,intervalo){if(!window.TradingView)return;" +
+        "if(intervalo)window.intervaloGrafico=intervalo;" +
+        "var iv=window.intervaloGrafico,rsi=window.rsiPorIntervalo[iv];" +
+        'var bs=document.querySelectorAll(".tv-tf");for(var k=0;k<bs.length;k++)' +
+        'bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-tf")===iv?"true":"false");' +
         JSON.stringify(comGrafico.map((c) => ({ id: `tv-${c.key}`, s: c.grafico }))) +
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
-        "new TradingView.widget({container_id:g.id,symbol:g.s,interval:\"D\",theme:tema," +
+        "new TradingView.widget({container_id:g.id,symbol:g.s,interval:iv,theme:tema," +
         'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
         // EMA89 e RSI(14) fixos; ADX/DMI fica de fora e se adiciona na
         // hora, pelo proprio widget -- o padrao dele ja serve.
@@ -3958,13 +3983,12 @@ export function toHTML(text, dados) {
         // override escondendo o plot da media. Se nenhum pegar, o RSI sai
         // com a media e se desmarca a mao -- nao quebra nada.
         "allow_symbol_change:false,save_image:false," +
-        // Periodos DERIVADOS da configuracao, nao cravados: o grafico abre
-        // no diario (interval "D"), entao usa o RSI do timeframe diario --
-        // hoje 21. Mudar tf.rsi.length move o desenho junto, sem ninguem
-        // lembrar de vir aqui. A EMA vem de EMA_PERIOD, que nao e' por
-        // timeframe.
+        // O RSI vem da tabela por intervalo montada acima, entao segue o
+        // botao: diario usa o periodo do cartao diario, semanal o do
+        // semanal. A EMA vem de EMA_PERIOD, que nao e' por timeframe e
+        // por isso nao muda com o intervalo.
         `studies:[{id:"MAExp@tv-basicstudies",inputs:{length:${EMA_PERIOD}}},` +
-        `{id:"RSI@tv-basicstudies",inputs:{length:${rsiDoGrafico},smoothingLine:"None"}}],` +
+        '{id:"RSI@tv-basicstudies",inputs:{length:rsi,smoothingLine:"None"}}],' +
         'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0",' +
         '"relative strength index.smoothed ma.visible":false},' +
         'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +
@@ -3981,6 +4005,14 @@ export function toHTML(text, dados) {
     'if(salvar){try{localStorage.setItem("tema",noite?"noite":"claro")}catch(e){}}' +
     'if(window.desenharGraficos)window.desenharGraficos(noite?"dark":"light");}' +
     'if(b)b.addEventListener("click",function(){aplica(r.hasAttribute("data-tema"),true)});' +
+    // Delegado no documento: os botoes do grafico nascem com o cartao e
+    // nao mudam depois, mas assim um cartao a mais nao pede fiacao nova.
+    'document.addEventListener("click",function(e){' +
+    'var t=e.target,alvo=null;while(t&&t!==document){' +
+    'if(t.classList&&t.classList.contains("tv-tf")){alvo=t;break}t=t.parentNode}' +
+    'if(!alvo||!window.desenharGraficos)return;' +
+    'window.desenharGraficos(r.hasAttribute("data-tema")?"light":"dark",' +
+    'alvo.getAttribute("data-tf"));});' +
     // Quem nunca clicou no botao segue o SO tambem enquanto a pagina
     // esta aberta -- trocar o tema do sistema muda a pagina na hora.
     // Quem clicou fica com a propria escolha e ignora o SO.
