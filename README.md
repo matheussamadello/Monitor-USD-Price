@@ -346,12 +346,12 @@ Internamente aparecem classificações como HH, HL, LH e LL, que correspondem a:
 
 **O fractal é por timeframe**, pelo mesmo motivo do RSI e do DMI, e o relatório declara qual usou em `pivos_fractal`:
 
-| Timeframe | Fractal | Velas mínimas por perna |
+| Timeframe | Fractal | Confirmação exigida |
 | --- | --- | --- |
-| Diário | 5/5 | 10 |
-| Semanal | 2/2 | 4, que são 4 semanas |
+| Diário | 5/5 | 5 velas à esquerda e 5 à direita; o pivô só é confirmado depois que as 5 velas à direita fecham |
+| Semanal | 2/2 | 2 velas à esquerda e 2 à direita; o pivô só é confirmado depois que as 2 velas semanais à direita fecham |
 
-Até 2026-09-11 os dois usavam 2/2, que era o único parâmetro de análise nunca desacelerado quando o monitor assumiu horizonte de swing e position. Um fractal 2/2 no diário marca pivô a cada três velas: medido em 720 velas de série **sem tendência nenhuma**, a `estrutura_tendencia` publicada virava de alta para baixa e de volta 98 vezes, cerca de uma a cada sete dias. Com 5/5 são 43 viradas e a perna mínima passa a ter sete velas, que é a escala de um swing de 1 a 6 semanas. Havia um dano colateral: o detector de divergências exige cinco velas entre os dois pivôs, e com pivôs a cada três velas ele se recusava a avaliar em 30% das leituras. O semanal fica em 2/2 porque cada vela já cobre uma semana, e alongar ali faria o pivô só existir dez semanas depois.
+Até 2026-09-11 os dois usavam 2/2, que era o único parâmetro de análise nunca desacelerado quando o monitor assumiu horizonte de swing e position. Na série sintética de 720 velas **sem tendência nenhuma** usada na auditoria, a `estrutura_tendencia` publicada mudou de direção 98 vezes com 2/2 e 43 vezes com 5/5. O ganho do 5/5 diário vem da janela local mais larga e do maior atraso de confirmação, que filtram extremos curtos e reduzem ruído. Isso **não** significa que exista uma distância mínima fixa de 10, 7 ou qualquer outro número de velas entre pivôs consecutivos. O detector de divergências continua exigindo cinco velas entre os pivôs; o 5/5 diário também reduziu leituras recusadas por pivôs próximos. O semanal fica em 2/2 porque cada vela já cobre uma semana: levá-lo a 5/5 faria um pivô candidato esperar cinco velas semanais à direita para ser confirmado, atraso excessivo para a janela útil deste monitor.
 
 `estrutura_tendencia` tem **cinco** valores, não três:
 

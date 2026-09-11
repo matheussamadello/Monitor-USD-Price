@@ -942,10 +942,11 @@ console.log("\n== pivos: o fractal e' por timeframe e o relatorio declara qual u
   ok(dia.pivos.esq > sem.pivos.esq,
     `o diario usa fractal mais largo que o semanal (${dia.pivos.esq} contra ${sem.pivos.esq}): ` +
     "cada vela semanal ja cobre uma semana");
-  // O mesmo motivo do RSI e do DMI: a perna minima do diario tem de
-  // caber num swing de 1 a 6 semanas, nao em tres dias.
-  ok(dia.pivos.esq + dia.pivos.dir >= 10,
-    "o fractal diario exige ao menos 10 velas por perna, a escala de um swing");
+  // O 5/5 amplia a janela local e exige cinco velas fechadas a direita
+// antes de confirmar um pivo candidato. Isso filtra ruido, mas NAO
+// define uma distancia minima fixa entre pivos consecutivos.
+ok(dia.pivos.esq === 5 && dia.pivos.dir === 5,
+  "o fractal diario usa 5 velas de cada lado e confirma apos 5 velas a direita");
   // Serie com ruido de vela a vela por cima de uma onda maior: e'
   // exatamente o ruido que o fractal largo tem de descartar.
   let semente = 7;
