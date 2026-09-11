@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia, ondeNosNiveis,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1044,11 +1044,12 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   // Cinco campos do bloco SEMANAL, e nada mais. Existe para responder
   // "e dai?" sem obrigar a ler os 100 e poucos campos do relatorio.
   // dp/dm/adx sao opcionais: sem eles a leitura tem de continuar saindo.
-  const bloco = (fech, ema, dist, rsi, estrutura, dp, dm, adx) => ({
+  const bloco = (fech, ema, dist, rsi, estrutura, dp, dm, adx, niveis) => ({
     ultimo_fechamento_close: fech, ema89_fechada_atual: ema,
     distancia_ema89_fechada_atr: dist, rsi_fechado: rsi,
     estrutura_tendencia: estrutura,
     di_plus_fechado: dp, di_minus_fechado: dm, adx_fechado: adx,
+    ...(niveis || {}),
   });
   const barato = leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao"));
   ok(barato.classe === "acumular", "abaixo da media longa e sem baixa instalada: acumular");
@@ -1099,6 +1100,43 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   const semDmi = leituraLonga(bloco(130, 100, 2.5, 74, "alta"));
   ok(semDmi.rotulo.length > 0 && !/undefined/.test(semDmi.razao),
     "bloco sem DMI nao quebra a leitura");
+
+  // ---- niveis manuais: a prioridade 1 da lista do prompt ----
+  // A faixa nascia apoiada na media longa (prioridade 3) e nos
+  // indicadores (prioridade 5), pulando os niveis, que sao o primeiro
+  // item. Estar dentro de uma faixa e' o fato mais decisivo da tela.
+  ok(ondeNosNiveis("atual", 0, "faixa_78k_80k", "alinhado") === "dentro de uma das suas faixas",
+    "distancia zero quer dizer DENTRO da faixa");
+  ok(/região de suporte/.test(ondeNosNiveis("atual", 0, "regiao_suporte_64k_66k", "alinhado")),
+    "faixa de suporte e' nomeada como tal");
+  ok(/encostando/.test(ondeNosNiveis("atual", 0.4, "faixa_78k_80k", "alinhado")),
+    "perto mas fora da faixa: encostando");
+  ok(/perto/.test(ondeNosNiveis("monitorar", 2, "faixa_78k_80k", "alinhado")),
+    "entre 1 e 3 ATR: perto");
+  ok(/longe/.test(ondeNosNiveis("obsoleto", 5, "faixa_78k_80k", "alinhado")),
+    "alem de 3 ATR: longe das faixas");
+  ok(ondeNosNiveis(null, 0, null, null) === null, "sem situacao publicada, nao inventa frase");
+
+  // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
+  const desalinhada = ondeNosNiveis("atual", 0, "faixa_78k_80k", "desalinhado");
+  ok(/não vem respeitando/.test(desalinhada),
+    "faixa desalinhada e' citada COM a ressalva: o mercado nao a respeita");
+  ok(!/não vem respeitando/.test(ondeNosNiveis("obsoleto", 5, "faixa_78k_80k", "desalinhado")),
+    "mas longe da faixa a ressalva nao faz sentido e nao aparece");
+
+  // A razao segue a ordem de prioridade do prompt: niveis antes da media
+  // longa, e os indicadores por ultimo.
+  const comNivel = leituraLonga(bloco(130, 100, 2.5, 74, "alta", 35, 10, 30, {
+    niveis_manuais_situacao: "atual", niveis_manuais_distancia_atr: 0,
+    niveis_manuais_faixa_mais_proxima: "faixa_78k_80k",
+    niveis_manuais_alinhamento: "alinhado",
+  }));
+  ok(comNivel.razao.indexOf("faixas") < comNivel.razao.indexOf("média longa"),
+    "os niveis vem ANTES da media longa na razao");
+  ok(comNivel.razao.indexOf("média longa") < comNivel.razao.indexOf("momentum"),
+    "e os indicadores vem por ultimo");
+  ok(!/ATR|RSI|ADX|DI\+/.test(comNivel.razao),
+    "a linha dos niveis tambem sai sem jargao");
 
   ok(leituraLonga({ falha: "fonte fora do ar" }).classe === "neutro",
     "bloco em falha nao inventa leitura");

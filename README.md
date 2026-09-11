@@ -683,7 +683,9 @@ Monitor-USD-Price/
 
 O relatório tem mais de cem campos por bloco. Quase todos são refinamento, e refinamento serve para quem opera com frequência. Quem acumula ao longo do tempo e às vezes gasta precisa responder uma pergunta só: **é um momento melhor para comprar mais, para esperar ou para converter parte?**
 
-A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **oito campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI, a estrutura, e DI+, DI− e ADX.
+A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **doze campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI, a estrutura, DI+, DI− e ADX, e a situação, a distância, a faixa mais próxima e o alinhamento dos níveis manuais.
+
+A ordem da linha segue a **lista de prioridade de leitura do prompt**: níveis primeiro, média longa depois, indicadores por último. RSI e DMI ficam os dois, porque dizem coisas diferentes: o RSI mede o quanto o preço se esticou, o DMI mede se o movimento tem força. Medidos em série sintética, a correlação entre os dois fica em torno de 0,34 em regime de tendência e cai para praticamente zero em lateralização, ou seja, cerca de nove décimos do que cada um diz o outro não diz.
 
 | Rótulo | Quando aparece |
 | --- | --- |
@@ -704,6 +706,8 @@ Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria
 
 **A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
 
+- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro de uma das suas faixas`, `dentro da sua região de suporte`, `encostando`, `perto` ou `longe das suas faixas`, e diz "suas" porque são níveis escolhidos à mão, não calculados;
+- uma faixa que as zonas observadas não corroboram é citada **com a ressalva** `(que o mercado não vem respeitando)`. Dar destaque a um nível desalinhado sem avisar seria pior que omiti-lo;
 - a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
 - o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
 - o RSI vira `momentum esticado`, `normal` ou `muito fraco`, sem o número;

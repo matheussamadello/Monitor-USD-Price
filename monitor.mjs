@@ -4092,6 +4092,37 @@ function pgTimeframe(titulo, b, dec) {
 // para dizer que a tendencia ganhou ou perdeu forca.
 const ADX_FORTE = 25;
 
+// Onde o preco esta em relacao as FAIXAS MANUAIS -- as que o dono do
+// monitor marcou a mao. A lista de prioridade do prompt poe "preco,
+// estrutura e niveis relevantes" em PRIMEIRO lugar e "DMI/ADX + RSI" em
+// quinto, e a faixa de contexto longo nascia apoiada no 3 e no 5,
+// pulando o 1. Estar dentro de uma faixa e' o fato mais decisivo da
+// tela para quem escolhe entre comprar mais e converter.
+//
+// Sai em palavras, sem jargao, e diz "suas faixas" porque e' o que sao:
+// niveis escolhidos a mao, nao calculados.
+export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento) {
+  if (!situacao || situacao === "indefinida") return null;
+  const ehSuporte = typeof faixa === "string" && /suporte/.test(faixa);
+  let texto;
+  if (situacao === "obsoleto") {
+    texto = "longe das suas faixas";
+  } else if (typeof distAtr === "number" && distAtr <= 0) {
+    texto = ehSuporte ? "dentro da sua região de suporte" : "dentro de uma das suas faixas";
+  } else if (situacao === "atual") {
+    texto = "encostando numa das suas faixas";
+  } else {
+    texto = "perto de uma das suas faixas";
+  }
+  // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
+  // Cita-la no lugar de destaque sem dizer isso seria dar peso a um
+  // nivel que o mercado nao vem respeitando.
+  if (alinhamento === "desalinhado" && situacao !== "obsoleto") {
+    texto += " (que o mercado não vem respeitando)";
+  }
+  return texto;
+}
+
 export function forcaTendencia(dp, dm, adx) {
   if (typeof dp !== "number" || typeof dm !== "number") return null;
   const dominante = dp > dm ? "alta" : "baixa";
@@ -4108,6 +4139,12 @@ export function leituraLonga(sem) {
   const rsi = sem.rsi_fechado;
   const estrutura = sem.estrutura_tendencia;
   const forca = forcaTendencia(sem.di_plus_fechado, sem.di_minus_fechado, sem.adx_fechado);
+  const niveis = ondeNosNiveis(
+    sem.niveis_manuais_situacao,
+    sem.niveis_manuais_distancia_atr,
+    sem.niveis_manuais_faixa_mais_proxima,
+    sem.niveis_manuais_alinhamento
+  );
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 
   const abaixo = fech < ema;
@@ -4157,7 +4194,9 @@ export function leituraLonga(sem) {
     : forca.forte
     ? `${forca.dominante === "alta" ? "alta" : "queda"} ainda forte`
     : "sem tendência firme";
-  const razao = [onde, forcaRsi, comoVai].filter(Boolean).join(", ");
+  // Ordem da lista de prioridade do prompt: niveis primeiro, media
+  // longa depois, e os indicadores por ultimo.
+  const razao = [niveis, onde, forcaRsi, comoVai].filter(Boolean).join(", ");
 
   if (!longe) {
     return { classe: "neutro", rotulo: "na média longa", razao };
