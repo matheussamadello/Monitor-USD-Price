@@ -169,14 +169,30 @@ O trilho é **auxiliar e falha sozinho**: se as duas caírem, a seção sai com 
 
 ## Indicadores e leituras calculadas
 
-### RSI(14)
+### RSI
 
-O monitor calcula **RSI de 14 períodos** usando suavização de Wilder/RMA.
+**O período é diferente em cada timeframe**, e o relatório declara qual usou:
+
+| Timeframe | RSI Length | Papel |
+| --- | --- | --- |
+| Diário | 21 | momentum, perda de força e retomada, na escala de swing e position |
+| Semanal | 14 | leitura estrutural de momentum |
+
+Até 2026-09-11 o RSI usava 14 nos dois timeframes, por herdar o mesmo `PERIOD` que o DMI usava. O 14 no diário oscila demais para o horizonte deste monitor.
+
+Uma relação foi preservada de propósito: **em cada timeframe o RSI continua mais responsivo que o DMI/ADX** — 21 contra 28/42 no diário, 14 contra 14/21 no semanal. É do RSI que se espera perceber momentum e retomada antes do DMI confirmar; se ele ficasse mais lento que o ADX, perderia essa função. Há teste fixando isso.
+
+O cálculo usa suavização de Wilder/RMA — igual desde o início, só o período mudou.
 
 O relatório separa:
 
-- `rsi14_fechado`: calculado apenas com velas fechadas;
-- `rsi14_provisorio`: inclui a vela atualmente em formação.
+- `rsi_length`: o período usado **naquele bloco**;
+- `rsi_fechado`: calculado apenas com velas fechadas;
+- `rsi_provisorio`: inclui a vela atualmente em formação.
+
+Os campos perderam o `14` do nome pelo mesmo motivo dos de DMI: `rsi14_fechado` guardando um RSI de 21 seria mentira.
+
+**Os limiares não mudaram** — 70, 30 e 40 continuam onde estavam. Mas um RSI de 21 é menos extremo que um de 14: `rsi_acima_70` e `rsi_abaixo_30` passam a disparar menos no diário, e `rsi_esfriando` (que exige RSI acima de 40) muda de frequência. As divergências também usam o RSI como oscilador, então mudam de período junto.
 
 O código também detecta divergências RSI confirmadas e provisórias a partir de pivôs de preço.
 
@@ -591,7 +607,7 @@ A página serve a dois leitores ao mesmo tempo, com prioridades opostas.
 
 Não há regra por **horário**, de propósito. Quem quer tema escuro à noite já liga o agendamento automático do próprio sistema, e o `prefers-color-scheme` entrega isso de graça. Uma regra própria brigaria com quem escolheu claro deliberadamente, e faria a página mudar de cara sozinha conforme a hora de abrir — o que se lê como defeito, não como recurso. O tema claro **só redefine tokens de cor**: nenhuma regra de layout existe duas vezes, então os dois não têm como divergir de estrutura. Há um teste que compara os dois conjuntos de tokens e falha se alguém acrescentar uma cor no escuro e esquecer do claro — senão o tema claro herdaria uma cor de fundo escuro em silêncio.
 
-Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI, ADX com DI+/DI− (rotulado com os períodos daquele timeframe), estrutura, situação dos níveis manuais —, mais os alertas técnicos como etiquetas.
+Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI e ADX com DI+/DI− (ambos rotulados com os períodos daquele timeframe), estrutura, situação dos níveis manuais —, mais os alertas técnicos como etiquetas.
 
 **O ATR não aparece no cartão**, e a distância da EMA89 sai em porcentagem em vez de em múltiplos de ATR. Isso é só apresentação, e a razão é que ATR é unidade de **cálculo**, não leitura de relance: `0,0418` é muito ou pouco dependendo do par, enquanto `0,56%` se lê na hora.
 

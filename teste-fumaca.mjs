@@ -1,7 +1,7 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
-  build, relatorioParaJSON, toHTML, PARES_TESTE, dmiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
+  build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
 } from "./monitor.mjs";
 
@@ -240,7 +240,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/volume_referencia: ultima_vela_fechada/.test(usdtDia),
     "USDT/BRL: a classificacao declara que compara vela fechada");
   ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
-  ok(/rsi14_fechado: \d/.test(usdtDia) && /adx_fechado: \d/.test(usdtDia),
+  ok(/rsi_fechado: \d/.test(usdtDia) && /adx_fechado: \d/.test(usdtDia),
     "USDT/BRL: RSI e ADX calculados");
   ok(/nivel_5_31_estado: /.test(usdtDia) && /nivel_5_15_estado: /.test(usdtDia),
     "USDT/BRL: maquina de niveis com os niveis DELE");
@@ -249,7 +249,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/estrutura_preco: \w/.test(usdtDia), "USDT/BRL: estrutura de pivos");
   ok(/padrao_candles: /.test(usdtDia), "USDT/BRL: padroes de candle");
   ok(/vela_atual_em_formacao: (sim|nao)/.test(r.texto), "linha vela_atual_em_formacao");
-  ok(/rsi14_fechado: \d/.test(r.texto), "RSI calculado");
+  ok(/rsi_fechado: \d/.test(r.texto), "RSI calculado");
   ok(/adx_fechado: \d/.test(r.texto), "ADX calculado");
   ok(/ema89: \d/.test(r.texto), "EMA89 calculada");
   ok(/atr14: \d/.test(r.texto) && /atr14_pct: \d/.test(r.texto), "ATR publicado em preco e em %");
@@ -362,7 +362,7 @@ await cenario("trilho fora do ar nao derruba o relatorio", {
   ok(/trilho_disponivel: nao/.test(r.texto), "trilho marcado como indisponivel");
   ok(/binance: HTTP 451/.test(r.texto) && /mercadobitcoin: HTTP 503/.test(r.texto),
     "falha cita cada provedora");
-  ok(/rsi14_fechado: \d/.test(r.texto), "o par analisado continua saindo inteiro");
+  ok(/rsi_fechado: \d/.test(r.texto), "o par analisado continua saindo inteiro");
   ok(/GATILHOS ATIVOS:/.test(r.texto), "gatilhos continuam sendo avaliados");
 });
 
@@ -504,7 +504,7 @@ console.log("\n== a situacao dos niveis olha a vela FECHADA ==");
 console.log("\n== JSON ==");
 const j = relatorioParaJSON(r1.texto, r1.zonas);
 ok(j.diario["USD/BRL"] && typeof j.diario["USD/BRL"].preco_atual === "number", "JSON tem diario USD/BRL com preco numerico");
-ok(j.semanal["USD/BRL"] && typeof j.semanal["USD/BRL"].rsi14_fechado === "number", "JSON tem semanal USD/BRL com RSI numerico");
+ok(j.semanal["USD/BRL"] && typeof j.semanal["USD/BRL"].rsi_fechado === "number", "JSON tem semanal USD/BRL com RSI numerico");
 ok(j.diario["USD/BRL"].volume_disponivel === "nao", "JSON marca volume_disponivel");
 ok(Array.isArray(j.diario["USD/BRL"].alertas_tecnicos), "alertas_tecnicos vira lista");
 ok(Array.isArray(j.gatilhos_ativos), "gatilhos_ativos vira lista");
@@ -513,7 +513,7 @@ ok(j.trilho_execucao && typeof j.trilho_execucao.trilho_premio_pct === "number",
 ok(j.trilho_execucao.trilho_par === "USDT/BRL", "JSON identifica o par do trilho");
 ok(j.diario["USD/BRL"].trilho_premio_pct === undefined,
   "o trilho nao vazou para o bloco diario do JSON");
-ok(j.diario["USDT/BRL"] && typeof j.diario["USDT/BRL"].rsi14_fechado === "number",
+ok(j.diario["USDT/BRL"] && typeof j.diario["USDT/BRL"].rsi_fechado === "number",
   "JSON tem o par USDT/BRL com indicadores");
 ok(typeof j.diario["USDT/BRL"].volume_vs_media_pct === "number",
   "JSON traz volume real do USDT/BRL");
@@ -735,6 +735,65 @@ console.log("\n== DMI/ADX: o relatorio declara a configuracao usada ==");
   const adxDe = (t) => (/adx_fechado: ([\d.]+)/.exec(t) || [])[1];
   ok(adxDe(diaBloco) !== adxDe(semBloco),
     "diario e semanal publicam ADX distintos: as configuracoes nao se misturam");
+}
+
+
+console.log("\n== RSI: periodo por timeframe ==");
+{
+  // Ate 2026-09-11 o RSI usava 14 nos dois timeframes, por herdar o
+  // default de PERIOD. Agora: diario 21, semanal 14. O metodo nao mudou
+  // -- Wilder/RMA --, so o periodo, e rsiSeries ja aceitava o parametro:
+  // eram os call sites que nao passavam.
+  const c = [];
+  let p = 100;
+  for (let i = 0; i < 300; i++) { p = p * (1 + (rnd() - 0.48) * 0.03); c.push(p); }
+  const u = c.length - 1;
+
+  const r14 = rsiSeries(c);
+  const r14x = rsiSeries(c, 14);
+  ok(r14[u] === r14x[u], "rsiSeries(c, 14) reproduz exatamente o default de antes");
+
+  const r21 = rsiSeries(c, 21);
+  ok(r21[u] !== r14[u], "periodo 21 produz RSI diferente do 14");
+
+  // O objetivo da troca: menos oscilacao vela a vela no diario.
+  const varia = (s) => {
+    let soma = 0, n = 0;
+    for (let i = 100; i < s.length; i++)
+      if (s[i] !== null && s[i - 1] !== null) { soma += Math.abs(s[i] - s[i - 1]); n++; }
+    return n ? soma / n : 0;
+  };
+  ok(varia(r21) < varia(r14), "RSI(21) varia menos de vela para vela que o RSI(14)");
+
+  // E a relacao que o usuario pediu para preservar: o RSI tem de
+  // continuar MAIS responsivo que o DMI do mesmo timeframe.
+  const dia = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+  const sem = TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
+  ok(dia.rsi.length === 21 && dia.dmi.diLen === 28, "diario: RSI 21 contra DMI 28");
+  ok(sem.rsi.length === 14 && sem.dmi.diLen === 14, "semanal: RSI 14 contra DMI 14");
+  ok(dia.rsi.length < dia.dmi.adxLen && sem.rsi.length < sem.dmi.adxLen,
+    "em cada timeframe o RSI e' mais curto que o alisamento do ADX");
+
+  const curto = rsiSeries(c.slice(0, 10), 21);
+  ok(curto.every((v) => v === null), "serie curta demais devolve RSI null, nao NaN");
+}
+
+console.log("\n== RSI: o relatorio declara o periodo usado ==");
+{
+  const par = PARES_TESTE[0].label;
+  const lenDe = (t) => (/rsi_length: (\d+)/.exec(t) || [])[1];
+  const diaBloco = blocoTf(r1.texto, "GRAFICO DIARIO", par);
+  const semBloco = blocoTf(r1.texto, "GRAFICO SEMANAL", par);
+  ok(lenDe(diaBloco) === "21", "bloco diario declara rsi_length 21");
+  ok(lenDe(semBloco) === "14", "bloco semanal declara rsi_length 14");
+  ok(/indicadores:.*RSI diario 21, semanal 14/.test(r1.texto),
+    "o cabecalho lista o periodo de RSI de cada timeframe");
+  ok(!/rsi14_fechado|rsi14_provisorio/.test(r1.texto),
+    "os campos perderam o '14' do nome, que virou mentira no diario");
+
+  const rsiDe = (t) => (/rsi_fechado: ([\d.]+)/.exec(t) || [])[1];
+  ok(rsiDe(diaBloco) !== rsiDe(semBloco),
+    "diario e semanal publicam RSI distintos: os periodos nao se misturam");
 }
 
 console.log("\n== estado entre execucoes ==");
