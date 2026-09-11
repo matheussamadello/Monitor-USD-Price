@@ -679,6 +679,26 @@ Monitor-USD-Price/
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
 
+## Contexto longo: a linha para quem não é trader
+
+O relatório tem mais de cem campos por bloco. Quase todos são refinamento, e refinamento serve para quem opera com frequência. Quem acumula ao longo do tempo e às vezes gasta precisa responder uma pergunta só: **é um momento melhor para comprar mais, para esperar ou para converter parte?**
+
+A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **cinco campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI e a estrutura.
+
+| Rótulo | Quando aparece |
+| --- | --- |
+| barato ante a média longa | fechou 1 ATR ou mais **abaixo** da EMA89 semanal, sem estrutura de baixa |
+| barato, mas em tendência de baixa | o mesmo, porém com a estrutura semanal já em `baixa` |
+| esticado ante a média longa | fechou 1 ATR ou mais **acima**, com RSI semanal em 70 ou mais |
+| acima da média, sem esticamento | longe acima, mas o RSI não acompanha |
+| na média longa | a menos de 1 ATR da EMA89, para qualquer lado |
+
+Nenhuma regra nova de mercado nasce aí. O corte de 1 ATR é o mesmo que o monitor já usa para separar perto de longe na obsolescência dos níveis, e 70 é a referência de RSI que o prompt usa em todo lugar. Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria mentira. E uma alta longe da média sem RSI esticado não vira alarme, porque alta saudável é o estado normal de uma tendência.
+
+**A linha mostra os números que a produziram**, ao lado do rótulo. É o que permite conferir a leitura sem ler o resto da página: se o rótulo disser "esticado" e a razão disser 3,05 ATR acima com RSI 72, dá para julgar por conta própria se concorda.
+
+Ela **descreve enquadramento, não recomenda operação e não gera alerta**. É contexto que muda de estado poucas vezes por ano, e é essa lentidão que a torna útil para horizonte longo.
+
 ## Histórico: o substrato para medir
 
 Nenhum parâmetro deste projeto foi validado contra resultado. Os períodos, os limiares, os pesos do score das zonas: tudo foi escolhido por raciocínio, e raciocínio bem argumentado continua sendo palpite até alguém medir. `docs/historico.jsonl` existe para que um dia seja possível medir.

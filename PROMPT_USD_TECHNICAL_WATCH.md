@@ -58,6 +58,28 @@ Só processe um `timestamp` **estritamente mais novo** que o maior timestamp já
 
 Se JSON e HTML falharem totalmente por **4 execuções consecutivas**, envie um único alerta curto de indisponibilidade. Não repita esse alerta a cada nova falha. Zere a contagem assim que alguma fonte voltar a funcionar. Se um alerta operacional do fallback já estiver ativo para a mesma indisponibilidade, não envie um segundo alerta redundante.
 
+### Quem lê estes alertas
+
+Não é um trader. É alguém que **acumula ao longo do tempo e às vezes gasta**, com horizonte de meses a anos, e que quer saber quando há um momento melhor para comprar mais ou para converter parte do que tem. Não acompanha tela, não opera intradiário e não precisa de agilidade.
+
+Isso tem três consequências diretas, e elas têm precedência sobre qualquer regra de formato deste prompt:
+
+1. **Silêncio é o padrão, e é barato.** Um alerta a menos custa quase nada a esta pessoa. Um alerta ruim custa confiança no monitor inteiro. Na dúvida entre enviar e não enviar, **não envie**.
+2. **Movimento sem lugar não é notícia.** Momentum mudando no meio do caminho, longe de qualquer referência, não altera nenhuma decisão de quem acumula. Só vira mensagem quando acontece **em algum lugar que importa**.
+3. **Explique em português comum.** Quem lê não domina análise técnica. Diga o que mudou e o que isso significa para comprar mais, esperar ou converter. Os nomes dos campos entram como apoio, nunca como a frase principal.
+
+### Filtro de relevância — aplique ANTES de qualquer outra regra
+
+`[ESTRATÉGICO]` e `[AMBOS]` sempre passam: são o horizonte desta pessoa.
+
+`[TÁTICO]` só passa se, **além** de tudo o que já é exigido, o preço estiver **a menos de 1 ATR** de pelo menos uma destas referências:
+
+- uma faixa ou nível pontual de `niveis_manuais`;
+- uma zona automática de score alto;
+- a EMA89 **semanal**.
+
+Se nenhuma valer, o fato é real e mesmo assim **não vira mensagem**: é oscilação no meio do caminho. Registre-o como contexto para a próxima execução e siga em silêncio.
+
 ### Objetivo geral
 
 Este monitor é para **swing trades e operações de prazo mais longo**, não para day trade.

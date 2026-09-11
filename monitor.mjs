@@ -3917,6 +3917,19 @@ dl{margin:0;display:grid;gap:8px}
 .chip.risco{background:var(--risco-bg);border-color:var(--risco-borda);color:var(--risco-txt)}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
+.leituras{margin:0 0 22px}
+.leituras h2{margin:0 0 12px;font:600 11px/1 var(--mono);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fraco)}
+.leitura{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;
+  padding:12px 16px;border:1px solid var(--linha);border-radius:12px;
+  background:var(--painel);margin-bottom:8px}
+.leitura .lp{font:600 13px/1.3 var(--mono);color:var(--txt-forte);min-width:88px}
+.leitura .lr{font:600 14px/1.3 var(--mono);color:var(--fraco)}
+.leitura .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
+.leitura.acumular .lr{color:var(--alta)}
+.leitura.esticado .lr{color:var(--baixa)}
+.leitura.atencao .lr{color:var(--atencao)}
+.leituras .nota{margin:10px 2px 0;font:11px/1.6 var(--mono);color:var(--fraco)}
 .grafico{border-top:1px solid var(--linha)}
 .tv-barra{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--linha)}
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
@@ -4054,6 +4067,78 @@ function pgTimeframe(titulo, b, dec) {
   );
 }
 
+// ------------------------------------------------------------
+// LEITURA DE CONTEXTO LONGO
+//
+// Uma linha em portugues no topo da pagina, para quem acumula e as
+// vezes gasta, e nao opera. O relatorio tem 102 campos por bloco; esta
+// leitura usa CINCO, todos do bloco SEMANAL, e mostra os numeros que a
+// produziram para poder ser conferida sem ler o resto.
+//
+// Ela DESCREVE onde o preco esta em relacao a propria media longa. Nao
+// e' recomendacao, nao e' gatilho e nao vira alerta: e' contexto de
+// enquadramento, do tipo que muda de estado poucas vezes por ano.
+//
+// Nenhuma regra nova de mercado nasce aqui. Os cortes sao os que o
+// projeto ja usa em outros lugares: 1 ATR separa "perto" de "longe" na
+// obsolescencia dos niveis, e 70/30 e' o par de referencia do RSI em
+// todo o prompt.
+export function leituraLonga(sem) {
+  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponivel" };
+  if (!sem || sem.falha) return nada;
+  const fech = sem.ultimo_fechamento_close;
+  const ema = sem.ema89_fechada_atual;
+  const dist = sem.distancia_ema89_fechada_atr;
+  const rsi = sem.rsi_fechado;
+  const estrutura = sem.estrutura_tendencia;
+  if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
+
+  const abaixo = fech < ema;
+  const partes = [
+    `semanal ${num(dist, 2)} ATR ${abaixo ? "abaixo" : "acima"} da EMA89`,
+    typeof rsi === "number" ? `RSI ${num(rsi, 0)}` : null,
+    estrutura ? `estrutura ${estrutura}` : null,
+  ].filter(Boolean);
+  const razao = partes.join(", ");
+
+  // LONGE e' 1 ATR, o mesmo corte que o monitor ja usa para separar
+  // perto de longe na obsolescencia dos niveis. Sem esse piso, estar
+  // 0,15 ATR abaixo da media -- ou seja, EM CIMA dela -- seria anunciado
+  // como "barato", que e' falso e e' o tipo de exagero que faz alguem
+  // parar de confiar no painel.
+  const LONGE_ATR = 1;
+  if (dist < LONGE_ATR) {
+    return { classe: "neutro", rotulo: "na media longa", razao };
+  }
+  // ABAIXO da media longa e sem tendencia de baixa instalada: e' a
+  // faixa em que acumular historicamente custa menos. "Historicamente
+  // custa menos" nao e' "vai subir".
+  if (abaixo && estrutura !== "baixa") {
+    return { classe: "acumular", rotulo: "barato ante a media longa", razao };
+  }
+  // ABAIXO mas com a estrutura semanal ja de baixa: barato e caindo sao
+  // coisas diferentes, e juntar as duas num so rotulo seria mentira.
+  if (abaixo) {
+    return { classe: "atencao", rotulo: "barato, mas em tendencia de baixa", razao };
+  }
+  // ACIMA e longe, com momentum esticado: e' a faixa em que comprar mais
+  // historicamente custa caro, e em que gastar cripto doi menos. Exige as
+  // duas coisas, para uma alta saudavel nao virar alarme.
+  if (typeof rsi === "number" && rsi >= 70) {
+    return { classe: "esticado", rotulo: "esticado ante a media longa", razao };
+  }
+  return { classe: "neutro", rotulo: "acima da media, sem esticamento", razao };
+}
+
+function pgLeitura(cfg, dados) {
+  const L = leituraLonga((dados.semanal || {})[cfg.label]);
+  return (
+    `<div class="leitura ${pgEsc(L.classe)}"><span class="lp">${pgEsc(cfg.label)}</span>` +
+    `<span class="lr">${pgEsc(L.rotulo)}</span>` +
+    `<span class="lz">${pgEsc(L.razao)}</span></div>`
+  );
+}
+
 function pgCartao(cfg, dados) {
   const dia = (dados.diario || {})[cfg.label];
   const sem = (dados.semanal || {})[cfg.label];
@@ -4144,6 +4229,14 @@ export function toHTML(text, dados) {
     '<svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
     "</button>" +
     "</div></header>\n" +
+    // Vem ANTES dos cartoes de proposito: e' a unica linha que responde
+    // "e dai?" sem exigir leitura do resto da pagina.
+    `<section class="leituras"><h2>Contexto longo</h2>` +
+    comCartao.map((c) => pgLeitura(c, d)).join("") +
+    `<p class="nota">Onde o preco fechou em relacao a EMA89 do timeframe ` +
+    `<b>semanal</b>, com a estrutura e o RSI do mesmo bloco. Descreve ` +
+    `enquadramento de prazo longo, nao recomenda operacao e nao gera alerta.` +
+    `</p></section>\n` +
     `<section class="pares">${comCartao.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----

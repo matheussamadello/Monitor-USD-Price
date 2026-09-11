@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1036,6 +1036,43 @@ console.log("\n== maquina de estados: a tolerancia acompanha a volatilidade do p
   const calmoLonge = atualizarEstadoNivel(anterior, { ...ctx(0.4), vela: vela(101) });
   ok(!volatilLonge.afastado && calmoLonge.afastado,
     "e o mesmo desvio de 1,0 so conta como afastamento no par calmo");
+}
+
+console.log("\n== leitura de contexto longo: a linha para quem nao e' trader ==");
+{
+  // Cinco campos do bloco SEMANAL, e nada mais. Existe para responder
+  // "e dai?" sem obrigar a ler os 100 e poucos campos do relatorio.
+  const bloco = (fech, ema, dist, rsi, estrutura) => ({
+    ultimo_fechamento_close: fech, ema89_fechada_atual: ema,
+    distancia_ema89_fechada_atr: dist, rsi_fechado: rsi,
+    estrutura_tendencia: estrutura,
+  });
+  const barato = leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao"));
+  ok(barato.classe === "acumular", "abaixo da media longa e sem baixa instalada: acumular");
+  const caindo = leituraLonga(bloco(80, 100, 2.0, 45, "baixa"));
+  ok(caindo.classe === "atencao",
+    "barato E caindo sao coisas diferentes: a tendencia de baixa muda o rotulo");
+  const esticado = leituraLonga(bloco(130, 100, 2.5, 74, "alta"));
+  ok(esticado.classe === "esticado", "longe acima com RSI esticado: esticado");
+  const subindoSaudavel = leituraLonga(bloco(130, 100, 2.5, 58, "alta"));
+  ok(subindoSaudavel.classe === "neutro",
+    "longe acima mas SEM esticamento nao vira alarme: alta saudavel e' normal");
+  // O exagero que esta regra existe para evitar.
+  const emCima = leituraLonga(bloco(99, 100, 0.15, 50, "lateral_contracao"));
+  ok(emCima.classe === "neutro" && emCima.rotulo === "na media longa",
+    "0,15 ATR da media e' ESTAR na media, e nao vira 'barato'");
+  ok(leituraLonga({ falha: "fonte fora do ar" }).classe === "neutro",
+    "bloco em falha nao inventa leitura");
+  ok(leituraLonga(null).classe === "neutro", "bloco ausente nao quebra");
+  // A razao tem de mostrar os numeros que produziram o rotulo: e' o que
+  // torna a linha conferivel por quem nao le o resto da pagina.
+  ok(/ATR/.test(barato.razao) && /RSI/.test(barato.razao) && /estrutura/.test(barato.razao),
+    "a razao publica distancia em ATR, RSI e estrutura, para poder ser conferida");
+  const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  ok(pag.includes('class="leituras"') && /class="leitura /.test(pag),
+    "a faixa de contexto longo aparece na pagina");
+  ok(pag.indexOf('class="leituras"') < pag.indexOf('class="pares"'),
+    "e vem ANTES dos cartoes, que e' o lugar de quem so quer a resposta");
 }
 
 console.log("\n== historico: o substrato para medir o que o monitor acerta ==");
