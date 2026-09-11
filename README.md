@@ -180,15 +180,29 @@ O relatório separa:
 
 O código também detecta divergências RSI confirmadas e provisórias a partir de pivôs de preço.
 
-### DMI/ADX(14)
+### DMI/ADX
+
+**Os períodos são diferentes em cada timeframe**, e o relatório declara qual usou:
+
+| Timeframe | DI Length | ADX Smoothing | Papel |
+| --- | --- | --- | --- |
+| Diário | 28 | 42 | leitura **operacional** de tendência e força, para swing e position |
+| Semanal | 14 | 21 | **contexto** da tendência de prazo maior |
+
+Até 2026-09-11 havia um único período, 14, servindo ao mesmo tempo de DI Length e de ADX Smoothing nos dois timeframes. O 14/14 no diário reagia a ruído de curto prazo demais para o horizonte deste monitor; 28/42 alonga a janela e alisa o ADX. No semanal, 14/21 já é lento o bastante nessa escala — alongar mais só atrasaria a leitura sem ganhar filtragem.
 
 São calculados:
 
-- `di_plus14_fechado` / `di_plus14_provisorio`;
-- `di_minus14_fechado` / `di_minus14_provisorio`;
-- `adx14_fechado` / `adx14_provisorio`.
+- `dmi_di_length` / `dmi_adx_smoothing` — a configuração usada **naquele bloco**;
+- `di_plus_fechado` / `di_plus_provisorio`;
+- `di_minus_fechado` / `di_minus_provisorio`;
+- `adx_fechado` / `adx_provisorio`.
 
-O cálculo usa a suavização de Wilder/RMA. O ADX mede força direcional e deve ser interpretado junto de DI+ e DI−; o monitor não trata ADX isoladamente como direção de mercado.
+Os campos perderam o `14` do nome na mesma mudança: um campo chamado `adx14_fechado` guardando um ADX alisado em 42 seria mentira. Quem precisa do período lê `dmi_di_length` e `dmi_adx_smoothing`, que saem ao lado dos valores, e o cabeçalho do relatório lista os dois timeframes.
+
+O **semanal não é gatilho de entrada isoladamente** — serve de confirmação e contexto. E o ADX não é o gatilho principal em nenhum dos dois: preço, estrutura, rompimentos/retestes e candles continuam com prioridade.
+
+O cálculo usa a suavização de Wilder/RMA em todas as etapas — só os períodos mudaram. O ADX mede força direcional e deve ser interpretado junto de DI+ e DI−; o monitor não trata ADX isoladamente como direção de mercado.
 
 ### EMA89
 
@@ -577,7 +591,7 @@ A página serve a dois leitores ao mesmo tempo, com prioridades opostas.
 
 Não há regra por **horário**, de propósito. Quem quer tema escuro à noite já liga o agendamento automático do próprio sistema, e o `prefers-color-scheme` entrega isso de graça. Uma regra própria brigaria com quem escolheu claro deliberadamente, e faria a página mudar de cara sozinha conforme a hora de abrir — o que se lê como defeito, não como recurso. O tema claro **só redefine tokens de cor**: nenhuma regra de layout existe duas vezes, então os dois não têm como divergir de estrutura. Há um teste que compara os dois conjuntos de tokens e falha se alguém acrescentar uma cor no escuro e esquecer do claro — senão o tema claro herdaria uma cor de fundo escuro em silêncio.
 
-Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI, ADX com DI+/DI−, estrutura, situação dos níveis manuais —, mais os alertas técnicos como etiquetas.
+Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI, ADX com DI+/DI− (rotulado com os períodos daquele timeframe), estrutura, situação dos níveis manuais —, mais os alertas técnicos como etiquetas.
 
 **O ATR não aparece no cartão**, e a distância da EMA89 sai em porcentagem em vez de em múltiplos de ATR. Isso é só apresentação, e a razão é que ATR é unidade de **cálculo**, não leitura de relance: `0,0418` é muito ou pouco dependendo do par, enquanto `0,56%` se lê na hora.
 

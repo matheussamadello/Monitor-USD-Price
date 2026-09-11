@@ -1,7 +1,7 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
 import {
-  build, relatorioParaJSON, toHTML, PARES_TESTE, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
+  build, relatorioParaJSON, toHTML, PARES_TESTE, dmiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
 } from "./monitor.mjs";
 
@@ -182,6 +182,16 @@ function fonteDoPar(texto, par) {
   const m = new RegExp(`${par.replace("/", "\\/")} (diario=\\S+ semanal=\\S+)`).exec(linha);
   return m ? m[1] : null;
 }
+// Bloco de UM par dentro de UMA secao do relatorio textual.
+function blocoTf(texto, secao, par) {
+  const sec = (texto.split("========== " + secao + " ==========")[1] || "").split("\n==========")[0];
+  const i = sec.indexOf("\n" + par + "\n");
+  if (i === -1) return "";
+  const resto = sec.slice(i + 1);
+  const prox = resto.slice(1).search(/\n[A-Z0-9]+\/[A-Z]+\n/);
+  return prox === -1 ? resto : resto.slice(0, prox + 1);
+}
+
 const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
 
 // Extrai o bloco de UM par dentro de UMA secao. Com dois pares na
@@ -230,7 +240,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/volume_referencia: ultima_vela_fechada/.test(usdtDia),
     "USDT/BRL: a classificacao declara que compara vela fechada");
   ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
-  ok(/rsi14_fechado: \d/.test(usdtDia) && /adx14_fechado: \d/.test(usdtDia),
+  ok(/rsi14_fechado: \d/.test(usdtDia) && /adx_fechado: \d/.test(usdtDia),
     "USDT/BRL: RSI e ADX calculados");
   ok(/nivel_5_31_estado: /.test(usdtDia) && /nivel_5_15_estado: /.test(usdtDia),
     "USDT/BRL: maquina de niveis com os niveis DELE");
@@ -240,7 +250,7 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/padrao_candles: /.test(usdtDia), "USDT/BRL: padroes de candle");
   ok(/vela_atual_em_formacao: (sim|nao)/.test(r.texto), "linha vela_atual_em_formacao");
   ok(/rsi14_fechado: \d/.test(r.texto), "RSI calculado");
-  ok(/adx14_fechado: \d/.test(r.texto), "ADX calculado");
+  ok(/adx_fechado: \d/.test(r.texto), "ADX calculado");
   ok(/ema89: \d/.test(r.texto), "EMA89 calculada");
   ok(/atr14: \d/.test(r.texto) && /atr14_pct: \d/.test(r.texto), "ATR publicado em preco e em %");
   ok(/zonas_automaticas_total: \d/.test(r.texto) || /zonas_automaticas: nenhuma/.test(r.texto), "secao de zonas presente");
@@ -615,7 +625,8 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/^distancia_ema89_fechada_atr: [\d.]+$/m.test(r1.texto),
     "relatorio segue publicando a distancia da EMA89 em ATR");
   ok(!/<dt>ATR\(14\)<\/dt>/.test(html), "o cartao nao tem mais linha de ATR");
-  ok(/<dt>ADX \/ DI \(14\)<\/dt>/.test(html), "a linha de ADX/DI declara o periodo (14)");
+  ok(/<dt>ADX \/ DI \(28\/42\)<\/dt>/.test(html) && /<dt>ADX \/ DI \(14\/21\)<\/dt>/.test(html),
+    "o cartao rotula cada timeframe com os SEUS periodos de DMI");
   // So faz sentido onde ha widget (par com cartao e grafico).
   if (/s3\.tradingview\.com\/tv\.js/.test(html))
     ok(/MAExp@tv-basicstudies[^}]*length:89/.test(html), "o widget do TradingView pede a EMA de periodo 89");
@@ -654,6 +665,76 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
     ok(html.includes(`id="tv-${c.key}"`) === Boolean(c.grafico && temCartao),
       `${c.label}: container do grafico ${c.grafico && temCartao ? "presente" : "ausente"}, como deve`);
   }
+}
+
+
+console.log("\n== DMI/ADX: periodos por timeframe ==");
+{
+  // Ate 2026-09-11 havia UM periodo (14) servindo de DI Length e de ADX
+  // Smoothing, nos dois timeframes. Agora sao dois parametros e uma
+  // configuracao por timeframe: diario 28/42 (leitura operacional de
+  // swing/position), semanal 14/21 (contexto de prazo maior).
+
+  // 1. COMPATIBILIDADE. Chamar com (14, 14) tem de reproduzir exatamente
+  //    o que a versao de um parametro so produzia: e' o que garante que
+  //    o refactor nao mexeu no metodo de Wilder, so nos periodos.
+  const h = [], l = [], c = [];
+  let p = 100;
+  for (let i = 0; i < 300; i++) {
+    p = p * (1 + (rnd() - 0.48) * 0.03);
+    h.push(p * 1.01); l.push(p * 0.99); c.push(p);
+  }
+  const u = c.length - 1;
+  const padrao = dmiSeries(h, l, c);
+  const explicito = dmiSeries(h, l, c, 14, 14);
+  ok(padrao.adx[u] === explicito.adx[u] && padrao.plusDI[u] === explicito.plusDI[u],
+    "dmiSeries(14,14) reproduz exatamente o comportamento de antes");
+
+  // 2. OS DOIS PARAMETROS SAO INDEPENDENTES. Mudar so o alisamento do ADX
+  //    muda o ADX e NAO pode mexer nos DIs, que dependem so do diLen.
+  const so28 = dmiSeries(h, l, c, 28, 28);
+  const d2842 = dmiSeries(h, l, c, 28, 42);
+  ok(so28.plusDI[u] === d2842.plusDI[u] && so28.minusDI[u] === d2842.minusDI[u],
+    "adxLen nao afeta os DIs: eles dependem so do diLen");
+  ok(so28.adx[u] !== d2842.adx[u], "mas afeta o ADX, como deve");
+  ok(d2842.plusDI[u] !== padrao.plusDI[u], "e diLen 28 da DIs diferentes do 14");
+
+  // 3. ADX MAIS ALISADO OSCILA MENOS -- o objetivo da mudanca.
+  const varia = (s) => {
+    let soma = 0, n = 0;
+    for (let i = 200; i < s.length; i++)
+      if (s[i] !== null && s[i - 1] !== null) { soma += Math.abs(s[i] - s[i - 1]); n++; }
+    return n ? soma / n : 0;
+  };
+  ok(varia(d2842.adx) < varia(padrao.adx),
+    "ADX com alisamento 42 varia menos de vela para vela que o de 14");
+
+  // 4. SERIE CURTA nao quebra: sai null, que o relatorio publica como
+  //    "--", nunca NaN.
+  const curto = dmiSeries(h.slice(0, 40), l.slice(0, 40), c.slice(0, 40), 28, 42);
+  ok(curto.adx.every((v) => v === null), "serie curta demais devolve ADX null, nao NaN");
+}
+
+console.log("\n== DMI/ADX: o relatorio declara a configuracao usada ==");
+{
+  const cfgDe = (t) => {
+    const di = /dmi_di_length: (\d+)/.exec(t);
+    const ad = /dmi_adx_smoothing: (\d+)/.exec(t);
+    return di && ad ? di[1] + "/" + ad[1] : null;
+  };
+  const par = PARES_TESTE[0].label;
+  const diaBloco = blocoTf(r1.texto, "GRAFICO DIARIO", par);
+  const semBloco = blocoTf(r1.texto, "GRAFICO SEMANAL", par);
+  ok(cfgDe(diaBloco) === "28/42", "bloco diario declara DMI 28/42");
+  ok(cfgDe(semBloco) === "14/21", "bloco semanal declara DMI 14/21");
+  ok(/indicadores:.*diario 28\/42, semanal 14\/21/.test(r1.texto),
+    "o cabecalho lista os periodos de cada timeframe");
+  ok(!/adx14_fechado|di_plus14_|di_minus14_/.test(r1.texto),
+    "os campos perderam o '14' do nome, que virou mentira no diario");
+
+  const adxDe = (t) => (/adx_fechado: ([\d.]+)/.exec(t) || [])[1];
+  ok(adxDe(diaBloco) !== adxDe(semBloco),
+    "diario e semanal publicam ADX distintos: as configuracoes nao se misturam");
 }
 
 console.log("\n== estado entre execucoes ==");
