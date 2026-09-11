@@ -1059,6 +1059,10 @@ Dois campos diferentes medem coisas diferentes, e é fácil confundi-los:
 
 Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, mas deslocada da região que o mercado respeita. É justamente o caso que mais merece revisão, e o único dos dois campos que enxerga isso é o alinhamento.
 
+Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual cobre: zona com score 70 ou mais e pelo menos 5 toques, sem sobreposição com faixa nenhuma. No semanal ele não roda, porque a estrutura fica em outro patamar e um único conjunto de faixas serve aos dois timeframes.
+
+Quando esse campo trouxer algo, **diga ao usuário em linguagem simples**, como manutenção e não como alerta de mercado: que região é, quantas vezes o preço reagiu nela, e que ela está sem máquina de rompimento e reteste até virar faixa manual. Vale mencionar que zonas automáticas expiram depois de semanas sem toque e faixas manuais não, que é a razão de promover. Isto não consome a cota de mensagens de mercado e não deve ser repetido a cada execução: uma vez por região é suficiente, enquanto ela continuar na lista.
+
 Não alerte só porque:
 
 - o preço se afastou de um nível;

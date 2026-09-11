@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia, ondeNosNiveis,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia, ondeNosNiveis, zonasCandidatas,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1160,6 +1160,44 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     "a faixa de contexto longo aparece na pagina");
   ok(pag.indexOf('class="leituras"') < pag.indexOf('class="pares"'),
     "e vem ANTES dos cartoes, que e' o lugar de quem so quer a resposta");
+}
+
+console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");
+{
+  const z = (lo, hi, score, toques) => ({
+    limites_operacionais: { inferior: lo, superior: hi }, score, numero_toques: toques,
+  });
+  const niveis = { faixas: [[100, 110, "a"]] };
+  // Madura e descoberta: e' o caso que o radar existe para achar.
+  const achou = zonasCandidatas([z(200, 210, 82, 8)], niveis, 150, "diario");
+  ok(achou.length === 1 && achou[0].score === 82, "zona madura sem faixa entra no radar");
+  ok(achou[0].lado === "acima", "e o radar diz de que lado do preco ela esta");
+  // Madura mas JA coberta por faixa: promover nao faria sentido.
+  ok(zonasCandidatas([z(101, 109, 90, 9)], niveis, 105, "diario").length === 0,
+    "zona ja coberta por faixa nao entra");
+  // Descoberta mas imatura: e' o caso das zonas de 1 toque, que existem
+  // acima do preco em quase todo par e nao significam nada ainda.
+  ok(zonasCandidatas([z(200, 210, 35, 1)], niveis, 150, "diario").length === 0,
+    "zona de score baixo e um toque nao entra: e' o ruido que o radar filtra");
+  ok(zonasCandidatas([z(200, 210, 90, 2)], niveis, 150, "diario").length === 0,
+    "score alto com poucos toques tambem nao: exige as duas coisas");
+  // No semanal o radar NAO roda. A estrutura semanal fica noutro
+  // patamar e um unico conjunto de faixas serve aos dois timeframes,
+  // entao ali a lista seria enorme, permanente e inacionavel.
+  ok(zonasCandidatas([z(200, 210, 90, 9)], niveis, 150, "semanal").length === 0,
+    "no semanal o radar nao roda, para nao virar ruido permanente");
+  // Teto de tres, senao o campo vira parede de texto.
+  const muitas = [z(200,210,90,9), z(300,310,88,9), z(400,410,86,9), z(500,510,84,9)];
+  ok(zonasCandidatas(muitas, niveis, 150, "diario").length === 3,
+    "publica no maximo tres, e as de maior score");
+
+  // O campo sai no relatorio, e no bloco DIARIO.
+  const linha = blocoTf(r1.texto, "GRAFICO DIARIO", PARES_TESTE[0].label);
+  ok(/^zonas_candidatas_a_faixa: /m.test(linha),
+    "o bloco diario publica o campo, mesmo quando nao ha candidata");
+  const linhaSem = blocoTf(r1.texto, "GRAFICO SEMANAL", PARES_TESTE[0].label);
+  ok(/^zonas_candidatas_a_faixa: nenhuma$/m.test(linhaSem),
+    "e o semanal publica sempre 'nenhuma', porque la o radar nao roda");
 }
 
 console.log("\n== historico: o substrato para medir o que o monitor acerta ==");

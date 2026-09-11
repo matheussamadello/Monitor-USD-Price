@@ -542,6 +542,18 @@ Também existem penalidades multiplicativas para casos como repetidos rompimento
 
 A proximidade do preço não entra no score: ela serve para ordenar quais zonas próximas são publicadas, não para medir a força histórica da zona.
 
+### Radar de promoção
+
+As zonas automáticas são **contexto**. Elas não alimentam a máquina de rompimento e reteste, não entram na linha de gatilhos e não geram alerta de entrada em faixa: isso tudo roda só sobre os níveis manuais. Uma região que o mercado passou a respeitar fica sem máquina de estados até alguém promovê-la a faixa manual. E zonas **expiram** depois de semanas sem toque, enquanto faixas manuais não.
+
+`zonas_candidatas_a_faixa` existe para essa promoção não depender de alguém reparar nela. Lista regiões com **score 70 ou mais e pelo menos 5 toques** que nenhuma faixa manual cobre, no máximo três, das de maior score para as menores, dizendo de que lado do preço cada uma está.
+
+**Só no bloco diário.** No semanal a estrutura fica num patamar diferente do diário, e um único conjunto de faixas serve aos dois timeframes: promover uma zona semanal quebraria o alinhamento diário, que é o operacional. Sinalizar lá seria uma lista enorme, permanente e sem ação possível, então o campo sai sempre como `nenhuma` no semanal.
+
+Os dois cortes filtram exatamente o que não serve. Zonas de 1 toque e score baixo aparecem acima do preço em quase todo par e não significam nada ainda; zona de score alto com 2 toques também não, porque o radar exige as duas coisas. Quando o campo trouxer algo, é manutenção de configuração, não alerta de mercado: a região merece virar faixa manual para ganhar máquina de estados.
+
+Na página, a linha só ocupa espaço quando há candidata.
+
 ### Toques, rejeições e role reversal
 
 O monitor reconstrói episódios históricos de contato com cada zona e registra `numero_toques`, `numero_rejeicoes` e `forca_reacao_atr`.

@@ -3352,6 +3352,20 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(
     `niveis_manuais_faixas_corroboradas: ${alinNiveis.corroboradas} de ${alinNiveis.total}`
   );
+  const candidatas = zonasCandidatas(zonasAutomaticas, cfg.niveis, closes[i], tf.key);
+  L.push(
+    `zonas_candidatas_a_faixa: ${
+      candidatas.length
+        ? candidatas
+            .map(
+              (c) =>
+                `${num(c.inferior, D)}-${num(c.superior, D)} score=${c.score} ` +
+                `toques=${c.toques}${c.lado ? ` (${c.lado} do preco)` : ""}`
+            )
+            .join(" | ")
+        : "nenhuma"
+    }`
+  );
 
   // ---- periodo e volume ----
   L.push("");
@@ -3926,6 +3940,7 @@ dl{margin:0;display:grid;gap:8px}
 .leitura .lp{font:600 13px/1.3 var(--mono);color:var(--txt-forte);min-width:88px}
 .leitura .lr{font:600 14px/1.3 var(--mono);color:var(--fraco)}
 .leitura .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
+.leitura .lradar{font:11px/1.5 var(--mono);color:var(--atencao);flex:1 1 100%}
 .leitura.acumular .lr{color:var(--alta)}
 .leitura.esticado .lr{color:var(--baixa)}
 .leitura.atencao .lr{color:var(--atencao)}
@@ -4101,6 +4116,59 @@ const ADX_FORTE = 25;
 //
 // Sai em palavras, sem jargao, e diz "faixa manual" porque e' o termo
 // que o resto do projeto usa: niveis escolhidos a mao, nao calculados.
+// ------------------------------------------------------------
+// RADAR DE PROMOCAO: zonas que amadureceram e nenhuma faixa cobre.
+//
+// As zonas automaticas sao CONTEXTO: nao alimentam a maquina de
+// rompimento/reteste, nao entram na linha de gatilhos e nao geram
+// alerta de entrada em faixa. Isso tudo roda so sobre os niveis
+// manuais. Entao uma regiao que o mercado passou a respeitar fica sem
+// maquina de estados ate alguem promove-la a faixa manual -- e zonas
+// expiram (30 velas sem toque enfraquece, mais 15 remove), enquanto
+// faixas manuais nao.
+//
+// Este radar existe para essa promocao nao depender de alguem reparar
+// nela. Nao e' alerta de mercado: e' manutencao de configuracao.
+const CANDIDATA_SCORE_MIN = 70;
+const CANDIDATA_TOQUES_MIN = 5;
+
+export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
+  // SO no diario. No semanal a estrutura fica num patamar diferente e um
+  // unico conjunto de faixas serve aos dois timeframes: promover zona
+  // semanal quebraria o alinhamento diario, que e' o operacional.
+  // Sinalizar la seria ruido permanente e inacionavel.
+  if (tfKey !== "diario") return [];
+  const faixas = (niveis && niveis.faixas) || [];
+  const out = [];
+  for (const z of zonas || []) {
+    const L = z.limites_operacionais;
+    if (!L) continue;
+    if ((z.score || 0) < CANDIDATA_SCORE_MIN) continue;
+    if ((z.numero_toques || 0) < CANDIDATA_TOQUES_MIN) continue;
+    const coberta = faixas.some(
+      ([lo, hi]) =>
+        sobreposicaoFrac({ inferior: lo, superior: hi }, L) >=
+        CONFLUENCIA_SOBREPOSICAO_MIN
+    );
+    if (coberta) continue;
+    out.push({
+      inferior: L.inferior,
+      superior: L.superior,
+      score: z.score,
+      toques: z.numero_toques,
+      lado:
+        typeof precoRef === "number"
+          ? L.inferior > precoRef
+            ? "acima"
+            : L.superior < precoRef
+            ? "abaixo"
+            : "no preco"
+          : null,
+    });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
 export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento) {
   if (!situacao || situacao === "indefinida") return null;
   const ehSuporte = typeof faixa === "string" && /suporte/.test(faixa);
@@ -4234,10 +4302,19 @@ export function leituraLonga(sem) {
 
 function pgLeitura(cfg, dados) {
   const L = leituraLonga((dados.semanal || {})[cfg.label]);
+  // O radar de promocao so ocupa espaco quando tem o que dizer. E' aviso
+  // de MANUTENCAO, nao leitura de mercado, entao entra discreto e
+  // separado do resto da linha.
+  const dia = (dados.diario || {})[cfg.label] || {};
+  const cand = dia.zonas_candidatas_a_faixa;
+  const radar =
+    cand && cand !== "nenhuma"
+      ? `<span class="lradar">região amadurecida sem faixa manual: ${pgEsc(cand)}</span>`
+      : "";
   return (
     `<div class="leitura ${pgEsc(L.classe)}"><span class="lp">${pgEsc(cfg.label)}</span>` +
     `<span class="lr">${pgEsc(L.rotulo)}</span>` +
-    `<span class="lz">${pgEsc(L.razao)}</span></div>`
+    `<span class="lz">${pgEsc(L.razao)}</span>${radar}</div>`
   );
 }
 
