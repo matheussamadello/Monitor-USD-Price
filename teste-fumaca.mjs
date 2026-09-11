@@ -1105,23 +1105,40 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   // A faixa nascia apoiada na media longa (prioridade 3) e nos
   // indicadores (prioridade 5), pulando os niveis, que sao o primeiro
   // item. Estar dentro de uma faixa e' o fato mais decisivo da tela.
-  ok(ondeNosNiveis("atual", 0, "faixa_78k_80k", "alinhado") === "dentro de uma faixa manual",
-    "distancia zero quer dizer DENTRO da faixa");
-  ok(/região de suporte manual/.test(ondeNosNiveis("atual", 0, "regiao_suporte_64k_66k", "alinhado")),
-    "faixa de suporte e' nomeada como tal");
-  ok(/encostando/.test(ondeNosNiveis("atual", 0.4, "faixa_78k_80k", "alinhado")),
+  const fx = (lo, hi, label) => ({ inferior: lo, superior: hi, label });
+  const f78 = fx(78000, 80000, "faixa_78k_80k");
+  // A frase NOMEIA a faixa. Sem isso ela afirmava algo sobre "uma faixa"
+  // e obrigava quem le a procurar o rotulo no cartao -- e ainda a saber
+  // que esta leitura sai do bloco semanal, nao do diario.
+  ok(ondeNosNiveis("atual", 0, f78, "alinhado", 2) === "dentro da faixa manual de 78.000 a 80.000",
+    "distancia zero quer dizer DENTRO da faixa, e a frase diz QUAL");
+  ok(/região de suporte manual de 64.000 a 66.000/.test(
+      ondeNosNiveis("atual", 0, fx(64000, 66000, "regiao_suporte_64k_66k"), "alinhado", 2)),
+    "faixa de suporte e' nomeada como tal, tambem com os limites");
+  ok(/encostando na faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2)),
     "perto mas fora da faixa: encostando");
-  ok(/perto/.test(ondeNosNiveis("monitorar", 2, "faixa_78k_80k", "alinhado")),
+  ok(/perto da faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("monitorar", 2, f78, "alinhado", 2)),
     "entre 1 e 3 ATR: perto");
-  ok(/longe/.test(ondeNosNiveis("obsoleto", 5, "faixa_78k_80k", "alinhado")),
-    "alem de 3 ATR: longe das faixas");
+  // Longe de TODAS, nomear uma nao ajudaria.
+  ok(ondeNosNiveis("obsoleto", 5, f78, "alinhado", 2) === "longe das faixas manuais",
+    "alem de 3 ATR: longe das faixas, sem nomear nenhuma");
   ok(ondeNosNiveis(null, 0, null, null) === null, "sem situacao publicada, nao inventa frase");
+  ok(/dentro da faixa manual$/.test(ondeNosNiveis("atual", 0, "faixa_78k_80k", "alinhado", 2)),
+    "sem os limites publicados, a frase sai sem o intervalo em vez de quebrar");
+
+  // Casas decimais suficientes, sem zeros a toa: cada par tem a sua escala.
+  ok(/de 76.000 a 78.000/.test(ondeNosNiveis("atual", 0, fx(76000, 78000, "f"), "alinhado", 2)),
+    "valores inteiros saem sem casas decimais");
+  ok(/de 0,00656 a 0,00705/.test(ondeNosNiveis("atual", 0, fx(0.00656, 0.00705, "f"), "alinhado", 8)),
+    "e um par de escala pequena sai com as casas que precisa");
+  ok(/de 5,12 a 5,16/.test(ondeNosNiveis("atual", 0, fx(5.12, 5.16, "f"), "alinhado", 4)),
+    "sem arrastar casas que a faixa nao usa");
 
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
-  const desalinhada = ondeNosNiveis("atual", 0, "faixa_78k_80k", "desalinhado");
+  const desalinhada = ondeNosNiveis("atual", 0, f78, "desalinhado", 2);
   ok(/não vem respeitando/.test(desalinhada),
     "faixa desalinhada e' citada COM a ressalva: o mercado nao a respeita");
-  ok(!/não vem respeitando/.test(ondeNosNiveis("obsoleto", 5, "faixa_78k_80k", "desalinhado")),
+  ok(!/não vem respeitando/.test(ondeNosNiveis("obsoleto", 5, f78, "desalinhado", 2)),
     "mas longe da faixa a ressalva nao faz sentido e nao aparece");
 
   // A razao segue a ordem de prioridade do prompt: niveis antes da media

@@ -4169,20 +4169,39 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
   return out.sort((a, b) => b.score - a.score).slice(0, 3);
 }
 
-export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento) {
+// `faixa` e' o objeto {label, inferior, superior} da faixa mais proxima.
+// Nomear os limites aqui evita o vaivem que existia: a frase afirmava
+// algo sobre uma faixa sem dizer qual, e quem lia tinha de procurar o
+// rotulo no cartao -- e ainda lembrar que esta leitura sai do bloco
+// SEMANAL, nao do diario. Agora a linha se basta.
+export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
   if (!situacao || situacao === "indefinida") return null;
-  const ehSuporte = typeof faixa === "string" && /suporte/.test(faixa);
+  const label = faixa && typeof faixa === "object" ? faixa.label : faixa;
+  const ehSuporte = typeof label === "string" && /suporte/.test(label);
+  // Casas decimais suficientes para os limites, sem zeros a toa: 76000
+  // sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas.
+  const casas = (v) => {
+    const t = String(v);
+    const i = t.indexOf(".");
+    return i < 0 ? 0 : t.length - i - 1;
+  };
+  const lo = faixa && typeof faixa === "object" ? faixa.inferior : null;
+  const hi = faixa && typeof faixa === "object" ? faixa.superior : null;
+  const temLimites = typeof lo === "number" && typeof hi === "number";
+  const d = temLimites ? Math.min(Math.max(casas(lo), casas(hi)), dec) : 0;
+  const intervalo = temLimites ? ` de ${pgNum(lo, d)} a ${pgNum(hi, d)}` : "";
   let texto;
   if (situacao === "obsoleto") {
+    // Longe de todas, nomear uma nao ajuda.
     texto = "longe das faixas manuais";
   } else if (typeof distAtr === "number" && distAtr <= 0) {
     texto = ehSuporte
-      ? "dentro da região de suporte manual"
-      : "dentro de uma faixa manual";
+      ? `dentro da região de suporte manual${intervalo}`
+      : `dentro da faixa manual${intervalo}`;
   } else if (situacao === "atual") {
-    texto = "encostando numa faixa manual";
+    texto = `encostando na faixa manual${intervalo}`;
   } else {
-    texto = "perto de uma faixa manual";
+    texto = `perto da faixa manual${intervalo}`;
   }
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
   // Cita-la no lugar de destaque sem dizer isso seria dar peso a um
@@ -4200,7 +4219,7 @@ export function forcaTendencia(dp, dm, adx) {
   return { dominante, forte };
 }
 
-export function leituraLonga(sem) {
+export function leituraLonga(sem, dec = 2) {
   const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponível" };
   if (!sem || sem.falha) return nada;
   const fech = sem.ultimo_fechamento_close;
@@ -4209,11 +4228,16 @@ export function leituraLonga(sem) {
   const rsi = sem.rsi_fechado;
   const estrutura = sem.estrutura_tendencia;
   const forca = forcaTendencia(sem.di_plus_fechado, sem.di_minus_fechado, sem.adx_fechado);
+  const labelFaixa = sem.niveis_manuais_faixa_mais_proxima;
+  const faixaObj =
+    (((sem.niveis_manuais || {}).faixas) || []).find((f) => f.label === labelFaixa) ||
+    (labelFaixa ? { label: labelFaixa } : null);
   const niveis = ondeNosNiveis(
     sem.niveis_manuais_situacao,
     sem.niveis_manuais_distancia_atr,
-    sem.niveis_manuais_faixa_mais_proxima,
-    sem.niveis_manuais_alinhamento
+    faixaObj,
+    sem.niveis_manuais_alinhamento,
+    dec
   );
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 
@@ -4301,7 +4325,7 @@ export function leituraLonga(sem) {
 }
 
 function pgLeitura(cfg, dados) {
-  const L = leituraLonga((dados.semanal || {})[cfg.label]);
+  const L = leituraLonga((dados.semanal || {})[cfg.label], cfg.dec);
   // O radar de promocao so ocupa espaco quando tem o que dizer. E' aviso
   // de MANUTENCAO, nao leitura de mercado, entao entra discreto e
   // separado do resto da linha.
