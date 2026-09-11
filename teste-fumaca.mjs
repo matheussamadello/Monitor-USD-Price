@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1042,10 +1042,12 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
 {
   // Cinco campos do bloco SEMANAL, e nada mais. Existe para responder
   // "e dai?" sem obrigar a ler os 100 e poucos campos do relatorio.
-  const bloco = (fech, ema, dist, rsi, estrutura) => ({
+  // dp/dm/adx sao opcionais: sem eles a leitura tem de continuar saindo.
+  const bloco = (fech, ema, dist, rsi, estrutura, dp, dm, adx) => ({
     ultimo_fechamento_close: fech, ema89_fechada_atual: ema,
     distancia_ema89_fechada_atr: dist, rsi_fechado: rsi,
     estrutura_tendencia: estrutura,
+    di_plus_fechado: dp, di_minus_fechado: dm, adx_fechado: adx,
   });
   const barato = leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao"));
   ok(barato.classe === "acumular", "abaixo da media longa e sem baixa instalada: acumular");
@@ -1061,6 +1063,42 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   const emCima = leituraLonga(bloco(99, 100, 0.15, 50, "lateral_contracao"));
   ok(emCima.classe === "neutro" && emCima.rotulo === "na média longa",
     "0,15 ATR da media e' ESTAR na media, e nao vira 'barato'");
+  // ---- o que o DMI acrescenta, e o RSI nao tinha como dizer ----
+  // Duas situacoes com o MESMO preco e o MESMO RSI, separadas so pelo
+  // DMI: subiu muito com a compra mandando e' diferente de subiu muito
+  // com o movimento morrendo, e a acao que cada uma sugere e' oposta.
+  const esticadoVivo = leituraLonga(bloco(130, 100, 2.5, 74, "alta", 35, 10, 30));
+  const esticadoMorrendo = leituraLonga(bloco(130, 100, 2.5, 74, "alta", 35, 10, 15));
+  ok(esticadoVivo.rotulo !== esticadoMorrendo.rotulo,
+    "mesmo preco e mesmo RSI, rotulos diferentes: quem separa e' o DMI");
+  ok(/ainda tem força/.test(esticadoVivo.rotulo) && esticadoVivo.classe === "atencao",
+    "esticado com ADX forte e compra mandando: a alta ainda tem forca, nao e' hora");
+  ok(/perdendo força/.test(esticadoMorrendo.rotulo) && esticadoMorrendo.classe === "esticado",
+    "esticado com ADX fraco: a alta esta morrendo, e e' aqui que a janela costuma estar");
+
+  // Do lado barato, o DMI denuncia a queda viva antes da estrutura, que
+  // depende de pivos e e' lenta. Qualquer um dos dois basta.
+  const baratoCaindoDmi = leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao", 10, 35, 30));
+  ok(baratoCaindoDmi.rotulo === "barato, mas ainda caindo",
+    "venda mandando com ADX forte marca queda viva mesmo sem a estrutura confirmar");
+  const baratoParado = leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao", 18, 17, 14));
+  ok(baratoParado.classe === "acumular",
+    "sem forca nenhuma, barato continua sendo barato");
+
+  // ADX abaixo do corte significa que NAO ha tendencia. Nomear uma
+  // direcao ali seria inventar uma alta que nao existe.
+  ok(/sem tendência firme/.test(baratoParado.razao) && !/alta|queda/.test(
+      baratoParado.razao.split(",").pop()),
+    "com ADX fraco a razao diz 'sem tendencia firme', e nao nomeia direcao");
+
+  ok(forcaTendencia(30, 10, 30).forte === true && forcaTendencia(30, 10, 20).forte === false,
+    "o corte de forca e' 25, o mesmo que a linha de eventos ja usava");
+  ok(forcaTendencia(undefined, undefined, 30) === null,
+    "sem DI a forca e' nula, e a leitura segue sem ela");
+  const semDmi = leituraLonga(bloco(130, 100, 2.5, 74, "alta"));
+  ok(semDmi.rotulo.length > 0 && !/undefined/.test(semDmi.razao),
+    "bloco sem DMI nao quebra a leitura");
+
   ok(leituraLonga({ falha: "fonte fora do ar" }).classe === "neutro",
     "bloco em falha nao inventa leitura");
   ok(leituraLonga(null).classe === "neutro", "bloco ausente nao quebra");

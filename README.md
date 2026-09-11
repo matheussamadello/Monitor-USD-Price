@@ -683,23 +683,31 @@ Monitor-USD-Price/
 
 O relatório tem mais de cem campos por bloco. Quase todos são refinamento, e refinamento serve para quem opera com frequência. Quem acumula ao longo do tempo e às vezes gasta precisa responder uma pergunta só: **é um momento melhor para comprar mais, para esperar ou para converter parte?**
 
-A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **cinco campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI e a estrutura.
+A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **oito campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI, a estrutura, e DI+, DI− e ADX.
 
 | Rótulo | Quando aparece |
 | --- | --- |
-| barato ante a média longa | fechou 1 ATR ou mais **abaixo** da EMA89 semanal, sem estrutura de baixa |
-| barato, mas em tendência de baixa | o mesmo, porém com a estrutura semanal já em `baixa` |
-| esticado ante a média longa | fechou 1 ATR ou mais **acima**, com RSI semanal em 70 ou mais |
+| barato ante a média longa | 1 ATR ou mais **abaixo** da EMA89 semanal, sem queda instalada |
+| barato, mas ainda caindo | o mesmo, porém com estrutura semanal em `baixa` **ou** DI− dominante com ADX em 25 ou mais |
+| esticado, mas a alta ainda tem força | 1 ATR ou mais **acima**, RSI em 70 ou mais, com DI+ dominante e ADX em 25 ou mais |
+| esticado e a alta perdendo força | o mesmo, porém sem essa força |
 | acima da média, sem esticamento | longe acima, mas o RSI não acompanha |
 | na média longa | a menos de 1 ATR da EMA89, para qualquer lado |
 
-Nenhuma regra nova de mercado nasce aí. O corte de 1 ATR é o mesmo que o monitor já usa para separar perto de longe na obsolescência dos níveis, e 70 é a referência de RSI que o prompt usa em todo lugar. Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria mentira. E uma alta longe da média sem RSI esticado não vira alarme, porque alta saudável é o estado normal de uma tendência.
+Nenhuma regra nova de mercado nasce aí. O corte de 1 ATR é o mesmo que o monitor usa para separar perto de longe na obsolescência dos níveis, 70 é a referência de RSI que o prompt usa em todo lugar, e 25 é o mesmo corte de força de ADX que a linha de eventos já usava.
+
+**O DMI entrou porque o RSI sozinho juntava situações opostas.** RSI alto diz que subiu bastante nas últimas semanas. Não diz se a alta continua viva. Subiu muito com a compra ainda mandando e subiu muito com o movimento morrendo pedem ações contrárias, e até 2026-09-11 as duas saíam com o mesmo rótulo. Quem separa é o ADX com os DIs, não o RSI. Do lado barato vale o espelho, com uma vantagem: o DMI denuncia a queda viva **antes** da estrutura, que depende de pivôs confirmados e por isso é lenta. Qualquer um dos dois basta para marcar `ainda caindo`.
+
+Abaixo do corte de 25 a razão diz `sem tendência firme` e não nomeia direção. ADX fraco significa que não há tendência instalada, e escrever "alta perdendo força" com ADX em 14 seria inventar uma alta que não existe.
+
+Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria mentira. E uma alta longe da média sem RSI esticado não vira alarme, porque alta saudável é o estado normal de uma tendência.
 
 **A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
 
 - a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
 - o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
 - o RSI vira `momentum esticado`, `normal` ou `muito fraco`, sem o número;
+- o DMI vira `alta ainda forte`, `queda ainda forte` ou `sem tendência firme`;
 - a estrutura sai da linha. Quando ela muda o veredito, isso já aparece no próprio rótulo.
 
 O ATR continua sendo o que **decide**, e continua inteiro no relatório abaixo, para o agente e para quem consome os campos. Ele só não aparece aqui.

@@ -4083,6 +4083,22 @@ function pgTimeframe(titulo, b, dec) {
 // projeto ja usa em outros lugares: 1 ATR separa "perto" de "longe" na
 // obsolescencia dos niveis, e 70/30 e' o par de referencia do RSI em
 // todo o prompt.
+// Forca e direcao da tendencia, a partir do DMI/ADX. RSI e DMI dizem
+// coisas diferentes e a leitura longa so olhava o RSI: "RSI alto"
+// significa que subiu bastante, nao que a alta esta viva. Para decidir
+// entre comprar mais e converter, quem manda e' a segunda pergunta.
+//
+// O corte de 25 nao e' novo: e' o mesmo que a linha de eventos ja usa
+// para dizer que a tendencia ganhou ou perdeu forca.
+const ADX_FORTE = 25;
+
+export function forcaTendencia(dp, dm, adx) {
+  if (typeof dp !== "number" || typeof dm !== "number") return null;
+  const dominante = dp > dm ? "alta" : "baixa";
+  const forte = typeof adx === "number" && adx >= ADX_FORTE;
+  return { dominante, forte };
+}
+
 export function leituraLonga(sem) {
   const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponível" };
   if (!sem || sem.falha) return nada;
@@ -4091,6 +4107,7 @@ export function leituraLonga(sem) {
   const dist = sem.distancia_ema89_fechada_atr;
   const rsi = sem.rsi_fechado;
   const estrutura = sem.estrutura_tendencia;
+  const forca = forcaTendencia(sem.di_plus_fechado, sem.di_minus_fechado, sem.adx_fechado);
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 
   const abaixo = fech < ema;
@@ -4118,7 +4135,7 @@ export function leituraLonga(sem) {
   // pgNum e nao num: esta linha e' para o olho humano, entao virgula
   // decimal. O relatorio continua com ponto, para quem parseia.
   const quanto = `${pct >= 0 ? "+" : "−"}${pgNum(Math.abs(pct), 1)}%`;
-  const forca =
+  const forcaRsi =
     typeof rsi !== "number"
       ? null
       : rsi >= 70
@@ -4129,29 +4146,49 @@ export function leituraLonga(sem) {
   const onde = longe
     ? `bem ${abaixo ? "abaixo" : "acima"} da média longa (${quanto})`
     : `perto da média longa (${quanto})`;
-  const razao = [onde, forca].filter(Boolean).join(", ");
+  // "alta ainda forte" e "alta perdendo força" e' o que o DMI acrescenta,
+  // e e' informacao que o RSI nao tem: subiu muito com a compra mandando
+  // e' diferente de subiu muito com o movimento morrendo.
+  // Abaixo do corte de forca NAO existe tendencia instalada, entao
+  // nomear uma direcao ali seria inventar. "Alta perdendo forca" com ADX
+  // em 14 e' falso: nao ha alta nenhuma para perder forca.
+  const comoVai = !forca
+    ? null
+    : forca.forte
+    ? `${forca.dominante === "alta" ? "alta" : "queda"} ainda forte`
+    : "sem tendência firme";
+  const razao = [onde, forcaRsi, comoVai].filter(Boolean).join(", ");
 
   if (!longe) {
     return { classe: "neutro", rotulo: "na média longa", razao };
   }
-  // ABAIXO da media longa e sem tendencia de baixa instalada: e' a
-  // faixa em que acumular historicamente custa menos. "Historicamente
-  // custa menos" nao e' "vai subir".
-  if (abaixo && estrutura !== "baixa") {
-    return { classe: "acumular", rotulo: "barato ante a média longa", razao };
-  }
-  // ABAIXO mas com a estrutura semanal ja de baixa: barato e caindo sao
-  // coisas diferentes, e juntar as duas num so rotulo seria mentira.
+  // ABAIXO da media longa. Barato e barato-ainda-caindo sao coisas
+  // diferentes, e juntar as duas seria mentira. Duas coisas denunciam a
+  // queda viva: a estrutura semanal ja em baixa, que e' lenta porque
+  // depende de pivos, e o DMI com a venda mandando e ADX forte, que
+  // responde antes. Qualquer uma das duas basta.
   if (abaixo) {
-    return { classe: "atencao", rotulo: "barato, mas em tendência de baixa", razao };
+    const caindo =
+      estrutura === "baixa" || (forca && forca.dominante === "baixa" && forca.forte);
+    // Sem queda instalada o rotulo volta a ser o simples: estar abaixo da
+    // media nao implica que houve queda recente a ceder.
+    return caindo
+      ? { classe: "atencao", rotulo: "barato, mas ainda caindo", razao }
+      : { classe: "acumular", rotulo: "barato ante a média longa", razao };
   }
-  // ACIMA e longe, com momentum esticado: e' a faixa em que comprar mais
-  // historicamente custa caro, e em que gastar cripto doi menos. Exige as
-  // duas coisas, para uma alta saudavel nao virar alarme.
-  if (typeof rsi === "number" && rsi >= 70) {
-    return { classe: "esticado", rotulo: "esticado ante a média longa", razao };
+  // ACIMA e longe, sem esticamento: alta saudavel e' o estado normal de
+  // uma tendencia, e nao vira alarme.
+  if (!(typeof rsi === "number" && rsi >= 70)) {
+    return { classe: "neutro", rotulo: "acima da média, sem esticamento", razao };
   }
-  return { classe: "neutro", rotulo: "acima da média, sem esticamento", razao };
+  // ACIMA, longe e esticado. Aqui o RSI sozinho juntava duas situacoes
+  // opostas: subiu muito E a compra ainda manda (converter agora costuma
+  // ser cedo) contra subiu muito E o movimento esta morrendo (e' onde a
+  // janela costuma estar). Quem separa as duas e' o DMI, nao o RSI.
+  const altaViva = forca && forca.dominante === "alta" && forca.forte;
+  return altaViva
+    ? { classe: "atencao", rotulo: "esticado, mas a alta ainda tem força", razao }
+    : { classe: "esticado", rotulo: "esticado e a alta perdendo força", razao };
 }
 
 function pgLeitura(cfg, dados) {
