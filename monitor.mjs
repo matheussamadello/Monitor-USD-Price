@@ -3879,6 +3879,11 @@ export function toHTML(text, dados) {
   // ha como sobrar um widget apontando para um container inexistente.
   const comCartao = PAIRS.filter((c) => !c.semCartao);
   const comGrafico = comCartao.filter((c) => c.grafico);
+  // O grafico embutido abre no DIARIO; o RSI dele tem de ser o mesmo que
+  // o cartao diario publica, senao o desenho contradiz o numero ao lado.
+  const rsiDoGrafico = (
+    TIMEFRAMES.find((t) => t.key === "diario") || { rsi: { length: PERIOD } }
+  ).rsi.length;
 
   return (
     "<!doctype html>\n" +
@@ -3952,8 +3957,13 @@ export function toHTML(text, dados) {
         // override escondendo o plot da media. Se nenhum pegar, o RSI sai
         // com a media e se desmarca a mao -- nao quebra nada.
         "allow_symbol_change:false,save_image:false," +
-        'studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}},' +
-        '{id:"RSI@tv-basicstudies",inputs:{length:14,smoothingLine:"None"}}],' +
+        // Periodos DERIVADOS da configuracao, nao cravados: o grafico abre
+        // no diario (interval "D"), entao usa o RSI do timeframe diario --
+        // hoje 21. Mudar tf.rsi.length move o desenho junto, sem ninguem
+        // lembrar de vir aqui. A EMA vem de EMA_PERIOD, que nao e' por
+        // timeframe.
+        `studies:[{id:"MAExp@tv-basicstudies",inputs:{length:${EMA_PERIOD}}},` +
+        `{id:"RSI@tv-basicstudies",inputs:{length:${rsiDoGrafico},smoothingLine:"None"}}],` +
         'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0",' +
         '"relative strength index.smoothed ma.visible":false},' +
         'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +

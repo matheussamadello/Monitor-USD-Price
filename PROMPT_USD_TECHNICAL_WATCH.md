@@ -109,7 +109,7 @@ Leia, quando disponíveis no relatório:
 
 - preço e OHLC;
 - EMA89;
-- RSI(14);
+- RSI (o período vem em `rsi_length` e difere por timeframe);
 - DI+;
 - DI−;
 - ADX;

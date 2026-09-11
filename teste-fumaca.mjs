@@ -633,6 +633,13 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   if (/s3\.tradingview\.com\/tv\.js/.test(html)) {
     ok(/\{id:"RSI@tv-basicstudies",inputs:\{[^}]*smoothingLine:"None"/.test(html),
       "pede o RSI como objeto, com a media do RSI desligada");
+    // O grafico abre no diario: o RSI dele tem de bater com o do cartao
+    // diario, e a EMA com a do relatorio. Derivado, nunca cravado.
+    const diarioTf = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+    ok(html.includes(`{id:"RSI@tv-basicstudies",inputs:{length:${diarioTf.rsi.length},`),
+      `o RSI do grafico usa o periodo do diario (${diarioTf.rsi.length})`);
+    ok(/\{id:"MAExp@tv-basicstudies",inputs:\{length:89\}\}/.test(html),
+      "e a EMA do grafico usa 89, como o relatorio");
     ok(!/"RSI@tv-basicstudies"\s*[\]}]/.test(html), "e nunca como string solta, que o widget descartava");
   }
   ok(!/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>[^<]*<small>[^<]*ATR</.test(html),
