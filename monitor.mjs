@@ -109,11 +109,17 @@ const TIMEFRAMES = [
 // preco sair dessas regioes — o proprio relatorio sugere isso quando as
 // faixas param de conter o preco.
 // ------------------------------------------------------------
+//
+// A faixa de 5,00-5,05 entrou em 2026-09-12, promovida pelo radar: ele a
+// apontou como zona madura (score 73, 6 toques) e descoberta, logo
+// abaixo da regiao de suporte que ja existia. Sobreposicao 1,00 sobre a
+// zona, e o diario foi a 4 de 4.
 const NIVEIS_USD = {
   faixas: [
     [5.25, 5.36, "faixa_5_25_5_36"],
     [5.13, 5.21, "faixa_5_13_5_21"],
     [5.05, 5.12, "regiao_suporte_5_05_5_12"],
+    [5.0, 5.05, "regiao_suporte_5_00_5_05"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -4169,6 +4175,20 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
   return out.sort((a, b) => b.score - a.score).slice(0, 3);
 }
 
+// Casas decimais suficientes para o valor, sem zeros a toa: 76000 sai
+// inteiro, 0,00656 sai com cinco casas, 5,12 com duas. Limitado pelo dec
+// do par, para nao inventar precisao que a fonte nao tem.
+function casasUteis(v, dec) {
+  const t = String(v);
+  const i = t.indexOf(".");
+  return Math.min(i < 0 ? 0 : t.length - i - 1, dec);
+}
+
+// Valor formatado para o olho humano, com as casas que ele precisa.
+function pgValor(v, dec) {
+  return pgNum(v, casasUteis(v, dec));
+}
+
 // `faixa` e' o objeto {label, inferior, superior} da faixa mais proxima.
 // Nomear os limites aqui evita o vaivem que existia: a frase afirmava
 // algo sobre uma faixa sem dizer qual, e quem lia tinha de procurar o
@@ -4178,17 +4198,10 @@ export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
   if (!situacao || situacao === "indefinida") return null;
   const label = faixa && typeof faixa === "object" ? faixa.label : faixa;
   const ehSuporte = typeof label === "string" && /suporte/.test(label);
-  // Casas decimais suficientes para os limites, sem zeros a toa: 76000
-  // sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas.
-  const casas = (v) => {
-    const t = String(v);
-    const i = t.indexOf(".");
-    return i < 0 ? 0 : t.length - i - 1;
-  };
   const lo = faixa && typeof faixa === "object" ? faixa.inferior : null;
   const hi = faixa && typeof faixa === "object" ? faixa.superior : null;
   const temLimites = typeof lo === "number" && typeof hi === "number";
-  const d = temLimites ? Math.min(Math.max(casas(lo), casas(hi)), dec) : 0;
+  const d = temLimites ? Math.max(casasUteis(lo, dec), casasUteis(hi, dec)) : 0;
   const intervalo = temLimites ? ` de ${pgNum(lo, d)} a ${pgNum(hi, d)}` : "";
   let texto;
   if (situacao === "obsoleto") {
@@ -4324,6 +4337,108 @@ export function leituraLonga(sem, dec = 2) {
     : { classe: "esticado", rotulo: "esticado e a alta perdendo força", razao };
 }
 
+// ------------------------------------------------------------
+// LEITURA DE CONTEXTO CURTO (diario)
+//
+// A leitura longa diz ONDE o preco esta. Esta diz o que esta
+// ACONTECENDO agora no timeframe que o projeto usa para timing.
+//
+// O diario nao e' day trade: RSI 21, DMI 28/42, pivos 5/5 e janela de
+// reteste de 30 velas, tudo calibrado para o horizonte tatico de 1 a 6
+// semanas. Nada aqui usa a vela em formacao.
+//
+// O nucleo e' a MAQUINA DE ROMPIMENTO E RETESTE, que roda so sobre os
+// niveis manuais e e' a prioridade 2 da lista do prompt. E' a sequencia
+// que mais importa para decidir uma entrada: rompeu, voltou, segurou.
+//
+// A cor diz "vale olhar", NAO diz "e' bom" nem "e' ruim". Um reteste
+// confirmado de resistencia rompida para cima e um de suporte perdido
+// para baixo tem o mesmo nome e significados opostos, e inventar a
+// direcao aqui seria palpite disfarcado de leitura.
+const ESTADOS_CURTO = [
+  ["reteste_confirmado", "reteste confirmado"],
+  ["em_reteste", "reteste em curso"],
+  ["rompimento_falhou", "rompimento falhou"],
+  ["recuperado", "nível recuperado"],
+  ["rompido", "rompido, sem reteste ainda"],
+  ["rompimento_candidato", "rompimento em avaliação"],
+];
+
+export function leituraCurta(dia, cfg) {
+  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco diário indisponível" };
+  if (!dia || dia.falha || !cfg) return nada;
+  const dec = cfg.dec == null ? 2 : cfg.dec;
+  const fech = dia.ultimo_fechamento_close;
+  const ema = dia.ema89_fechada_atual;
+
+  const pedacos = [];
+  if (typeof fech === "number" && typeof ema === "number" && ema !== 0) {
+    const pct = ((fech - ema) / ema) * 100;
+    // Abaixo de 0,05% o arredondamento daria "0,0% abaixo", que afirma um
+    // lado que o numero nao sustenta. Em cima da media e' em cima dela.
+    pedacos.push(
+      Math.abs(pct) < 0.05
+        ? "em cima da média diária"
+        : `${pgNum(Math.abs(pct), 1)}% ${fech >= ema ? "acima" : "abaixo"} da média diária`
+    );
+  }
+
+  // Qual nivel manual esta no estado mais decisivo. A ordem de
+  // ESTADOS_CURTO e' a ordem de relevancia para quem decide entrada.
+  let achado = null;
+  for (const [estado, texto] of ESTADOS_CURTO) {
+    for (const nv of niveisDoPar(cfg)) {
+      if (dia[`nivel_${nv.label}_estado`] !== estado) continue;
+      achado = {
+        rotulo: texto,
+        alvo: `${nv.direcao === "alta" ? "resistência" : "suporte"} de ${pgValor(nv.nivel, dec)}`,
+      };
+      break;
+    }
+    if (achado) break;
+  }
+  if (achado) {
+    return {
+      classe: "atencao",
+      rotulo: achado.rotulo,
+      razao: [achado.alvo, ...pedacos].join(", "),
+    };
+  }
+
+  // Sem evento de nivel, a travessia da media diaria ainda e' fato do dia.
+  const cruz = dia.ema89_cruzamento_fechado;
+  if (cruz && cruz !== "nenhum") {
+    return {
+      classe: "atencao",
+      rotulo: `cruzou a média diária para ${cruz === "acima" ? "cima" : "baixo"}`,
+      razao: pedacos.join(", ") || "sem mais dados no fechamento",
+    };
+  }
+
+  const det = Array.isArray(dia.deterioracao_tendencia) ? dia.deterioracao_tendencia : [];
+  if (det.length) {
+    return {
+      classe: "atencao",
+      rotulo: "sinais de enfraquecimento",
+      razao: pedacos.join(", ") || "sem mais dados no fechamento",
+    };
+  }
+  return {
+    classe: "neutro",
+    rotulo: "sem evento no diário",
+    razao: pedacos.join(", ") || "sem dados suficientes no fechamento",
+  };
+}
+
+function pgLeituraCurta(cfg, dados) {
+  const L = leituraCurta((dados.diario || {})[cfg.label], cfg);
+  return (
+    `<div class="leitura ${pgEsc(L.classe)}"><span class="lp">${pgEsc(cfg.label)}</span>` +
+    `<span class="lr">${pgEsc(L.rotulo)}</span>` +
+    `<span class="lz">${pgEsc(L.razao)}</span></div>`
+  );
+}
+
 function pgLeitura(cfg, dados) {
   const L = leituraLonga((dados.semanal || {})[cfg.label], cfg.dec);
   // O radar de promocao so ocupa espaco quando tem o que dizer. E' aviso
@@ -4443,6 +4558,17 @@ export function toHTML(text, dados) {
     `<b>bem longe</b> levam em conta o quanto cada par costuma oscilar, ` +
     `por isso 3% já é bastante no dólar e é pouco numa cripto. Os campos ` +
     `técnicos completos ficam no relatório abaixo.</p></section>\n` +
+    // O curto vem DEPOIS do longo: primeiro onde se esta, depois o que
+    // esta acontecendo. A ordem inversa faria o evento do dia parecer
+    // mais importante que o enquadramento, que e' o contrario do que
+    // este monitor assume.
+    `<section class="leituras"><h2>Contexto curto</h2>` +
+    comCartao.map((c) => pgLeituraCurta(c, d)).join("") +
+    `<p class="nota">O que aconteceu no fechamento <b>diário</b>, que é o ` +
+    `timeframe de timing deste monitor, calibrado para 1 a 6 semanas e não ` +
+    `para o dia. O destaque em amarelo quer dizer <b>vale olhar</b>, não ` +
+    `quer dizer bom nem ruim: rompimento e reteste têm o mesmo nome ` +
+    `subindo ou descendo.</p></section>\n` +
     `<section class="pares">${comCartao.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----

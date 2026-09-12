@@ -395,6 +395,7 @@ Os valores atuais foram calibrados na primeira execução real, em 2026-08-29, c
 | R$ 5,25–5,36 | `faixa_5_25_5_36` | zona automática de resistência acima do preço |
 | R$ 5,13–5,21 | `faixa_5_13_5_21` | campo de batalha atual (zona de maior score) |
 | R$ 5,05–5,12 | `regiao_suporte_5_05_5_12` | zona de suporte imediatamente abaixo |
+| R$ 5,00–5,05 | `regiao_suporte_5_00_5_05` | promovida pelo radar em 2026-09-12: zona de score 73 com 6 toques, madura e descoberta |
 
 Além das faixas, o código mantém uma resistência pontual em **R$ 5,30** e um suporte pontual em **R$ 5,13** para a máquina de estados de rompimento/reteste. Nenhum dos dois é número redondo por acaso:
 
@@ -732,6 +733,32 @@ Um efeito colateral que confunde à primeira vista: `bem abaixo (−2,9%)` no d�
 
 Ela **descreve enquadramento, não recomenda operação e não gera alerta**. É contexto que muda de estado poucas vezes por ano, e é essa lentidão que a torna útil para horizonte longo.
 
+## Contexto curto: o que aconteceu no diário
+
+A faixa de contexto longo diz **onde** o preço está. Esta, logo abaixo dela, diz o que está **acontecendo** no timeframe que o projeto usa para timing.
+
+O diário não é day trade. Os períodos dele são todos calibrados para o horizonte tático de 1 a 6 semanas: RSI 21, DMI 28/42, pivôs 5/5 e janela de reteste de 30 velas. Nada aqui usa a vela em formação.
+
+O núcleo é a **máquina de rompimento e reteste**, que roda só sobre os níveis manuais e é a prioridade 2 da lista de leitura do prompt. É a sequência que mais importa para decidir uma entrada: rompeu, voltou, segurou.
+
+| Rótulo | Quando aparece |
+| --- | --- |
+| reteste confirmado | algum nível manual em `reteste_confirmado` |
+| reteste em curso | em `em_reteste` |
+| rompimento falhou | em `rompimento_falhou` |
+| nível recuperado | em `recuperado` |
+| rompido, sem reteste ainda | em `rompido` |
+| rompimento em avaliação | em `rompimento_candidato` |
+| cruzou a média diária | sem evento de nível, mas a EMA89 diária foi cruzada no fechamento |
+| sinais de enfraquecimento | sem os anteriores, mas `deterioracao_tendencia` traz algo |
+| sem evento no diário | nada disso |
+
+A ordem da tabela é a ordem de relevância: com dois níveis em estados diferentes, vence o mais decisivo, não o primeiro da configuração. A razão diz de qual nível se trata, se é resistência ou suporte, e onde o fechamento está em relação à média diária, em porcentagem.
+
+**O destaque em amarelo quer dizer "vale olhar", não quer dizer bom nem ruim.** Um reteste confirmado de resistência rompida para cima e um de suporte perdido para baixo têm o mesmo nome e significados opostos. Inventar a direção aqui seria palpite disfarçado de leitura, então a cor sinaliza atenção e o texto nomeia o nível, deixando o julgamento com quem lê.
+
+Sem jargão, pela mesma razão da faixa longa. E quando o fechamento fica a menos de 0,05% da média, a razão diz `em cima da média diária` em vez de arredondar para `0,0% abaixo`, que afirmaria um lado que o número não sustenta.
+
 ## Histórico: o substrato para medir
 
 Nenhum parâmetro deste projeto foi validado contra resultado. Os períodos, os limiares, os pesos do score das zonas: tudo foi escolhido por raciocínio, e raciocínio bem argumentado continua sendo palpite até alguém medir. `docs/historico.jsonl` existe para que um dia seja possível medir.
@@ -907,6 +934,7 @@ const NIVEIS_USD = {
     [5.25, 5.36, "faixa_5_25_5_36"],
     [5.13, 5.21, "faixa_5_13_5_21"],
     [5.05, 5.12, "regiao_suporte_5_05_5_12"],
+    [5.0, 5.05, "regiao_suporte_5_00_5_05"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",

@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, forcaTendencia, ondeNosNiveis, zonasCandidatas,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, forcaTendencia, ondeNosNiveis, zonasCandidatas,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1177,6 +1177,77 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     "a faixa de contexto longo aparece na pagina");
   ok(pag.indexOf('class="leituras"') < pag.indexOf('class="pares"'),
     "e vem ANTES dos cartoes, que e' o lugar de quem so quer a resposta");
+}
+
+console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
+{
+  // O diario e' o timeframe de TIMING deste monitor -- RSI 21, DMI
+  // 28/42, pivos 5/5, janela de reteste de 30 velas --, calibrado para
+  // 1 a 6 semanas. Nao e' day trade e nao usa a vela em formacao.
+  const cfg = PARES_TESTE.find((c) => !c.semCartao);
+  const nv = cfg.niveis;
+  const base = (extra) => ({
+    ultimo_fechamento_close: 110, ema89_fechada_atual: 100,
+    ema89_cruzamento_fechado: "nenhum", deterioracao_tendencia: [],
+    ...(extra || {}),
+  });
+  const comEstado = (estado) =>
+    leituraCurta(base({ [`nivel_${nv.resistenciaLabel}_estado`]: estado }), cfg);
+
+  // A maquina de rompimento e reteste e' o nucleo: e' a prioridade 2 da
+  // lista do prompt e a sequencia que mais importa para uma entrada.
+  ok(/reteste confirmado/.test(comEstado("reteste_confirmado").rotulo),
+    "reteste confirmado e' o estado mais decisivo e aparece no rotulo");
+  ok(/reteste em curso/.test(comEstado("em_reteste").rotulo), "reteste em curso idem");
+  ok(/rompimento falhou/.test(comEstado("rompimento_falhou").rotulo), "rompimento falhou idem");
+  ok(/resistência/.test(comEstado("em_reteste").razao),
+    "a razao diz de QUAL nivel se trata, e se e' resistencia ou suporte");
+
+  // Ordem de relevancia: com dois niveis em estados diferentes, vence o
+  // mais decisivo, nao o primeiro da lista de niveis.
+  const dois = leituraCurta(base({
+    [`nivel_${nv.resistenciaLabel}_estado`]: "rompido",
+    [`nivel_${nv.suporteLabel}_estado`]: "reteste_confirmado",
+  }), cfg);
+  ok(/reteste confirmado/.test(dois.rotulo),
+    "com dois niveis em estados diferentes, vence o mais decisivo");
+
+  // Sem evento de nivel, a travessia da media diaria ainda e' fato do dia.
+  const cruzou = leituraCurta(base({ ema89_cruzamento_fechado: "abaixo" }), cfg);
+  ok(/cruzou a média diária para baixo/.test(cruzou.rotulo),
+    "sem evento de nivel, a travessia da media entra no lugar");
+  const fraco = leituraCurta(base({ deterioracao_tendencia: ["rompimento_falhou"] }), cfg);
+  ok(/enfraquecimento/.test(fraco.rotulo), "e a deterioracao vem depois dela");
+  ok(/sem evento no diário/.test(leituraCurta(base(), cfg).rotulo),
+    "sem nada acontecendo, o rotulo diz isso em vez de inventar evento");
+
+  // A cor diz "vale olhar", nunca "e' bom" ou "e' ruim": rompimento e
+  // reteste tem o mesmo nome subindo e descendo.
+  ok(comEstado("reteste_confirmado").classe === "atencao" &&
+     comEstado("rompimento_falhou").classe === "atencao",
+    "todo evento sai na mesma cor: ela sinaliza atencao, nao direcao");
+  ok(leituraCurta(base(), cfg).classe === "neutro", "sem evento, sem destaque");
+
+  // Sem jargao, como a leitura longa.
+  const todas = ["reteste_confirmado", "em_reteste", "rompimento_falhou"].map(comEstado);
+  ok(todas.every((x) => !/ATR|RSI|EMA|ADX|DI\+/.test(x.razao)),
+    "nenhum jargao tecnico vaza para a razao");
+  // Arredondar 0,02% para "0,0% abaixo" afirmaria um lado que o numero
+  // nao sustenta.
+  ok(/em cima da média diária/.test(
+      leituraCurta(base({ ultimo_fechamento_close: 100.02 }), cfg).razao),
+    "praticamente em cima da media nao vira '0,0% abaixo'");
+  ok(leituraCurta(null, cfg).classe === "neutro" &&
+     leituraCurta({ falha: "fonte fora" }, cfg).classe === "neutro",
+    "bloco ausente ou em falha nao inventa leitura");
+
+  const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  ok((pag.match(/<h2>Contexto (longo|curto)<\/h2>/g) || []).length === 2,
+    "as duas secoes existem na pagina");
+  ok(pag.indexOf("Contexto longo") < pag.indexOf("Contexto curto"),
+    "o curto vem DEPOIS do longo: primeiro onde se esta, depois o que acontece");
+  ok(pag.indexOf("Contexto curto") < pag.indexOf('class="pares"'),
+    "e os dois vem antes dos cartoes");
 }
 
 console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");
