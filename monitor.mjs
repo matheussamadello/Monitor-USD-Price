@@ -3899,6 +3899,28 @@ const TITULO_PAGINA = "Monitor USD/BRL";
 // como discordar.
 // ------------------------------------------------------------
 
+// ------------------------------------------------------------
+// SUPERFICIE DO GRAFICO
+//
+// O embed do TradingView pinta a propria moldura -- barra do simbolo,
+// eixo de preco, eixo de tempo -- no cinza escuro neutro do tema dele,
+// que NAO e' o azul-noite do resto da pagina. Ficavam tres cores
+// empilhadas: o degrade do cartao, a faixa dos botoes por cima dele, e
+// o embed. Tres tons de escuro em sequencia leem como defeito de
+// renderizacao, nao como desenho.
+//
+// Entao a faixa e o container adotam a cor do EMBED, e nao a do cartao.
+// Os botoes nao marcados sao transparentes, entao vao junto; o marcado
+// continua azul, que e' o unico jeito de saber qual esta valendo.
+//
+// No tema claro o embed ja e' branco, igual ao painel, e por isso o
+// problema so aparece de noite -- mas o token existe nos dois para a
+// regra ser uma so.
+//
+// UM lugar so: o CSS e as opcoes do widget saem daqui. Duas copias do
+// mesmo hex divergem no dia em que alguem mexe numa e esquece da outra.
+const TV_FUNDO = { noite: "#131722", claro: "#ffffff" };
+
 const PAGINA_CSS = `
 /* Tema NOITE e' o padrao. O claro so redefine tokens -- nenhuma regra
    de layout aparece duas vezes, entao os dois temas nao tem como
@@ -3912,6 +3934,7 @@ const PAGINA_CSS = `
   --risco-bg:rgba(248,81,73,.09); --risco-borda:rgba(248,81,73,.30); --risco-txt:#ff8b84;
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
+  --tv-fundo:${TV_FUNDO.noite}; --tv-linha:#2a2e39;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -3923,6 +3946,7 @@ html[data-tema="claro"]{
   --risco-bg:rgba(192,54,44,.07); --risco-borda:rgba(192,54,44,.28); --risco-txt:#a3271f;
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
+  --tv-fundo:${TV_FUNDO.claro}; --tv-linha:#d5dfed;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -4034,12 +4058,14 @@ dl{margin:0;display:grid;gap:8px}
 .lh.atencao .lr{color:var(--atencao)}
 .leituras .nota{margin:10px 2px 0;font:11px/1.6 var(--mono);color:var(--fraco)}
 .grafico{border-top:1px solid var(--linha)}
-.tv-barra{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--linha)}
+.tv-barra{display:flex;gap:6px;padding:10px 18px;background:var(--tv-fundo);
+  border-bottom:1px solid var(--tv-linha)}
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
-  background:none;border:1px solid var(--linha);color:var(--fraco)}
+  background:none;border:1px solid var(--tv-linha);color:var(--fraco)}
 .tv-tf[aria-pressed="true"]{background:var(--chip-bg);border-color:var(--chip-borda);
   color:var(--chip-txt)}
-.tv{height:460px;background:var(--painel);display:flex;align-items:center;justify-content:center}
+.tv{height:460px;background:var(--tv-fundo);display:flex;align-items:center;
+  justify-content:center}
 .tv .tv-off{padding:24px;text-align:center;font-size:13px;color:var(--fraco)}
 .grafico>p{margin:0;padding:11px 18px;border-top:1px solid var(--linha);
   font:11px/1.5 var(--mono);color:var(--fraco)}
@@ -4830,7 +4856,7 @@ export function toHTML(text, dados) {
         '{id:"RSI@tv-basicstudies",inputs:{length:rsi,smoothingLine:"None"}}],' +
         'studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0",' +
         '"relative strength index.smoothed ma.visible":false},' +
-        'backgroundColor:tema==="dark"?"#0e1524":"#ffffff",' +
+        `backgroundColor:tema==="dark"?"${TV_FUNDO.noite}":"${TV_FUNDO.claro}",` +
         'gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};' +
         "</script>\n"
       : "") +

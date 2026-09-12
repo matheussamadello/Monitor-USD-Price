@@ -1339,6 +1339,38 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
     "o (?) e' so da parte visual: o relatorio do bot sai intacto");
 }
 
+console.log("\n== superficie do grafico: uma cor so para faixa, container e embed ==");
+{
+  const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  const css = pag.split("<style>")[1].split("</style>")[0];
+  const escuro = css.split(":root{")[1].split("}")[0];
+  const claro = css.split('html[data-tema="claro"]{')[1].split("}")[0];
+  const tok = (bloco, nome) => (bloco.match(new RegExp(nome + ":\\s*([^;]+);")) || [])[1];
+  const noite = tok(escuro, "--tv-fundo");
+  const dia = tok(claro, "--tv-fundo");
+  ok(!!noite && !!dia && noite !== dia, `a superficie do grafico tem cor por tema (${noite} / ${dia})`);
+
+  // Faixa dos botoes e container do grafico na MESMA cor: eram tres
+  // tons de escuro empilhados -- cartao, faixa, embed -- e tres escuros
+  // em sequencia leem como defeito, nao como desenho.
+  ok(/\.tv-barra\{[^}]*background:var\(--tv-fundo\)/.test(css),
+    "a faixa dos botoes usa a cor da superficie do grafico");
+  ok(/\.tv\{[^}]*background:var\(--tv-fundo\)/.test(css),
+    "e o container do grafico usa a mesma");
+  ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-linha\)/.test(css),
+    "a borda dos botoes acompanha, senao some no fundo novo");
+
+  // O botao MARCADO continua azul: e' o unico jeito de saber qual vale.
+  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*var\(--chip-bg\)/.test(css),
+    "o botao marcado continua com a cor de destaque");
+
+  // O widget recebe exatamente a mesma cor. Se o CSS e o widget
+  // tivessem hex proprios, um dia alguem mexeria num e nao no outro.
+  const script = pag.split("window.desenharGraficos=")[1] || "";
+  ok(script.includes(`"${noite}"`) && script.includes(`"${dia}"`),
+    "e o widget recebe os MESMOS hex do CSS, nao uma segunda copia");
+}
+
 console.log("\n== seletor de par: um par por vez ==");
 {
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
