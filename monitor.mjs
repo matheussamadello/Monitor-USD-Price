@@ -3920,19 +3920,22 @@ const TITULO_PAGINA = "Monitor USD/BRL";
 // widget que carrega hoje usa o tema escuro NOVO, quase preto e neutro,
 // que nao esta naquela paleta. Cor de terceiro se mede, nao se deduz.
 //
-// Os dois tokens seguem separados de proposito. Hoje valem o mesmo no
-// escuro, porque o tema novo pinta a barra e o grafico iguais, mas sao
-// superficies diferentes: se o widget voltar a separa-las, muda um
-// token e nao a regra.
+// O TEMA CLARO tinha o MESMO erro, e passou despercebido mais tempo: a
+// faixa ficou em #f1f3f6, a barra de ferramentas da paleta classica.
+// Nao era so isso -- as nossas duas superficies ja discordavam entre
+// si, porque o widget recebia #ffffff como fundo do grafico enquanto a
+// faixa era pintada de cinza ao lado dele. Medido, o embed claro e'
+// branco puro.
 //
-// No tema claro o embed ja e' quase branco, igual ao painel, e por isso
-// o problema so aparecia de noite -- mas os tokens existem nos dois
-// para a regra ser uma so.
+// Os dois tokens seguem separados de proposito, mesmo valendo o mesmo
+// nos dois temas hoje: barra e grafico sao superficies diferentes do
+// widget e ja foram pintadas em cores diferentes na paleta anterior
+// dele. Se voltarem a divergir, muda um token e nao a regra.
 //
 // UM lugar so: o CSS e as opcoes do widget saem daqui. Duas copias do
 // mesmo hex divergem no dia em que alguem mexe numa e esquece da outra.
 const TV_FUNDO = { noite: "#0f0f0f", claro: "#ffffff" };
-const TV_BARRA = { noite: "#0f0f0f", claro: "#f1f3f6" };
+const TV_BARRA = { noite: "#0f0f0f", claro: "#ffffff" };
 
 const PAGINA_CSS = `
 /* Tema NOITE e' o padrao. O claro so redefine tokens -- nenhuma regra
