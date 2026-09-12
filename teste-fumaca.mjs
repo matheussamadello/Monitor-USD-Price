@@ -582,7 +582,7 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(!/<[a-zA-Z\/]/.test(pre), "nenhuma tag dentro do <pre>");
   ok((pre.match(/^[a-z_0-9]+: /gm) || []).length > 50, "as linhas campo:valor continuam legiveis no fonte");
   ok(!/NaN|undefined/.test(html), "sem NaN/undefined na pagina");
-  ok(/<article class="par">/.test(html), "os cartoes de par foram gerados");
+  ok(/<article class="par"/.test(html), "os cartoes de par foram gerados");
   ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
     "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
 
@@ -1256,6 +1256,97 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     "e a secao vem antes dos cartoes");
   ok((pag.match(/class="nota"/g) || []).length === 1,
     "uma nota so: as duas somavam 684 caracteres contra 209 das leituras");
+}
+
+console.log("\n== seletor de par: um par por vez ==");
+{
+  const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  const comCartao = PARES_TESTE.filter((c) => !c.semCartao);
+  const botoes = pag.match(/data-sel="[^"]+"/g) || [];
+
+  // Um botao que nao faz nada e' pior que nenhum botao.
+  ok(botoes.length === (comCartao.length > 1 ? comCartao.length : 0),
+    comCartao.length > 1
+      ? `o seletor traz um botao por par (${comCartao.length})`
+      : "com um par so, nao ha seletor");
+
+  // A caixa de leitura e o cartao carregam o MESMO data-par: e' o que
+  // permite filtrar os dois de uma vez.
+  for (const c of comCartao) {
+    const n = (pag.match(new RegExp(`data-par="${c.label.replace("/", "\\/")}"`, "g")) || []).length;
+    ok(n === 2, `${c.label}: a leitura e o cartao levam o mesmo data-par`);
+  }
+
+  // O relatorio completo NAO pode ser filtrado: e' o fallback do prompt.
+  const pre = pag.slice(pag.indexOf("<pre>"), pag.indexOf("</pre>"));
+  ok(!/data-par|oculto/.test(pre),
+    "o bloco do bot fica fora do seletor e sai sempre inteiro");
+
+  // Sem JS, nada e' escondido: a classe so e' aplicada pelo script.
+  ok(!/class="[^"]*oculto/.test(pag),
+    "no HTML servido nada nasce escondido: sem JS a pagina fica completa");
+
+  if (comCartao.length > 1) {
+    // Roda o script de verdade, com DOM falso, e confere o efeito.
+    const caixas = [];
+    for (const c of comCartao) {
+      for (const tipo of ["leitura", "cartao"]) {
+        caixas.push({
+          tipo, par: c.label, classes: new Set(),
+          getAttribute: (k) => (k === "data-par" ? c.label : null),
+          classList: {
+            add: (x) => caixas.find((y) => y === undefined) || null,
+            remove: () => null,
+          },
+        });
+      }
+    }
+    // classList real por caixa
+    for (const cx of caixas) {
+      cx.classList = {
+        add: (x) => cx.classes.add(x),
+        remove: (x) => cx.classes.delete(x),
+        contains: (x) => cx.classes.has(x),
+      };
+    }
+    const bts = comCartao.map((c) => ({
+      pressed: "false",
+      getAttribute: (k) => (k === "data-sel" ? c.label : null),
+      setAttribute: (k, v) => { if (k === "aria-pressed") bts.find((b) => b.getAttribute("data-sel") === c.label).pressed = v; },
+    }));
+    let redesenhos = 0;
+    const doc = {
+      documentElement: { hasAttribute: () => false },
+      querySelectorAll: (sel) => (sel === "[data-par]" ? caixas : bts),
+      querySelector: () => bts[0],
+      addEventListener: () => {},
+    };
+    const janela = { desenharGraficos: () => { redesenhos++; } };
+    const corpo = pag.split("window.mostrarPar=")[1].split("aplica(!r.hasAttribute")[0];
+    new Function("window", "document", "r", "aplica", "window.mostrarPar=" + corpo)(
+      janela, doc, doc.documentElement, () => {}
+    );
+    // Na carga, o primeiro par fica visivel e os outros escondidos.
+    const visiveis = caixas.filter((c) => !c.classes.has("oculto"));
+    ok(visiveis.length === 2 && visiveis.every((c) => c.par === comCartao[0].label),
+      `na carga aparece so o primeiro par (${comCartao[0].label}), leitura e cartao`);
+    ok(bts[0].pressed === "true" && bts[1].pressed === "false",
+      "e o botao dele fica marcado");
+
+    janela.mostrarPar(comCartao[1].label);
+    const v2 = caixas.filter((c) => !c.classes.has("oculto"));
+    ok(v2.length === 2 && v2.every((c) => c.par === comCartao[1].label),
+      "trocar de par troca a leitura E o cartao juntos");
+    ok(bts[1].pressed === "true" && bts[0].pressed === "false",
+      "e a marcacao acompanha");
+    // O widget calcula o tamanho na criacao: um container que nasceu
+    // escondido sai quebrado. Redesenhar com ele visivel resolve.
+    ok(redesenhos >= 2, "cada troca redesenha o grafico do par que apareceu");
+    // Um par que nao existe nao pode apagar a pagina inteira.
+    janela.mostrarPar("PAR/INEXISTENTE");
+    ok(caixas.filter((c) => !c.classes.has("oculto")).length === 2,
+      "pedir um par inexistente nao esconde tudo");
+  }
 }
 
 console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");

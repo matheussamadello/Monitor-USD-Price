@@ -733,6 +733,18 @@ Um efeito colateral que confunde à primeira vista: `bem abaixo (−2,9%)` no d�
 
 Ela **descreve enquadramento, não recomenda operação e não gera alerta**. É contexto que muda de estado poucas vezes por ano, e é essa lentidão que a torna útil para horizonte longo.
 
+### Um par por vez
+
+Nos monitores com **mais de um par com cartão**, um seletor no topo mostra um par de cada vez, filtrando a caixa de contexto **e** o cartão ao mesmo tempo. A página inteira passa a falar de um par só, e a altura cai pela metade no monitor de XMR, que é o único onde isso aparece: os outros dois têm um par com cartão e o seletor nem é gerado, porque um botão que não faz nada é pior que nenhum botão.
+
+Três cuidados que valem conhecer:
+
+- **o relatório completo não é filtrado.** Ele é o fallback do prompt e sai sempre inteiro, com todos os pares. O seletor mexe só no resumo visual;
+- **sem JavaScript nada fica escondido.** A classe que oculta só é aplicada pelo script, então a página servida traz tudo e continua completa se o script não rodar;
+- **o gráfico é redesenhado a cada troca.** O widget do TradingView calcula o tamanho na criação, e um container que nasceu escondido sairia com dimensão zero e ficaria quebrado ao aparecer. Recriar com ele já visível resolve.
+
+Dentro de cada caixa, uma linha separa a leitura `longo` da `curto`. São duas leituras de escalas diferentes e a divisória deixa isso óbvio sem precisar de mais texto.
+
 ### A linha `curto`: o que aconteceu no diário
 
 A linha `longo` diz **onde** o preço está. A linha `curto`, logo abaixo dela na mesma caixa, diz o que está **acontecendo** no timeframe que o projeto usa para timing.

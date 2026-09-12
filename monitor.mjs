@@ -3937,6 +3937,13 @@ dl{margin:0;display:grid;gap:8px}
 .chip.risco{background:var(--risco-bg);border-color:var(--risco-borda);color:var(--risco-txt)}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
+.sel-par{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.sel-par button{font:11px/1 var(--mono);padding:7px 13px;border-radius:6px;
+  cursor:pointer;background:none;border:1px solid var(--linha);color:var(--fraco)}
+.sel-par button[aria-pressed="true"]{background:var(--chip-bg);
+  border-color:var(--chip-borda);color:var(--chip-txt)}
+/* Sem JS nada fica escondido: a classe so e' aplicada pelo script. */
+.oculto{display:none}
 .leituras{margin:0 0 22px}
 .leituras h2{margin:0 0 12px;font:600 11px/1 var(--mono);letter-spacing:.14em;
   text-transform:uppercase;color:var(--fraco)}
@@ -3945,6 +3952,7 @@ dl{margin:0;display:grid;gap:8px}
 .leitura .lp{display:block;font:600 13px/1.3 var(--mono);color:var(--txt-forte);
   margin-bottom:4px}
 .lh{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin-top:7px}
+.lh + .lh{border-top:1px solid var(--linha);margin-top:9px;padding-top:9px}
 .lh .lt{font:11px/1.3 var(--mono);color:var(--fraco);min-width:38px}
 .lh .lr{font:600 13px/1.3 var(--mono);color:var(--fraco)}
 .lh .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
@@ -4463,7 +4471,8 @@ function pgLeitura(cfg, dados) {
   // inversa faria o fato de hoje parecer mais importante que a escala em
   // que este monitor decide, que e' o contrario do que ele assume.
   return (
-    `<div class="leitura"><span class="lp">${pgEsc(cfg.label)}</span>` +
+    `<div class="leitura" data-par="${pgEsc(cfg.label)}">` +
+    `<span class="lp">${pgEsc(cfg.label)}</span>` +
     pgLinhaLeitura("longo", longa) +
     pgLinhaLeitura("curto", curta) +
     `${radar}</div>`
@@ -4491,7 +4500,8 @@ function pgCartao(cfg, dados) {
       `<p>${pgEsc(cfg.graficoNota || "")}</p></div>`
     : "";
   return (
-    `<article class="par"><header><h2>${pgEsc(cfg.label)}</h2>` +
+    `<article class="par" data-par="${pgEsc(cfg.label)}">` +
+    `<header><h2>${pgEsc(cfg.label)}</h2>` +
     `<div class="preco">${preco}</div></header>` +
     `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec)}${pgTimeframe("Semanal", sem, cfg.dec)}</div>` +
     grafico +
@@ -4560,6 +4570,24 @@ export function toHTML(text, dados) {
     '<svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
     "</button>" +
     "</div></header>\n" +
+    // Seletor de par. So aparece quando ha mais de um com cartao: num
+    // monitor de par unico ele seria um botao que nao faz nada.
+    //
+    // Ele filtra a LEITURA e o CARTAO ao mesmo tempo, entao a pagina
+    // inteira passa a falar de um par por vez. O relatorio completo la
+    // embaixo NAO e' filtrado: ele e' o fallback do prompt e sai sempre
+    // inteiro.
+    (comCartao.length > 1
+      ? `<div class="sel-par" role="group" aria-label="Par exibido">` +
+        comCartao
+          .map(
+            (c, i) =>
+              `<button type="button" data-sel="${pgEsc(c.label)}" ` +
+              `aria-pressed="${i === 0 ? "true" : "false"}">${pgEsc(c.label)}</button>`
+          )
+          .join("") +
+        `</div>\n`
+      : "") +
     // Vem ANTES dos cartoes de proposito: e' o que responde "e dai?" sem
     // exigir leitura do resto da pagina.
     `<section class="leituras"><h2>Contexto</h2>` +
@@ -4658,6 +4686,38 @@ export function toHTML(text, dados) {
     'mq.addEventListener("change",function(e){var t=null;' +
     'try{t=localStorage.getItem("tema")}catch(_){}' +
     'if(!t)aplica(e.matches,false)})}catch(e){}' +
+    // ---- seletor de par ----
+    // Mostra UM par por vez: filtra a caixa de leitura e o cartao, que
+    // carregam o mesmo data-par. Sem JS nada e' escondido, entao a
+    // pagina continua completa se o script nao rodar.
+    //
+    // Depois de trocar, o grafico e' REDESENHADO. O widget do
+    // TradingView calcula o tamanho na criacao, e um container que
+    // nasceu escondido sai com dimensao zero e fica quebrado ao
+    // aparecer. Recriar com o container ja visivel resolve.
+    'window.mostrarPar=function(par){' +
+    'var alvos=document.querySelectorAll("[data-par]");var achou=false;' +
+    // Confere ANTES de esconder. Esconder primeiro e desistir depois
+    // deixava a pagina em branco quando o par pedido nao existia.
+    'for(var i=0;i<alvos.length;i++)' +
+    'if(alvos[i].getAttribute("data-par")===par){achou=true;break}' +
+    'if(!achou)return;' +
+    'for(var j=0;j<alvos.length;j++){' +
+    'var meu=alvos[j].getAttribute("data-par")===par;' +
+    'if(meu)alvos[j].classList.remove("oculto");else alvos[j].classList.add("oculto")}' +
+    'var bs=document.querySelectorAll(".sel-par button");' +
+    'for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",' +
+    'bs[k].getAttribute("data-sel")===par?"true":"false");' +
+    'if(window.desenharGraficos)window.desenharGraficos(' +
+    'r.hasAttribute("data-tema")?"light":"dark")};' +
+    'document.addEventListener("click",function(e){' +
+    'var t=e.target,alvo=null;while(t&&t!==document){' +
+    'if(t.getAttribute&&t.getAttribute("data-sel")){alvo=t;break}t=t.parentNode}' +
+    'if(alvo)window.mostrarPar(alvo.getAttribute("data-sel"));});' +
+    // Na carga, seleciona o primeiro. So faz sentido quando ha seletor:
+    // com um par unico a pagina fica como sempre foi.
+    'var prim=document.querySelector(".sel-par button");' +
+    'if(prim)window.mostrarPar(prim.getAttribute("data-sel"));' +
     'aplica(!r.hasAttribute("data-tema"),false);})();</script>\n' +
     "</body>\n</html>\n"
   );
