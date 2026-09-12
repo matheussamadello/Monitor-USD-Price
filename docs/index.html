@@ -118,7 +118,12 @@ dl{margin:0;display:grid;gap:8px}
 .lh .aj{display:inline-flex;align-items:center;justify-content:center;
   align-self:center;width:15px;height:15px;padding:0;border-radius:50%;
   cursor:help;font:700 10px/1 var(--mono);background:none;
-  border:1px solid var(--linha);color:var(--fraco)}
+  border:1px solid var(--linha);color:var(--fraco);position:relative}
+/* Alvo de toque de 26px sem engordar o circulo: 15px e' confortavel
+   no mouse e apertado no dedo. O quadrado invisivel so amplia a area
+   clicavel, e nao muda o desenho nem o espaco ocupado na linha. */
+.lh .aj::after{content:"";position:absolute;left:50%;top:50%;
+  width:26px;height:26px;transform:translate(-50%,-50%)}
 .lh .aj:hover{color:var(--acento);border-color:var(--acento)}
 .lh .aj:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 /* Ancorado na LINHA e nao no botao: assim a caixa ocupa a largura
@@ -157,11 +162,11 @@ dl{margin:0;display:grid;gap:8px}
 <script id="tema-inicial">try{var t=localStorage.getItem("tema");if(t==="claro"||(!t&&!matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-tema","claro")}catch(e){}</script>
 <body>
 <div class="pagina">
-<header class="topo"><h1>Monitor <b>USD/BRL</b></h1><div class="carimbo"><time datetime="2026-09-12T03:57:00Z">2026-09-12 03:57 UTC</time><span class="idade" id="idade" data-ts="2026-09-12T03:57:00Z"></span><button type="button" class="btn-tema" id="btn-tema" aria-pressed="true" title="Alternar night mode" aria-label="Alternar night mode"><svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div></header>
+<header class="topo"><h1>Monitor <b>USD/BRL</b></h1><div class="carimbo"><time datetime="2026-09-12T04:36:00Z">2026-09-12 04:36 UTC</time><span class="idade" id="idade" data-ts="2026-09-12T04:36:00Z"></span><button type="button" class="btn-tema" id="btn-tema" aria-pressed="true" title="Alternar night mode" aria-label="Alternar night mode"><svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div></header>
 <section class="leituras"><h2>Contexto</h2><div class="leitura" data-par="USDT/BRL"><span class="lp">USDT/BRL</span><div class="lh acumular"><span class="lt">longo</span><span class="lr">barato ante a média longa</span><button type="button" class="aj" aria-describedby="aj-usdt-longo" aria-label="O que significa: barato ante a média longa">?</button><span class="ajt" id="aj-usdt-longo" role="tooltip">O fechamento está bem abaixo da média das últimas 89 semanas, e nada indica queda em andamento.</span><span class="lz">dentro da faixa manual de 5,17 a 5,22, bem abaixo da média longa (−2,9%), momentum normal, sem tendência firme</span></div><div class="lh atencao"><span class="lt">curto</span><span class="lr">reteste em curso</span><button type="button" class="aj" aria-describedby="aj-usdt-curto" aria-label="O que significa: reteste em curso">?</button><span class="ajt" id="aj-usdt-curto" role="tooltip">O preço passou de uma faixa manual e voltou para testá-la. Ainda não dá para dizer se ela segura.</span><span class="lz">suporte de 5,15, em cima da média diária</span></div></div><p class="nota"><b>Longo</b> compara o fechamento semanal com a média das últimas 89 semanas. <b>Curto</b> diz o que aconteceu no fechamento diário, o timeframe de timing, calibrado para 1 a 6 semanas e não para o dia. Perto e longe levam em conta o quanto cada par oscila; amarelo quer dizer <b>vale olhar</b>, não bom nem ruim. Não é recomendação.</p></section>
 <section class="pares"><article class="par" data-par="USDT/BRL"><header><h2>USDT/BRL</h2><div class="preco">5,1537</div></header><div class="tfs"><div class="tf"><h3>Diário</h3><dl><div class="m"><dt>Último fechamento</dt><dd class="">5,1543<small>2026-09-11</small></dd></div><div class="m"><dt>EMA89 (fechado)</dt><dd class="baixa">abaixo<small>0,00%</small></dd></div><div class="m"><dt>RSI(21)</dt><dd class="">49,1</dd></div><div class="m"><dt>ADX / DI (28/42)</dt><dd class="baixa">10,7<small>+18,5 / −24,7</small></dd></div><div class="m"><dt>Estrutura</dt><dd class="baixa">baixa</dd></div><div class="m"><dt>Níveis manuais</dt><dd class="alta">atual<small>regiao_suporte_5_12_5_16</small></dd></div></dl><div class="chips"><span class="chip">regiao_suporte_5_12_5_16</span><span class="chip">adx_subindo_com_di_minus_dominante</span><span class="chip">topo_mais_baixo_apos_HH</span><span class="chip risco">estrutura_de_baixa</span><span class="chip risco">di_minus_dominante_com_estrutura_nao_altista</span></div></div><div class="tf"><h3>Semanal</h3><dl><div class="m"><dt>Último fechamento</dt><dd class="">5,1713<small>2026-08-31</small></dd></div><div class="m"><dt>EMA89 (fechado)</dt><dd class="baixa">abaixo<small>2,86%</small></dd></div><div class="m"><dt>RSI(14)</dt><dd class="">49,6</dd></div><div class="m"><dt>ADX / DI (14/21)</dt><dd class="alta">14,1<small>+18,3 / −16,8</small></dd></div><div class="m"><dt>Estrutura</dt><dd class="fraco">lateral_contracao</dd></div><div class="m"><dt>Níveis manuais</dt><dd class="alta">atual<small>faixa_5_17_5_22</small></dd></div></dl><div class="chips"><span class="chip">regiao_suporte_5_12_5_16</span><span class="chip">toque_suporte_intradiario_5_15</span><span class="chip">novo_HL_apos_fundo_mais_baixo</span><span class="chip">topo_mais_baixo_apos_HH</span></div></div></div><div class="grafico"><div class="tv-barra" role="group" aria-label="Timeframe do gráfico"><button type="button" class="tv-tf" data-tf="D" aria-pressed="true">Diário</button><button type="button" class="tv-tf" data-tf="W" aria-pressed="false">Semanal</button></div><div class="tv" id="tv-usdt"><span class="tv-off">Gráfico indisponível — abra em <a href="https://www.tradingview.com/chart/?symbol=BINANCE%3AUSDTBRL" target="_blank" rel="noopener">BINANCE:USDTBRL</a>.</span></div><p>Série da Binance (BINANCE:USDTBRL) desenhada pelo TradingView — a mesma fonte primária do relatório acima.</p></div></article></section>
 <section class="relatorio"><h2>Relatório completo</h2>
-<pre>timestamp: 2026-09-12 03:57 UTC
+<pre>timestamp: 2026-09-12 04:36 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -230,17 +235,17 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.165
+fracao_periodo_decorrida: 0.192
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 2835502.3000
+volume_atual: 2895266.2000
 volume_ultima_fechada: 68107663.4000
 volume_media20: 56749670.0000
 volume_vs_media_pct: 20.01
 volume_referencia: ultima_vela_fechada
 volume_classificacao: acima_da_media
 volume_tendencia_3_fechadas: decrescente
-trades_vela_atual: 4438
+trades_vela_atual: 4847
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -278,12 +283,12 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: regiao_suporte_5_12_5_16, adx_subindo_com_di_minus_dominante, topo_mais_baixo_apos_HH
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=84 estrutural=5.197174-5.216026 operacional=5.190794-5.222380 centro=5.206587 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.02 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=63 estrutural=5.213888-5.266112 operacional=5.224242-5.255828 centro=5.240035 toques=6 rejeicoes=3 role_reversal=nao dist_pct=-1.65 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
-zona_auto_3: id=usdt|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.275500-5.344800 operacional=5.294359-5.325944 centro=5.310151 toques=13 rejeicoes=11 role_reversal=sim dist_pct=-2.95 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=em_teste score=85 estrutural=5.122000-5.161000 operacional=5.125726-5.157312 centro=5.141519 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.24 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_5: id=usdt|diario|z3 tipo=suporte status=enfraquecida estado=acima score=74 estrutural=5.039600-5.087600 operacional=5.047842-5.079428 centro=5.063635 toques=3 rejeicoes=2 role_reversal=sim dist_pct=1.78 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
-zona_auto_6: id=usdt|diario|z2 tipo=suporte status=enfraquecida estado=acima score=52 estrutural=4.996490-5.037810 operacional=5.001358-5.032943 centro=5.017150 toques=2 rejeicoes=1 role_reversal=nao dist_pct=2.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=84 estrutural=5.197174-5.216026 operacional=5.190798-5.222384 centro=5.206591 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.02 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=63 estrutural=5.213888-5.266112 operacional=5.224232-5.255817 centro=5.240025 toques=6 rejeicoes=3 role_reversal=nao dist_pct=-1.65 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usdt|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.275500-5.344800 operacional=5.294358-5.325944 centro=5.310151 toques=13 rejeicoes=11 role_reversal=sim dist_pct=-2.95 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=em_teste score=85 estrutural=5.122000-5.161000 operacional=5.125721-5.157306 centro=5.141513 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.24 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_5: id=usdt|diario|z3 tipo=suporte status=enfraquecida estado=acima score=74 estrutural=5.039600-5.087600 operacional=5.047832-5.079417 centro=5.063625 toques=3 rejeicoes=2 role_reversal=sim dist_pct=1.78 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usdt|diario|z2 tipo=suporte status=enfraquecida estado=acima score=52 estrutural=4.996490-5.037810 operacional=5.001357-5.032943 centro=5.017150 toques=2 rejeicoes=1 role_reversal=nao dist_pct=2.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 
 confluencia_entrada: nenhuma
 confluencia_pullback: em_reteste_de_nivel, volume_decrescente_na_correcao
@@ -389,12 +394,12 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: regiao_suporte_5_05_5_12, perda_suporte_confirmada_5_13, topo_mais_baixo_apos_HH
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=abaixo score=80 estrutural=5.152265-5.225500 operacional=5.169110-5.208570 centro=5.188840 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-1.66 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=79 estrutural=5.240700-5.285800 operacional=5.243485-5.282945 centro=5.263215 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-3.05 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_1: id=usd|diario|z4 tipo=resistencia status=ativa estado=abaixo score=80 estrutural=5.152265-5.225500 operacional=5.169123-5.208583 centro=5.188853 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-1.66 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usd|diario|z5 tipo=resistencia status=ativa estado=abaixo score=79 estrutural=5.240700-5.285800 operacional=5.243495-5.282956 centro=5.263226 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-3.05 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_3: id=usd|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=71 estrutural=5.281346-5.343600 operacional=5.292743-5.332203 centro=5.312473 toques=10 rejeicoes=8 role_reversal=sim dist_pct=-3.93 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=em_teste score=81 estrutural=5.050540-5.137807 operacional=5.074449-5.113909 centro=5.094179 toques=9 rejeicoes=5 role_reversal=sim dist_pct=0.17 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_5: id=usd|diario|z19 tipo=suporte status=enfraquecida estado=acima score=73 estrutural=4.995900-5.053300 operacional=5.004881-5.044341 centro=5.024611 toques=6 rejeicoes=3 role_reversal=sim dist_pct=1.56 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_6: id=usd|diario|z2 tipo=suporte status=enfraquecida estado=acima score=83 estrutural=4.933300-4.997806 operacional=4.945836-4.985297 centro=4.965566 toques=4 rejeicoes=3 role_reversal=sim dist_pct=2.76 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usd|diario|z3 tipo=suporte status=ativa estado=em_teste score=81 estrutural=5.050540-5.137807 operacional=5.074447-5.113907 centro=5.094177 toques=9 rejeicoes=5 role_reversal=sim dist_pct=0.17 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_5: id=usd|diario|z19 tipo=suporte status=enfraquecida estado=acima score=73 estrutural=4.995900-5.053300 operacional=5.004878-5.044338 centro=5.024608 toques=6 rejeicoes=3 role_reversal=sim dist_pct=1.56 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_6: id=usd|diario|z2 tipo=suporte status=enfraquecida estado=acima score=83 estrutural=4.933300-4.997806 operacional=4.945832-4.985293 centro=4.965562 toques=4 rejeicoes=3 role_reversal=sim dist_pct=2.76 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 
 confluencia_entrada: reteste_confirmado, di_plus_dominante
 confluencia_pullback: di_plus_ainda_dominante
@@ -457,17 +462,17 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.738
+fracao_periodo_decorrida: 0.742
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 349318228.4000
+volume_atual: 349377992.3000
 volume_ultima_fechada: 433041368.0000
 volume_media20: 408937080.8550
 volume_vs_media_pct: 5.89
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 219745
+trades_vela_atual: 220154
 volume_semana_dias_fechados: 5
 volume_semana_soma_dias_fechados: 346482726.1000
 volume_semanas_anteriores_mesmos_dias_media: 353828626.1000
@@ -576,7 +581,7 @@ niveis_manuais_alinhamento: parcial
 niveis_manuais_faixas_corroboradas: 2 de 4
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.738
+fracao_periodo_decorrida: 0.742
 vela_atual_em_formacao: sim
 volume_disponivel: nao
 
@@ -663,7 +668,7 @@ fim do relatorio</pre>
 </div>
 <script>(function(){var e=document.getElementById("idade"),t=e&&e.getAttribute("data-ts");if(!e||!t)return;var m=Math.round((Date.now()-Date.parse(t))/6e4);if(!isFinite(m))return;e.textContent="há "+(m<60?m+" min":Math.floor(m/60)+"h"+String(m%60).padStart(2,"0"));e.className="idade "+(m<=90?"ok":m<=240?"aviso":"velho");})();</script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script>window.rsiPorIntervalo={"D":21,"W":14};window.intervaloGrafico="D";window.desenharGraficos=function(tema,intervalo){if(!window.TradingView)return;if(intervalo)window.intervaloGrafico=intervalo;var iv=window.intervaloGrafico,rsi=window.rsiPorIntervalo[iv];var bs=document.querySelectorAll(".tv-tf");for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-tf")===iv?"true":"false");[{"id":"tv-usdt","s":"BINANCE:USDTBRL"}].forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';new TradingView.widget({container_id:g.id,symbol:g.s,interval:iv,theme:tema,style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,allow_symbol_change:false,save_image:false,studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}},{id:"RSI@tv-basicstudies",inputs:{length:rsi,smoothingLine:"None"}}],studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0","relative strength index.smoothed ma.visible":false},backgroundColor:tema==="dark"?"#0e1524":"#ffffff",gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};</script>
-<script>(function(){var r=document.documentElement,b=document.getElementById("btn-tema");function aplica(noite,salvar){if(noite)r.removeAttribute("data-tema");else r.setAttribute("data-tema","claro");if(b)b.setAttribute("aria-pressed",noite?"true":"false");if(salvar){try{localStorage.setItem("tema",noite?"noite":"claro")}catch(e){}}if(window.desenharGraficos)window.desenharGraficos(noite?"dark":"light");}if(b)b.addEventListener("click",function(){aplica(r.hasAttribute("data-tema"),true)});document.addEventListener("click",function(e){var t=e.target,alvo=null;while(t&&t!==document){if(t.classList&&t.classList.contains("tv-tf")){alvo=t;break}t=t.parentNode}if(!alvo||!window.desenharGraficos)return;window.desenharGraficos(r.hasAttribute("data-tema")?"light":"dark",alvo.getAttribute("data-tf"));});try{var mq=matchMedia("(prefers-color-scheme: dark)");mq.addEventListener("change",function(e){var t=null;try{t=localStorage.getItem("tema")}catch(_){}if(!t)aplica(e.matches,false)})}catch(e){}window.mostrarPar=function(par){var alvos=document.querySelectorAll("[data-par]");var achou=false;for(var i=0;i<alvos.length;i++)if(alvos[i].getAttribute("data-par")===par){achou=true;break}if(!achou)return;for(var j=0;j<alvos.length;j++){var meu=alvos[j].getAttribute("data-par")===par;if(meu)alvos[j].classList.remove("oculto");else alvos[j].classList.add("oculto")}var bs=document.querySelectorAll(".sel-par button");for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-sel")===par?"true":"false");if(window.desenharGraficos)window.desenharGraficos(r.hasAttribute("data-tema")?"light":"dark")};document.addEventListener("click",function(e){var t=e.target,alvo=null;while(t&&t!==document){if(t.getAttribute&&t.getAttribute("data-sel")){alvo=t;break}t=t.parentNode}if(alvo)window.mostrarPar(alvo.getAttribute("data-sel"));});var prim=document.querySelector(".sel-par button");if(prim)window.mostrarPar(prim.getAttribute("data-sel"));aplica(!r.hasAttribute("data-tema"),false);})();</script>
+<script>window.rsiPorIntervalo={"D":21,"W":14};window.intervaloGrafico="D";window.desenharGraficos=function(tema,intervalo){if(!window.TradingView)return;if(intervalo)window.intervaloGrafico=intervalo;var iv=window.intervaloGrafico,rsi=window.rsiPorIntervalo[iv];var bs=document.querySelectorAll(".tv-tf");for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-tf")===iv?"true":"false");[{"id":"tv-usdt","s":"BINANCE:USDTBRL"}].forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';if(el.offsetParent===null)return;new TradingView.widget({container_id:g.id,symbol:g.s,interval:iv,theme:tema,style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,allow_symbol_change:false,save_image:false,studies:[{id:"MAExp@tv-basicstudies",inputs:{length:89}},{id:"RSI@tv-basicstudies",inputs:{length:rsi,smoothingLine:"None"}}],studies_overrides:{"moving average exponential.plot.color":tema==="dark"?"#8ec6ff":"#1560c0","relative strength index.smoothed ma.visible":false},backgroundColor:tema==="dark"?"#0e1524":"#ffffff",gridColor:tema==="dark"?"rgba(93,109,140,0.14)":"rgba(90,110,140,0.16)"});});};</script>
+<script>(function(){var r=document.documentElement,b=document.getElementById("btn-tema");function aplica(noite,salvar){if(noite)r.removeAttribute("data-tema");else r.setAttribute("data-tema","claro");if(b)b.setAttribute("aria-pressed",noite?"true":"false");if(salvar){try{localStorage.setItem("tema",noite?"noite":"claro")}catch(e){}}if(window.desenharGraficos)window.desenharGraficos(noite?"dark":"light");}if(b)b.addEventListener("click",function(){aplica(r.hasAttribute("data-tema"),true)});document.addEventListener("click",function(e){var t=e.target,alvo=null;while(t&&t!==document){if(t.classList&&t.classList.contains("tv-tf")){alvo=t;break}t=t.parentNode}if(!alvo||!window.desenharGraficos)return;window.desenharGraficos(r.hasAttribute("data-tema")?"light":"dark",alvo.getAttribute("data-tf"));});try{var mq=matchMedia("(prefers-color-scheme: dark)");mq.addEventListener("change",function(e){var t=null;try{t=localStorage.getItem("tema")}catch(_){}if(!t)aplica(e.matches,false)})}catch(e){}window.mostrarPar=function(par,semDesenhar){var alvos=document.querySelectorAll("[data-par]");var achou=false;for(var i=0;i<alvos.length;i++)if(alvos[i].getAttribute("data-par")===par){achou=true;break}if(!achou)return;for(var j=0;j<alvos.length;j++){var meu=alvos[j].getAttribute("data-par")===par;if(meu)alvos[j].classList.remove("oculto");else alvos[j].classList.add("oculto")}var bs=document.querySelectorAll(".sel-par button");for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-sel")===par?"true":"false");if(!semDesenhar&&window.desenharGraficos)window.desenharGraficos(r.hasAttribute("data-tema")?"light":"dark")};document.addEventListener("click",function(e){var t=e.target,alvo=null;while(t&&t!==document){if(t.getAttribute&&t.getAttribute("data-sel")){alvo=t;break}t=t.parentNode}if(alvo)window.mostrarPar(alvo.getAttribute("data-sel"));});var prim=document.querySelector(".sel-par button");if(prim)window.mostrarPar(prim.getAttribute("data-sel"),true);aplica(!r.hasAttribute("data-tema"),false);})();</script>
 </body>
 </html>
