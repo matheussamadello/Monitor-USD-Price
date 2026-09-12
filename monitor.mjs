@@ -3955,7 +3955,7 @@ const PAGINA_CSS = `
 }
 html[data-tema="claro"]{
   color-scheme:light;
-  --bg:#eef2f8; --painel:#ffffff; --painel2:#f7f9fd; --linha:#d5dfed;
+  --bg:#eef2f8; --painel:#fbfcfe; --painel2:#f7f9fd; --linha:#d5dfed;
   --txt:#1b2534; --txt-forte:#0a1220; --fraco:#5a6b85;
   --azul:#1560c0; --acento:#0d4a94;
   --chip-bg:rgba(21,96,192,.07); --chip-borda:#bcd4f0; --chip-txt:#0d4a94;

@@ -1356,6 +1356,15 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
   const barra = tok(escuro, "--tv-barra");
   const barraClaro = tok(claro, "--tv-barra");
   ok(!!barra && !!barraClaro, `a barra do widget tem cor por tema (${barra} / ${barraClaro})`);
+  // BRANCO PURO E' DO EMBED, e de mais nada. No tema claro o embed e'
+  // #ffffff; se os paineis tambem forem, as camadas somem e a pagina
+  // vira uma chapa branca so. Os paineis ficam num branco levemente
+  // azulado, e a escada -- fundo, cartao, painel, embed -- sobe ate o
+  // branco puro, que so o grafico usa.
+  const painelClaro = tok(claro, "--painel");
+  ok(dia.toLowerCase() === "#ffffff", `no claro a superficie do grafico e' branco puro (${dia})`);
+  ok(painelClaro.toLowerCase() !== "#ffffff",
+    `e os paineis NAO sao branco puro, senao as camadas somem (${painelClaro})`);
   // Dois tokens para duas superficies, mesmo valendo o mesmo hoje: a
   // barra e o grafico sao coisas diferentes do widget, e ja foram
   // pintadas em cores diferentes na paleta anterior dele.
