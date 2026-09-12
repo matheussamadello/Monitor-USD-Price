@@ -692,11 +692,11 @@ Monitor-USD-Price/
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
 
-## Contexto longo: a linha para quem não é trader
+## Contexto: as duas linhas para quem não é trader
 
 O relatório tem mais de cem campos por bloco. Quase todos são refinamento, e refinamento serve para quem opera com frequência. Quem acumula ao longo do tempo e às vezes gasta precisa responder uma pergunta só: **é um momento melhor para comprar mais, para esperar ou para converter parte?**
 
-A faixa **Contexto longo**, no topo da página antes dos cartões, responde isso em uma linha por par. Ela usa **doze campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI, a estrutura, DI+, DI− e ADX, e a situação, a distância, a faixa mais próxima e o alinhamento dos níveis manuais.
+A seção **Contexto**, no topo da página antes dos cartões, responde isso em **duas linhas por par**, dentro de uma caixa só: `longo` diz onde o preço está, `curto` diz o que aconteceu. Foram duas seções separadas até 2026-09-12, e as notas explicativas respondiam por **73% do texto do topo** (684 caracteres de nota contra 209 de leitura). Juntas, some um título e uma nota inteira, o topo cai de 933 para 545 caracteres, e as duas leituras passam a ser lidas lado a lado, que é como se completam. A explicação longa mora aqui no README, que é o lugar dela. Ela usa **doze campos, todos do bloco semanal**: o fechamento, a EMA89, a distância entre os dois em ATR, o RSI, a estrutura, DI+, DI− e ADX, e a situação, a distância, a faixa mais próxima e o alinhamento dos níveis manuais.
 
 A ordem da linha segue a **lista de prioridade de leitura do prompt**: níveis primeiro, média longa depois, indicadores por último. RSI e DMI ficam os dois, porque dizem coisas diferentes: o RSI mede o quanto o preço se esticou, o DMI mede se o movimento tem força. Medidos em série sintética, a correlação entre os dois fica em torno de 0,34 em regime de tendência e cai para praticamente zero em lateralização, ou seja, cerca de nove décimos do que cada um diz o outro não diz.
 
@@ -733,9 +733,9 @@ Um efeito colateral que confunde à primeira vista: `bem abaixo (−2,9%)` no d�
 
 Ela **descreve enquadramento, não recomenda operação e não gera alerta**. É contexto que muda de estado poucas vezes por ano, e é essa lentidão que a torna útil para horizonte longo.
 
-## Contexto curto: o que aconteceu no diário
+### A linha `curto`: o que aconteceu no diário
 
-A faixa de contexto longo diz **onde** o preço está. Esta, logo abaixo dela, diz o que está **acontecendo** no timeframe que o projeto usa para timing.
+A linha `longo` diz **onde** o preço está. A linha `curto`, logo abaixo dela na mesma caixa, diz o que está **acontecendo** no timeframe que o projeto usa para timing.
 
 O diário não é day trade. Os períodos dele são todos calibrados para o horizonte tático de 1 a 6 semanas: RSI 21, DMI 28/42, pivôs 5/5 e janela de reteste de 30 velas. Nada aqui usa a vela em formação.
 

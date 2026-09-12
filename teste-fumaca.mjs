@@ -1173,8 +1173,8 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   ok(/esticado/.test(esticado.razao) && /normal/.test(subindoSaudavel.razao),
     "o RSI vira momentum em palavras, com o numero fora da linha");
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
-  ok(pag.includes('class="leituras"') && /class="leitura /.test(pag),
-    "a faixa de contexto longo aparece na pagina");
+  ok(pag.includes('class="leituras"') && /class="leitura"/.test(pag),
+    "a faixa de contexto aparece na pagina");
   ok(pag.indexOf('class="leituras"') < pag.indexOf('class="pares"'),
     "e vem ANTES dos cartoes, que e' o lugar de quem so quer a resposta");
 }
@@ -1242,12 +1242,20 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     "bloco ausente ou em falha nao inventa leitura");
 
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
-  ok((pag.match(/<h2>Contexto (longo|curto)<\/h2>/g) || []).length === 2,
-    "as duas secoes existem na pagina");
-  ok(pag.indexOf("Contexto longo") < pag.indexOf("Contexto curto"),
-    "o curto vem DEPOIS do longo: primeiro onde se esta, depois o que acontece");
-  ok(pag.indexOf("Contexto curto") < pag.indexOf('class="pares"'),
-    "e os dois vem antes dos cartoes");
+  // UMA secao, com as duas leituras dentro de cada caixa de par.
+  ok((pag.match(/<h2>Contexto<\/h2>/g) || []).length === 1,
+    "existe uma unica secao de contexto");
+  ok(!/Contexto longo|Contexto curto/.test(pag),
+    "as duas secoes separadas nao existem mais");
+  const caixa = pag.split('class="leitura"')[1].split("</div></div>")[0];
+  ok(caixa.indexOf(">longo<") < caixa.indexOf(">curto<"),
+    "dentro da caixa, o longo vem antes do curto: enquadramento antes do evento");
+  ok((pag.match(/class="lh /g) || []).length === PARES_TESTE.filter((c) => !c.semCartao).length * 2,
+    "duas linhas de leitura por par com cartao");
+  ok(pag.indexOf("<h2>Contexto</h2>") < pag.indexOf('class="pares"'),
+    "e a secao vem antes dos cartoes");
+  ok((pag.match(/class="nota"/g) || []).length === 1,
+    "uma nota so: as duas somavam 684 caracteres contra 209 das leituras");
 }
 
 console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");

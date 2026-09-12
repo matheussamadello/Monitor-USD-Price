@@ -3940,16 +3940,19 @@ dl{margin:0;display:grid;gap:8px}
 .leituras{margin:0 0 22px}
 .leituras h2{margin:0 0 12px;font:600 11px/1 var(--mono);letter-spacing:.14em;
   text-transform:uppercase;color:var(--fraco)}
-.leitura{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;
-  padding:12px 16px;border:1px solid var(--linha);border-radius:12px;
+.leitura{padding:12px 16px;border:1px solid var(--linha);border-radius:12px;
   background:var(--painel);margin-bottom:8px}
-.leitura .lp{font:600 13px/1.3 var(--mono);color:var(--txt-forte);min-width:88px}
-.leitura .lr{font:600 14px/1.3 var(--mono);color:var(--fraco)}
-.leitura .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
-.leitura .lradar{font:11px/1.5 var(--mono);color:var(--atencao);flex:1 1 100%}
-.leitura.acumular .lr{color:var(--alta)}
-.leitura.esticado .lr{color:var(--baixa)}
-.leitura.atencao .lr{color:var(--atencao)}
+.leitura .lp{display:block;font:600 13px/1.3 var(--mono);color:var(--txt-forte);
+  margin-bottom:4px}
+.lh{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin-top:7px}
+.lh .lt{font:11px/1.3 var(--mono);color:var(--fraco);min-width:38px}
+.lh .lr{font:600 13px/1.3 var(--mono);color:var(--fraco)}
+.lh .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
+.leitura .lradar{display:block;margin-top:9px;font:11px/1.5 var(--mono);
+  color:var(--atencao)}
+.lh.acumular .lr{color:var(--alta)}
+.lh.esticado .lr{color:var(--baixa)}
+.lh.atencao .lr{color:var(--atencao)}
 .leituras .nota{margin:10px 2px 0;font:11px/1.6 var(--mono);color:var(--fraco)}
 .grafico{border-top:1px solid var(--linha)}
 .tv-barra{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--linha)}
@@ -4430,30 +4433,40 @@ export function leituraCurta(dia, cfg) {
   };
 }
 
-function pgLeituraCurta(cfg, dados) {
-  const L = leituraCurta((dados.diario || {})[cfg.label], cfg);
+// UMA caixa por par, com as duas leituras dentro. Eram duas secoes
+// separadas, e as notas explicativas respondiam por 73% do texto do topo
+// da pagina -- as leituras em si eram 209 caracteres contra 684 de nota.
+// Juntas, some um titulo e uma nota inteira, e as duas linhas passam a
+// ser lidas lado a lado, que e' como elas se completam: a longa diz ONDE
+// o preco esta, a curta diz o que esta ACONTECENDO.
+function pgLinhaLeitura(tag, L, extra) {
   return (
-    `<div class="leitura ${pgEsc(L.classe)}"><span class="lp">${pgEsc(cfg.label)}</span>` +
+    `<div class="lh ${pgEsc(L.classe)}"><span class="lt">${pgEsc(tag)}</span>` +
     `<span class="lr">${pgEsc(L.rotulo)}</span>` +
-    `<span class="lz">${pgEsc(L.razao)}</span></div>`
+    `<span class="lz">${pgEsc(L.razao)}</span>${extra || ""}</div>`
   );
 }
 
 function pgLeitura(cfg, dados) {
-  const L = leituraLonga((dados.semanal || {})[cfg.label], cfg.dec);
+  const longa = leituraLonga((dados.semanal || {})[cfg.label], cfg.dec);
+  const curta = leituraCurta((dados.diario || {})[cfg.label], cfg);
   // O radar de promocao so ocupa espaco quando tem o que dizer. E' aviso
-  // de MANUTENCAO, nao leitura de mercado, entao entra discreto e
-  // separado do resto da linha.
+  // de MANUTENCAO, nao leitura de mercado, entao entra discreto e no fim
+  // da caixa, separado das duas leituras.
   const dia = (dados.diario || {})[cfg.label] || {};
   const cand = dia.zonas_candidatas_a_faixa;
   const radar =
     cand && cand !== "nenhuma"
       ? `<span class="lradar">região amadurecida sem faixa manual: ${pgEsc(cand)}</span>`
       : "";
+  // Longo primeiro: enquadramento antes do evento do dia. A ordem
+  // inversa faria o fato de hoje parecer mais importante que a escala em
+  // que este monitor decide, que e' o contrario do que ele assume.
   return (
-    `<div class="leitura ${pgEsc(L.classe)}"><span class="lp">${pgEsc(cfg.label)}</span>` +
-    `<span class="lr">${pgEsc(L.rotulo)}</span>` +
-    `<span class="lz">${pgEsc(L.razao)}</span>${radar}</div>`
+    `<div class="leitura"><span class="lp">${pgEsc(cfg.label)}</span>` +
+    pgLinhaLeitura("longo", longa) +
+    pgLinhaLeitura("curto", curta) +
+    `${radar}</div>`
   );
 }
 
@@ -4547,28 +4560,20 @@ export function toHTML(text, dados) {
     '<svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
     "</button>" +
     "</div></header>\n" +
-    // Vem ANTES dos cartoes de proposito: e' a unica linha que responde
-    // "e dai?" sem exigir leitura do resto da pagina.
-    `<section class="leituras"><h2>Contexto longo</h2>` +
+    // Vem ANTES dos cartoes de proposito: e' o que responde "e dai?" sem
+    // exigir leitura do resto da pagina.
+    `<section class="leituras"><h2>Contexto</h2>` +
     comCartao.map((c) => pgLeitura(c, d)).join("") +
-    `<p class="nota">Compara o fechamento da semana com a <b>média longa</b>, ` +
-    `que é a média das últimas 89 semanas, cerca de um ano e oito meses. ` +
-    `Diz onde o preço está nessa escala, e só nela. Não é recomendação, ` +
-    `não gera alerta e não serve para decidir hora do dia. <b>Perto</b> e ` +
-    `<b>bem longe</b> levam em conta o quanto cada par costuma oscilar, ` +
-    `por isso 3% já é bastante no dólar e é pouco numa cripto. Os campos ` +
-    `técnicos completos ficam no relatório abaixo.</p></section>\n` +
-    // O curto vem DEPOIS do longo: primeiro onde se esta, depois o que
-    // esta acontecendo. A ordem inversa faria o evento do dia parecer
-    // mais importante que o enquadramento, que e' o contrario do que
-    // este monitor assume.
-    `<section class="leituras"><h2>Contexto curto</h2>` +
-    comCartao.map((c) => pgLeituraCurta(c, d)).join("") +
-    `<p class="nota">O que aconteceu no fechamento <b>diário</b>, que é o ` +
-    `timeframe de timing deste monitor, calibrado para 1 a 6 semanas e não ` +
-    `para o dia. O destaque em amarelo quer dizer <b>vale olhar</b>, não ` +
-    `quer dizer bom nem ruim: rompimento e reteste têm o mesmo nome ` +
-    `subindo ou descendo.</p></section>\n` +
+    // UMA nota, curta. As duas anteriores somavam 684 caracteres contra
+    // 209 das leituras, e viravam parede de texto justo em cima da unica
+    // parte da pagina escrita para quem nao sabe analise tecnica. A
+    // explicacao inteira mora no README, que e' o lugar dela.
+    `<p class="nota"><b>Longo</b> compara o fechamento semanal com a média ` +
+    `das últimas 89 semanas. <b>Curto</b> diz o que aconteceu no fechamento ` +
+    `diário, o timeframe de timing, calibrado para 1 a 6 semanas e não para ` +
+    `o dia. Perto e longe levam em conta o quanto cada par oscila; amarelo ` +
+    `quer dizer <b>vale olhar</b>, não bom nem ruim. Não é recomendação.` +
+    `</p></section>\n` +
     `<section class="pares">${comCartao.map((c) => pgCartao(c, d)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----
