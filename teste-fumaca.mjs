@@ -1376,8 +1376,16 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
     "a borda dos botoes acompanha, senao some no fundo novo");
 
   // O botao MARCADO continua azul: e' o unico jeito de saber qual vale.
-  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*var\(--chip-bg\)/.test(css),
-    "o botao marcado continua com a cor de destaque");
+  // Os botoes sao CINZA, nao azul: moram dentro do bloco do grafico,
+  // que e' neutro nos dois temas. Sem o azul, o marcado precisa de
+  // PREENCHIMENTO -- so a cor do texto nao diria qual intervalo vale.
+  ok(/\.tv-tf\{[^}]*color:var\(--tv-btn\)/.test(css),
+    "os botoes do grafico usam o cinza do bloco, nao o azul da pagina");
+  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*background:var\(--tv-btn-ativo\)/.test(css) &&
+     /\.tv-tf\[aria-pressed="true"\]\{[^}]*color:var\(--tv-btn-forte\)/.test(css),
+    "e o marcado se distingue por preenchimento, nao so por cor de texto");
+  ok(!/\.tv-tf[^}]*var\(--chip-/.test(css),
+    "nenhum botao do grafico volta a puxar a cor de destaque da pagina");
 
   // O widget recebe exatamente a mesma cor. Se o CSS e o widget
   // tivessem hex proprios, um dia alguem mexeria num e nao no outro.

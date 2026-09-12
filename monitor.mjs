@@ -3950,7 +3950,8 @@ const PAGINA_CSS = `
   --risco-bg:rgba(248,81,73,.09); --risco-borda:rgba(248,81,73,.30); --risco-txt:#ff8b84;
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
-  --tv-fundo:${TV_FUNDO.noite}; --tv-barra:${TV_BARRA.noite}; --tv-linha:#2a2e39;
+  --tv-fundo:${TV_FUNDO.noite}; --tv-barra:${TV_BARRA.noite}; --tv-linha:#3c4043;
+  --tv-btn:#9aa0a6; --tv-btn-forte:#e8eaed; --tv-btn-ativo:#2f3136;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -3962,7 +3963,8 @@ html[data-tema="claro"]{
   --risco-bg:rgba(192,54,44,.07); --risco-borda:rgba(192,54,44,.28); --risco-txt:#a3271f;
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
-  --tv-fundo:${TV_FUNDO.claro}; --tv-barra:${TV_BARRA.claro}; --tv-linha:#d5dfed;
+  --tv-fundo:${TV_FUNDO.claro}; --tv-barra:${TV_BARRA.claro}; --tv-linha:#dadce0;
+  --tv-btn:#5f6368; --tv-btn-forte:#202124; --tv-btn-ativo:#e3e5e8;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -4076,10 +4078,18 @@ dl{margin:0;display:grid;gap:8px}
 .grafico{border-top:1px solid var(--linha)}
 .tv-barra{display:flex;gap:6px;padding:10px 18px;background:var(--tv-barra);
   border-bottom:1px solid var(--tv-linha)}
+/* Cinza, e nao o azul do resto da pagina: estes botoes moram DENTRO
+   do bloco do grafico, que e' territorio do widget e neutro nos dois
+   temas. O azul os fazia parecer controle da pagina pousado por cima
+   do embed. Cinza CLARO no escuro e cinza ESCURO no claro, sempre
+   contra o branco/preto que a faixa herda do embed. */
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
-  background:none;border:1px solid var(--tv-linha);color:var(--fraco)}
-.tv-tf[aria-pressed="true"]{background:var(--chip-bg);border-color:var(--chip-borda);
-  color:var(--chip-txt)}
+  background:none;border:1px solid var(--tv-linha);color:var(--tv-btn)}
+/* O marcado ganha PREENCHIMENTO e texto de contraste maximo: sem o
+   azul, so a cor do texto nao bastaria para saber qual intervalo
+   esta valendo. */
+.tv-tf[aria-pressed="true"]{background:var(--tv-btn-ativo);
+  border-color:var(--tv-btn-ativo);color:var(--tv-btn-forte)}
 .tv{height:460px;background:var(--tv-fundo);display:flex;align-items:center;
   justify-content:center}
 .tv .tv-off{padding:24px;text-align:center;font-size:13px;color:var(--fraco)}
