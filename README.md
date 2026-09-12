@@ -762,6 +762,8 @@ Vale rodar em mais de um horizonte. Uma condição útil deveria continuar útil
 
 Ele não sabe o que o agente escolheu enviar. Se você quiser medir isso também, o prompt pede que cada alerta termine numa linha compacta de registro; basta colar essas linhas em `alertas-enviados.jsonl` na raiz. Sem isso, dá para saber quais condições têm valor, mas não se o agente está encaminhando as certas.
 
+O rodapé carrega o horizonte, e aceita quatro valores: `TÁTICO`, `ESTRATÉGICO`, `AMBOS` e `MANUTENÇÃO`. O último é obrigatório para revisão de níveis e radar de promoção, e existe por dois motivos. Aviso de configuração marcado como tático ocuparia a vaga tática da execução, podendo suprimir um sinal de mercado real no mesmo ciclo. E contaminaria a medição depois, misturando manutenção com chamada de mercado na mesma coluna.
+
 ## Teste de fumaça
 
 Os três monitores da família têm um `teste-fumaca.mjs`, que roda o monitor inteiro contra séries sintéticas **sem tocar na rede**. O deste é o mais extenso porque aqui a fonte de dados é a mais nova e tem cascata em dois níveis, e um erro de parse só apareceria em produção.

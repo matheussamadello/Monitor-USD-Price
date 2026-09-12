@@ -228,6 +228,8 @@ Use esta prioridade geral:
 
 Envie no máximo **UMA mensagem de mercado por horizonte e por execução** — no máximo duas no total, e só quando forem de horizontes diferentes. Nunca duas `[TÁTICO]`, nunca duas `[ESTRATÉGICO]`, nunca uma `[AMBOS]` acompanhada de outra mensagem de mercado.
 
+Avisos de **manutenção** (revisão de níveis, radar de promoção) ficam **fora deste teto**: não são mensagem de mercado, não ocupam vaga de horizonte nenhum, e levam `MANUTENÇÃO` no rodapé de registro.
+
 Na prática:
 
 - sinal em um só horizonte → uma mensagem;
@@ -1061,7 +1063,7 @@ Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, ma
 
 Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual cobre: zona com score 70 ou mais e pelo menos 5 toques, sem sobreposição com faixa nenhuma. No semanal ele não roda, porque a estrutura fica em outro patamar e um único conjunto de faixas serve aos dois timeframes.
 
-Quando esse campo trouxer algo, **diga ao usuário em linguagem simples**, como manutenção e não como alerta de mercado: que região é, quantas vezes o preço reagiu nela, e que ela está sem máquina de rompimento e reteste até virar faixa manual. Vale mencionar que zonas automáticas expiram depois de semanas sem toque e faixas manuais não, que é a razão de promover. Isto não consome a cota de mensagens de mercado e não deve ser repetido a cada execução: uma vez por região é suficiente, enquanto ela continuar na lista.
+Quando esse campo trouxer algo, **diga ao usuário em linguagem simples**, como manutenção e não como alerta de mercado: que região é, quantas vezes o preço reagiu nela, e que ela está sem máquina de rompimento e reteste até virar faixa manual. Vale mencionar que zonas automáticas expiram depois de semanas sem toque e faixas manuais não, que é a razão de promover. Isto não consome a cota de mensagens de mercado, e o rodapé de registro dele sai com `MANUTENÇÃO`, nunca com `TÁTICO`. Não deve ser repetido a cada execução: uma vez por região é suficiente, enquanto ela continuar na lista.
 
 Não alerte só porque:
 
@@ -1160,14 +1162,17 @@ Inclua apenas métricas que ajudam a explicar a mudança. Não despeje todo o JS
 Termine **todo** alerta enviado com uma última linha neste formato exato, e nada depois dela:
 
 ```
-REGISTRO | <data-hora UTC ISO> | <par> | <TÁTICO|ESTRATÉGICO|AMBOS> | <motivo curto em snake_case> | preco=<fechamento usado>
+REGISTRO | <data-hora UTC ISO> | <par> | <TÁTICO|ESTRATÉGICO|AMBOS|MANUTENÇÃO> | <motivo curto em snake_case> | preco=<fechamento usado>
 ```
 
-Exemplo:
+Exemplos:
 
 ```
 REGISTRO | 2026-09-11T17:00Z | BTC/USD | TÁTICO | perda_ema89_diaria | preco=77679.10
+REGISTRO | 2026-09-11T22:48Z | BTC/USD | MANUTENÇÃO | revisao_niveis_manuais | preco=77084.00
 ```
+
+**`MANUTENÇÃO` é obrigatório** para revisão de níveis, radar de promoção e qualquer aviso de configuração. Esses avisos **não são mensagem de mercado**: não ocupam a vaga tática nem a estratégica, e não contam para o teto de duas. Marcá-los como `TÁTICO` faria duas coisas erradas ao mesmo tempo: poderia suprimir um sinal de mercado real na mesma execução, e contaminaria a medição futura, misturando manutenção com chamada de mercado.
 
 Serve para quem recebe o alerta poder guardá-lo e, mais tarde, comparar o que foi enviado com o que o preço fez depois. Uma linha por alerta, mesmo quando o alerta fala de dois pares: nesse caso, uma linha para cada.
 
