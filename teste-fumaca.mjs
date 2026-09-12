@@ -1110,14 +1110,14 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   // A frase NOMEIA a faixa. Sem isso ela afirmava algo sobre "uma faixa"
   // e obrigava quem le a procurar o rotulo no cartao -- e ainda a saber
   // que esta leitura sai do bloco semanal, nao do diario.
-  ok(ondeNosNiveis("atual", 0, f78, "alinhado", 2) === "dentro da faixa manual de 78.000 a 80.000",
+  ok(ondeNosNiveis("atual", 0, f78, "alinhado", 2) === "dentro da faixa manual 78.000–80.000",
     "distancia zero quer dizer DENTRO da faixa, e a frase diz QUAL");
-  ok(/região de suporte manual de 64.000 a 66.000/.test(
+  ok(/suporte manual 64.000–66.000/.test(
       ondeNosNiveis("atual", 0, fx(64000, 66000, "regiao_suporte_64k_66k"), "alinhado", 2)),
     "faixa de suporte e' nomeada como tal, tambem com os limites");
-  ok(/encostando na faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2)),
+  ok(/encostando na faixa manual 78.000–80.000/.test(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2)),
     "perto mas fora da faixa: encostando");
-  ok(/perto da faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("monitorar", 2, f78, "alinhado", 2)),
+  ok(/perto da faixa manual 78.000–80.000/.test(ondeNosNiveis("monitorar", 2, f78, "alinhado", 2)),
     "entre 1 e 3 ATR: perto");
   // Longe de TODAS, nomear uma nao ajudaria.
   ok(ondeNosNiveis("obsoleto", 5, f78, "alinhado", 2) === "longe das faixas manuais",
@@ -1127,18 +1127,18 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     "sem os limites publicados, a frase sai sem o intervalo em vez de quebrar");
 
   // Casas decimais suficientes, sem zeros a toa: cada par tem a sua escala.
-  ok(/de 76.000 a 78.000/.test(ondeNosNiveis("atual", 0, fx(76000, 78000, "f"), "alinhado", 2)),
+  ok(/ 76.000–78.000/.test(ondeNosNiveis("atual", 0, fx(76000, 78000, "f"), "alinhado", 2)),
     "valores inteiros saem sem casas decimais");
-  ok(/de 0,00656 a 0,00705/.test(ondeNosNiveis("atual", 0, fx(0.00656, 0.00705, "f"), "alinhado", 8)),
+  ok(/ 0,00656–0,00705/.test(ondeNosNiveis("atual", 0, fx(0.00656, 0.00705, "f"), "alinhado", 8)),
     "e um par de escala pequena sai com as casas que precisa");
-  ok(/de 5,12 a 5,16/.test(ondeNosNiveis("atual", 0, fx(5.12, 5.16, "f"), "alinhado", 4)),
+  ok(/ 5,12–5,16/.test(ondeNosNiveis("atual", 0, fx(5.12, 5.16, "f"), "alinhado", 4)),
     "sem arrastar casas que a faixa nao usa");
 
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
   const desalinhada = ondeNosNiveis("atual", 0, f78, "desalinhado", 2);
-  ok(/não vem respeitando/.test(desalinhada),
+  ok(/\(não respeitada\)/.test(desalinhada),
     "faixa desalinhada e' citada COM a ressalva: o mercado nao a respeita");
-  ok(!/não vem respeitando/.test(ondeNosNiveis("obsoleto", 5, f78, "desalinhado", 2)),
+  ok(!/\(não respeitada\)/.test(ondeNosNiveis("obsoleto", 5, f78, "desalinhado", 2)),
     "mas longe da faixa a ressalva nao faz sentido e nao aparece");
 
   // A razao segue a ordem de prioridade do prompt: niveis antes da media
@@ -1148,10 +1148,14 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     niveis_manuais_faixa_mais_proxima: "faixa_78k_80k",
     niveis_manuais_alinhamento: "alinhado",
   }));
-  ok(comNivel.razao.indexOf("faixas") < comNivel.razao.indexOf("média longa"),
-    "os niveis vem ANTES da media longa na razao");
-  ok(comNivel.razao.indexOf("média longa") < comNivel.razao.indexOf("momentum"),
+  ok(comNivel.razao.indexOf("faixa") < comNivel.razao.indexOf("da média"),
+    "os niveis vem ANTES da media na razao");
+  ok(comNivel.razao.indexOf("da média") < comNivel.razao.indexOf("momentum"),
     "e os indicadores vem por ultimo");
+  // Quatro fatos independentes, separados por ponto medio em vez de
+  // virgula: a linha deixou de parecer frase corrida.
+  ok((comNivel.razao.match(/ · /g) || []).length === 3,
+    "a razao sai com os quatro fatos separados por ponto medio");
   ok(!/ATR|RSI|ADX|DI\+/.test(comNivel.razao),
     "a linha dos niveis tambem sai sem jargao");
 
