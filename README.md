@@ -745,6 +745,14 @@ Três cuidados que valem conhecer:
 
 Dentro de cada caixa, uma linha separa a leitura `longo` da `curto`. São duas leituras de escalas diferentes e a divisória deixa isso óbvio sem precisar de mais texto.
 
+### O `(?)` ao lado de cada rótulo
+
+O rótulo é curto por obrigação de layout: `esticado e a alta perdendo força` já é o limite do que cabe numa linha, e a explicação inteira não caberia em nenhuma. O `(?)` ao lado resolve isso sem custo de espaço — passando o mouse no computador, tocando no celular, ou com o foco do teclado. Quem já sabe o que o rótulo quer dizer nunca precisa abrir.
+
+O texto vem do mapa `EXPLICACOES`, e a chave sai da **própria leitura**, não do texto do rótulo: casar por texto faria a explicação sumir em silêncio no dia em que alguém reescrevesse um rótulo. O teste de fumaça cobre os dois lados — toda chave que as leituras sabem produzir tem explicação, e nenhuma explicação fica órfã — e também que **nenhuma delas usa jargão**, a mesma regra que já vale para a razão de cada linha.
+
+É markup só da parte visual: o relatório completo, que é o que o agente lê, sai idêntico.
+
 ### A linha `curto`: o que aconteceu no diário
 
 A linha `longo` diz **onde** o preço está. A linha `curto`, logo abaixo dela na mesma caixa, diz o que está **acontecendo** no timeframe que o projeto usa para timing.

@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, forcaTendencia, ondeNosNiveis, zonasCandidatas,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, EXPLICACOES, forcaTendencia, ondeNosNiveis, zonasCandidatas,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1256,6 +1256,87 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     "e a secao vem antes dos cartoes");
   ok((pag.match(/class="nota"/g) || []).length === 1,
     "uma nota so: as duas somavam 684 caracteres contra 209 das leituras");
+}
+
+console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
+{
+  // O rotulo e' curto por obrigacao de layout. O (?) devolve a
+  // explicacao inteira sem ocupar linha -- mas so vale se TODA chave
+  // que as leituras sabem produzir tiver texto, senao o botao abre
+  // vazio para quem mais precisa dele.
+  const bloco = (fech, ema, dist, rsi, estrutura, dp, dm, adx) => ({
+    ultimo_fechamento_close: fech, ema89_fechada_atual: ema,
+    distancia_ema89_fechada_atr: dist, rsi_fechado: rsi,
+    estrutura_tendencia: estrutura,
+    di_plus_fechado: dp, di_minus_fechado: dm, adx_fechado: adx,
+  });
+  const cfg = PARES_TESTE.find((c) => !c.semCartao);
+  const nv = cfg.niveis;
+  const base = (extra) => ({
+    ultimo_fechamento_close: 110, ema89_fechada_atual: 100,
+    ema89_cruzamento_fechado: "nenhum", deterioracao_tendencia: [],
+    ...(extra || {}),
+  });
+
+  const produzidas = new Set();
+  const somar = (L) => { produzidas.add(L.chave); return L; };
+
+  somar(leituraLonga(null));
+  somar(leituraLonga(bloco(99, 100, 0.15, 50, "lateral_contracao")));
+  somar(leituraLonga(bloco(80, 100, 2.0, 45, "lateral_contracao")));
+  somar(leituraLonga(bloco(80, 100, 2.0, 45, "baixa")));
+  somar(leituraLonga(bloco(130, 100, 2.5, 58, "alta")));
+  somar(leituraLonga(bloco(130, 100, 2.5, 74, "alta", 35, 10, 30)));
+  somar(leituraLonga(bloco(130, 100, 2.5, 74, "alta", 35, 10, 15)));
+  somar(leituraCurta(null, cfg));
+  for (const e of ["reteste_confirmado", "em_reteste", "rompimento_falhou",
+                   "recuperado", "rompido", "rompimento_candidato"]) {
+    somar(leituraCurta(base({ [`nivel_${nv.resistenciaLabel}_estado`]: e }), cfg));
+  }
+  somar(leituraCurta(base({ ema89_cruzamento_fechado: "acima" }), cfg));
+  somar(leituraCurta(base({ ema89_cruzamento_fechado: "abaixo" }), cfg));
+  somar(leituraCurta(base({ deterioracao_tendencia: ["rompimento_falhou"] }), cfg));
+  somar(leituraCurta(base(), cfg));
+
+  const faltando = [...produzidas].filter((k) => !EXPLICACOES[k]);
+  ok(faltando.length === 0, `toda chave de leitura tem explicacao (faltou: ${faltando})`);
+  // E o contrario tambem: explicacao que nenhuma leitura produz e' texto
+  // morto que ninguem ia notar envelhecendo.
+  const sobrando = Object.keys(EXPLICACOES).filter((k) => !produzidas.has(k));
+  ok(sobrando.length === 0, `nenhuma explicacao orfa (sobrou: ${sobrando})`);
+
+  // O texto e' para quem NAO sabe analise tecnica: o mesmo criterio da
+  // razao, que ja proibe jargao.
+  const jargao = /\bATR\b|\bRSI\b|\bADX\b|\bDMI\b|\bEMA\b|pivô|momentum/i;
+  const comJargao = Object.entries(EXPLICACOES).filter(([, v]) => jargao.test(v));
+  ok(comJargao.length === 0, `explicacao sem jargao (com jargao: ${comJargao.map((x) => x[0])})`);
+
+  const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
+  const comCartao = PARES_TESTE.filter((c) => !c.semCartao);
+  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 2,
+    "um (?) por linha de leitura: longo e curto de cada par com cartao");
+
+  // O id liga o botao ao texto para leitor de tela. Repetido, o leitor
+  // leria a explicacao errada -- e o CSS ainda funcionaria, entao so um
+  // teste pega isso.
+  const ids = pag.match(/id="aj-[^"]+"/g) || [];
+  ok(ids.length === comCartao.length * 2 && new Set(ids).size === ids.length,
+    "cada (?) aponta para um id unico");
+  for (const id of ids) {
+    const alvo = id.slice(4, -1);
+    ok(pag.includes(`aria-describedby="${alvo}"`),
+      `o (?) de ${alvo} aponta para um texto que existe`);
+  }
+
+  // O botao vem DEPOIS do rotulo, que e' o que ele explica.
+  const linha = pag.split('class="lh ')[1].split("</div>")[0];
+  ok(linha.indexOf('class="lr"') < linha.indexOf('class="aj"'),
+    "o (?) vem depois do rotulo, nao antes");
+
+  // Nada disso pode encostar no bloco que o bot le.
+  const pre = pag.slice(pag.indexOf("<pre>"), pag.indexOf("</pre>"));
+  ok(!/class="aj"|role="tooltip"/.test(pre),
+    "o (?) e' so da parte visual: o relatorio do bot sai intacto");
 }
 
 console.log("\n== seletor de par: um par por vez ==");

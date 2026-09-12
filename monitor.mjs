@@ -3951,13 +3951,31 @@ dl{margin:0;display:grid;gap:8px}
   background:var(--painel);margin-bottom:8px}
 .leitura .lp{display:block;font:600 13px/1.3 var(--mono);color:var(--txt-forte);
   margin-bottom:4px}
-.lh{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin-top:7px}
+.lh{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;margin-top:7px;
+  position:relative}
 .lh + .lh{border-top:1px solid var(--linha);margin-top:9px;padding-top:9px}
 .lh .lt{font:11px/1.3 var(--mono);color:var(--fraco);min-width:38px}
 .lh .lr{font:600 13px/1.3 var(--mono);color:var(--fraco)}
 .lh .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
 .leitura .lradar{display:block;margin-top:9px;font:11px/1.5 var(--mono);
   color:var(--atencao)}
+/* O (?) fica discreto ate alguem procurar por ele: a linha e' para
+   ser lida de relance, e um circulo forte ao lado de cada rotulo
+   competiria com o proprio rotulo. Abre no hover E no foco -- o
+   foco e' o que faz funcionar no toque e no teclado. */
+.lh .aj{display:inline-flex;align-items:center;justify-content:center;
+  align-self:center;width:15px;height:15px;padding:0;border-radius:50%;
+  cursor:help;font:700 10px/1 var(--mono);background:none;
+  border:1px solid var(--linha);color:var(--fraco)}
+.lh .aj:hover{color:var(--acento);border-color:var(--acento)}
+.lh .aj:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+/* Ancorado na LINHA e nao no botao: assim a caixa ocupa a largura
+   toda e o texto nunca vaza para fora da tela no celular. */
+.lh .ajt{display:none;position:absolute;left:0;right:0;top:100%;z-index:5;
+  margin-top:6px;padding:10px 12px;border-radius:8px;background:var(--painel2);
+  border:1px solid var(--linha);box-shadow:var(--sombra);
+  font:11px/1.6 var(--mono);color:var(--txt);text-align:left}
+.lh .aj:hover + .ajt,.lh .aj:focus + .ajt{display:block}
 .lh.acumular .lr{color:var(--alta)}
 .lh.esticado .lr{color:var(--baixa)}
 .lh.atencao .lr{color:var(--atencao)}
@@ -4244,7 +4262,10 @@ export function forcaTendencia(dp, dm, adx) {
 }
 
 export function leituraLonga(sem, dec = 2) {
-  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponível" };
+  const nada = {
+    classe: "neutro", rotulo: "sem leitura", razao: "bloco semanal indisponível",
+    chave: "sem_leitura",
+  };
   if (!sem || sem.falha) return nada;
   const fech = sem.ultimo_fechamento_close;
   const ema = sem.ema89_fechada_atual;
@@ -4317,7 +4338,7 @@ export function leituraLonga(sem, dec = 2) {
   const razao = [niveis, onde, forcaRsi, comoVai].filter(Boolean).join(", ");
 
   if (!longe) {
-    return { classe: "neutro", rotulo: "na média longa", razao };
+    return { classe: "neutro", rotulo: "na média longa", razao, chave: "na_media" };
   }
   // ABAIXO da media longa. Barato e barato-ainda-caindo sao coisas
   // diferentes, e juntar as duas seria mentira. Duas coisas denunciam a
@@ -4330,13 +4351,16 @@ export function leituraLonga(sem, dec = 2) {
     // Sem queda instalada o rotulo volta a ser o simples: estar abaixo da
     // media nao implica que houve queda recente a ceder.
     return caindo
-      ? { classe: "atencao", rotulo: "barato, mas ainda caindo", razao }
-      : { classe: "acumular", rotulo: "barato ante a média longa", razao };
+      ? { classe: "atencao", rotulo: "barato, mas ainda caindo", razao, chave: "barato_caindo" }
+      : { classe: "acumular", rotulo: "barato ante a média longa", razao, chave: "barato" };
   }
   // ACIMA e longe, sem esticamento: alta saudavel e' o estado normal de
   // uma tendencia, e nao vira alarme.
   if (!(typeof rsi === "number" && rsi >= 70)) {
-    return { classe: "neutro", rotulo: "acima da média, sem esticamento", razao };
+    return {
+      classe: "neutro", rotulo: "acima da média, sem esticamento", razao,
+      chave: "acima_normal",
+    };
   }
   // ACIMA, longe e esticado. Aqui o RSI sozinho juntava duas situacoes
   // opostas: subiu muito E a compra ainda manda (converter agora costuma
@@ -4344,8 +4368,14 @@ export function leituraLonga(sem, dec = 2) {
   // janela costuma estar). Quem separa as duas e' o DMI, nao o RSI.
   const altaViva = forca && forca.dominante === "alta" && forca.forte;
   return altaViva
-    ? { classe: "atencao", rotulo: "esticado, mas a alta ainda tem força", razao }
-    : { classe: "esticado", rotulo: "esticado e a alta perdendo força", razao };
+    ? {
+        classe: "atencao", rotulo: "esticado, mas a alta ainda tem força", razao,
+        chave: "esticado_com_forca",
+      }
+    : {
+        classe: "esticado", rotulo: "esticado e a alta perdendo força", razao,
+        chave: "esticado_sem_forca",
+      };
 }
 
 // ------------------------------------------------------------
@@ -4376,7 +4406,10 @@ const ESTADOS_CURTO = [
 ];
 
 export function leituraCurta(dia, cfg) {
-  const nada = { classe: "neutro", rotulo: "sem leitura", razao: "bloco diário indisponível" };
+  const nada = {
+    classe: "neutro", rotulo: "sem leitura", razao: "bloco diário indisponível",
+    chave: "sem_leitura",
+  };
   if (!dia || dia.falha || !cfg) return nada;
   const dec = cfg.dec == null ? 2 : cfg.dec;
   const fech = dia.ultimo_fechamento_close;
@@ -4401,6 +4434,7 @@ export function leituraCurta(dia, cfg) {
     for (const nv of niveisDoPar(cfg)) {
       if (dia[`nivel_${nv.label}_estado`] !== estado) continue;
       achado = {
+        chave: estado,
         rotulo: texto,
         alvo: `${nv.direcao === "alta" ? "resistência" : "suporte"} de ${pgValor(nv.nivel, dec)}`,
       };
@@ -4413,6 +4447,7 @@ export function leituraCurta(dia, cfg) {
       classe: "atencao",
       rotulo: achado.rotulo,
       razao: [achado.alvo, ...pedacos].join(", "),
+      chave: achado.chave,
     };
   }
 
@@ -4423,6 +4458,7 @@ export function leituraCurta(dia, cfg) {
       classe: "atencao",
       rotulo: `cruzou a média diária para ${cruz === "acima" ? "cima" : "baixo"}`,
       razao: pedacos.join(", ") || "sem mais dados no fechamento",
+      chave: cruz === "acima" ? "cruzou_acima" : "cruzou_abaixo",
     };
   }
 
@@ -4432,13 +4468,93 @@ export function leituraCurta(dia, cfg) {
       classe: "atencao",
       rotulo: "sinais de enfraquecimento",
       razao: pedacos.join(", ") || "sem mais dados no fechamento",
+      chave: "enfraquecimento",
     };
   }
   return {
     classe: "neutro",
     rotulo: "sem evento no diário",
     razao: pedacos.join(", ") || "sem dados suficientes no fechamento",
+    chave: "sem_evento",
   };
+}
+
+// ------------------------------------------------------------
+// O QUE CADA ROTULO QUER DIZER
+//
+// O rotulo tem de caber na linha, entao ele e' curto; a explicacao
+// inteira nao caberia. O (?) ao lado resolve sem custo de espaco: quem
+// ja sabe ignora, quem nao sabe passa o mouse -- e no celular, toca.
+//
+// A chave vem da propria leitura, e NAO do texto do rotulo. Casar por
+// texto faria a explicacao sumir em silencio no dia em que alguem
+// reescrevesse um rotulo; o teste cobre que toda chave que as leituras
+// sabem produzir tem explicacao, e que nao sobra explicacao morta.
+//
+// Mesma regra da razao: SEM JARGAO, e sem dizer o que o preco vai
+// fazer. A explicacao conta o que o rotulo constatou, nada alem disso.
+export const EXPLICACOES = {
+  sem_leitura:
+    "O bloco deste timeframe não veio nesta execução, então não há o que ler.",
+  na_media:
+    "O fechamento está colado na média das últimas 89 semanas: nem esticado " +
+    "para cima, nem descontado para baixo.",
+  barato:
+    "O fechamento está bem abaixo da média das últimas 89 semanas, e nada " +
+    "indica queda em andamento.",
+  barato_caindo:
+    "O fechamento está bem abaixo da média das últimas 89 semanas, mas a " +
+    "queda ainda está viva. Preço baixo não quer dizer que já parou de cair.",
+  acima_normal:
+    "O fechamento está bem acima da média das últimas 89 semanas, sem " +
+    "exagero: é o estado normal de uma tendência de alta.",
+  esticado_com_forca:
+    "Subiu bem mais que a média das últimas 89 semanas, mas a compra ainda " +
+    "manda no movimento. Esticado não é o mesmo que acabando.",
+  esticado_sem_forca:
+    "Subiu bem mais que a média das últimas 89 semanas e o movimento está " +
+    "perdendo força: quem empurrava a alta está saindo.",
+  reteste_confirmado:
+    "O preço passou de uma faixa manual, voltou para testá-la e ela segurou. " +
+    "É a sequência mais completa que o monitor acompanha.",
+  em_reteste:
+    "O preço passou de uma faixa manual e voltou para testá-la. Ainda não dá " +
+    "para dizer se ela segura.",
+  rompimento_falhou:
+    "O preço passou de uma faixa manual e voltou para dentro dela: o " +
+    "rompimento não se sustentou.",
+  recuperado:
+    "Uma faixa manual que tinha sido perdida foi retomada no fechamento.",
+  rompido:
+    "O preço passou de uma faixa manual e ainda não voltou para testá-la.",
+  rompimento_candidato:
+    "O preço acabou de passar de uma faixa manual, e o rompimento ainda não " +
+    "foi confirmado.",
+  cruzou_acima:
+    "O fechamento diário passou para cima da média das últimas 89 velas do " +
+    "diário.",
+  cruzou_abaixo:
+    "O fechamento diário passou para baixo da média das últimas 89 velas do " +
+    "diário.",
+  enfraquecimento:
+    "O fechamento diário trouxe sinais de perda de força, sem nenhum evento " +
+    "nas faixas manuais.",
+  sem_evento:
+    "Nada aconteceu no fechamento diário que mereça destaque.",
+};
+
+// O (?) so sai quando ha o que explicar: um botao que abre vazio e' pior
+// que botao nenhum. aria-describedby com um <span role="tooltip"> e nao
+// o title nativo, porque title nao abre no toque, nao segue o tema da
+// pagina e demora um segundo para aparecer.
+function pgAjuda(L, id) {
+  const texto = EXPLICACOES[L.chave];
+  if (!texto) return "";
+  return (
+    `<button type="button" class="aj" aria-describedby="${pgEsc(id)}" ` +
+    `aria-label="O que significa: ${pgEsc(L.rotulo)}">?</button>` +
+    `<span class="ajt" id="${pgEsc(id)}" role="tooltip">${pgEsc(texto)}</span>`
+  );
 }
 
 // UMA caixa por par, com as duas leituras dentro. Eram duas secoes
@@ -4447,10 +4563,10 @@ export function leituraCurta(dia, cfg) {
 // Juntas, some um titulo e uma nota inteira, e as duas linhas passam a
 // ser lidas lado a lado, que e' como elas se completam: a longa diz ONDE
 // o preco esta, a curta diz o que esta ACONTECENDO.
-function pgLinhaLeitura(tag, L, extra) {
+function pgLinhaLeitura(tag, L, id, extra) {
   return (
     `<div class="lh ${pgEsc(L.classe)}"><span class="lt">${pgEsc(tag)}</span>` +
-    `<span class="lr">${pgEsc(L.rotulo)}</span>` +
+    `<span class="lr">${pgEsc(L.rotulo)}</span>${pgAjuda(L, id)}` +
     `<span class="lz">${pgEsc(L.razao)}</span>${extra || ""}</div>`
   );
 }
@@ -4473,8 +4589,8 @@ function pgLeitura(cfg, dados) {
   return (
     `<div class="leitura" data-par="${pgEsc(cfg.label)}">` +
     `<span class="lp">${pgEsc(cfg.label)}</span>` +
-    pgLinhaLeitura("longo", longa) +
-    pgLinhaLeitura("curto", curta) +
+    pgLinhaLeitura("longo", longa, `aj-${cfg.key}-longo`) +
+    pgLinhaLeitura("curto", curta, `aj-${cfg.key}-curto`) +
     `${radar}</div>`
   );
 }
