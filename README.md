@@ -643,7 +643,8 @@ Ele armazena atualmente:
 - `em`: timestamp de atualização do estado;
 - `niveis`: estado persistente da máquina de rompimento/reteste;
 - `zonas`: coleção completa de zonas vivas por timeframe, inclusive zonas que podem não estar entre as publicadas no relatório;
-- `contadoresZona`: contadores usados para preservar a identidade das zonas.
+- `contadoresZona`: contadores usados para preservar a identidade das zonas;
+- `historicoAssinaturas`: a assinatura da última condição registrada por par e timeframe. É o que faz a execução seguinte, sobre a mesma vela fechada, não repetir linha em `historico.jsonl`.
 
 O arquivo não substitui `relatorio.json` como interface de consumo. Sua principal finalidade é impedir que o monitor esqueça ciclos de níveis, IDs de zonas, históricos e contadores entre uma execução e outra.
 
@@ -655,10 +656,13 @@ Ao executar `node monitor.mjs`, o monitor cria ou atualiza:
 docs/
 ├── .nojekyll
 ├── estado.json
+├── historico.jsonl
 ├── index.html
 ├── index.txt
 └── relatorio.json
 ```
+
+`historico.jsonl` é o único que **cresce por acréscimo**: os outros cinco são reescritos inteiros a cada execução, e nele o monitor só acrescenta linhas.
 
 ### A página publicada (`index.html`)
 
@@ -852,7 +856,14 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que o volume vem da última vela fechada, e a mediana ignora a em formação;
 - que a cascata inteira caída vira `FALHA:` citando o status de cada elo;
 - que a vela-fantasma de fim de semana não vira a vela em formação;
-- que a ancoragem de fuso não joga uma vela para o dia seguinte.
+- que a ancoragem de fuso não joga uma vela para o dia seguinte;
+- que RSI, ADX e EMA89 usam o período de cada timeframe, e que o relatório declara qual usou;
+- que os **cinco** valores de estrutura têm nomes distintos, e que os eventos de pivô não prometem o que não aconteceu;
+- que `afastado` mede distância e não etapa do ciclo, e que um rompimento vira notícia **uma vez só**;
+- que o relatório avisa quando a faixa manual sai de onde o mercado reage, e que o radar só aponta região madura e descoberta;
+- que a ficha de uma zona coberta dorme em vez de ser rasgada, e que zona em observação envelhece;
+- que as leituras `longo` e `curto` saem sem jargão, e que todo rótulo tem explicação no `(?)`;
+- que o histórico grava uma linha por vela fechada e não repete na mesma vela.
 
 Rode com:
 

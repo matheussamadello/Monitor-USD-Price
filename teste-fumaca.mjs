@@ -871,7 +871,7 @@ console.log("\n== RSI: o relatorio declara o periodo usado ==");
 // ------------------------------------------------------------
 // Estrutura de mercado: rotulos e eventos
 // ------------------------------------------------------------
-console.log("\n== estrutura: os quatro estados tem nomes distintos ==");
+console.log("\n== estrutura: os cinco valores tem nomes distintos ==");
 {
   // Zigue-zague com pernas longas o bastante para cada virada ser um
   // extremo local estrito, e pivos 2/2 para o teste nao depender do

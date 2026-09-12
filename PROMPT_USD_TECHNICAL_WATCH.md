@@ -901,13 +901,16 @@ Estrutura não é sinal isolado. Uma mudança de `alta` para `lateral_contracao`
 
 Quando publicados, interprete os estados da máquina de rompimento/reteste do respectivo par assim:
 
+- `sem_registro`: o nível ainda não entrou na máquina. É ausência de histórico, não evento, e é o valor mais comum;
 - `rompimento_candidato`: não alerta sozinho;
 - `rompido`: só merece alerta quando a transição for nova e material;
 - `em_reteste`: contexto por padrão, não alerta sozinho;
 - `reteste_confirmado`: maior relevância, mas ainda precisa alterar materialmente a leitura;
 - `rompimento_falhou`: maior relevância, especialmente em contexto de realização, mas deve respeitar as confirmações da regra correspondente;
 - `recuperado`: maior relevância, mas precisa alterar materialmente a tese;
-- `afastado`: não alerta sozinho.
+- `arquivado`: o preço deixou o nível para trás e o registro ficou dormente, **sem apagar o histórico do ciclo**. Não alerta. Se o preço voltar a encostar, o registro acorda e o ciclo recomeça em reteste — e é a volta que pode ser notícia, nunca o arquivamento.
+
+`afastado` **não é um estado**. É um campo à parte, `nivel_X_afastado: sim|nao`, que diz se o preço está além da distância de reset daquele nível, em qualquer estado. Não alerta sozinho e não substitui a leitura de `nivel_X_estado`.
 
 Não transforme cada mudança descritiva de estado em mensagem.
 
