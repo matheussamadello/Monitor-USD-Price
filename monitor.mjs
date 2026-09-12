@@ -4205,16 +4205,14 @@ export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
   const hi = faixa && typeof faixa === "object" ? faixa.superior : null;
   const temLimites = typeof lo === "number" && typeof hi === "number";
   const d = temLimites ? Math.max(casasUteis(lo, dec), casasUteis(hi, dec)) : 0;
-  // Travessao em vez de "de X a Y": cinco caracteres a menos por linha,
-  // e le igual.
-  const intervalo = temLimites ? ` ${pgNum(lo, d)}–${pgNum(hi, d)}` : "";
+  const intervalo = temLimites ? ` de ${pgNum(lo, d)} a ${pgNum(hi, d)}` : "";
   let texto;
   if (situacao === "obsoleto") {
     // Longe de todas, nomear uma nao ajuda.
     texto = "longe das faixas manuais";
   } else if (typeof distAtr === "number" && distAtr <= 0) {
     texto = ehSuporte
-      ? `dentro do suporte manual${intervalo}`
+      ? `dentro da região de suporte manual${intervalo}`
       : `dentro da faixa manual${intervalo}`;
   } else if (situacao === "atual") {
     texto = `encostando na faixa manual${intervalo}`;
@@ -4225,9 +4223,7 @@ export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
   // Cita-la no lugar de destaque sem dizer isso seria dar peso a um
   // nivel que o mercado nao vem respeitando.
   if (alinhamento === "desalinhado" && situacao !== "obsoleto") {
-    // Era "(que o mercado nao vem respeitando)". A versao curta diz o
-    // mesmo em 19 caracteres a menos, e a nota da secao ja enquadra.
-    texto += " (não respeitada)";
+    texto += " (que o mercado não vem respeitando)";
   }
   return texto;
 }
@@ -4294,14 +4290,9 @@ export function leituraLonga(sem, dec = 2) {
       : rsi <= 30
       ? "momentum muito fraco"
       : "momentum normal";
-  // "da media" e nao "da media longa": as duas linhas da caixa sao
-  // rotuladas longo e curto, e a do curto diz "media diaria", entao o
-  // contraste ja desfaz a ambiguidade sem repetir a palavra em toda
-  // linha. "bem acima" e "perto" continuam carregando o criterio de
-  // 1 ATR, que era o motivo de existirem.
   const onde = longe
-    ? `bem ${abaixo ? "abaixo" : "acima"} da média (${quanto})`
-    : `perto da média (${quanto})`;
+    ? `bem ${abaixo ? "abaixo" : "acima"} da média longa (${quanto})`
+    : `perto da média longa (${quanto})`;
   // "alta ainda forte" e "alta perdendo força" e' o que o DMI acrescenta,
   // e e' informacao que o RSI nao tem: subiu muito com a compra mandando
   // e' diferente de subiu muito com o movimento morrendo.
@@ -4311,12 +4302,11 @@ export function leituraLonga(sem, dec = 2) {
   const comoVai = !forca
     ? null
     : forca.forte
-    ? `${forca.dominante === "alta" ? "alta" : "queda"} forte`
+    ? `${forca.dominante === "alta" ? "alta" : "queda"} ainda forte`
     : "sem tendência firme";
   // Ordem da lista de prioridade do prompt: niveis primeiro, media
-  // depois, indicadores por ultimo. Ponto medio no lugar da virgula: sao
-  // quatro FATOS independentes, nao uma frase corrida.
-  const razao = [niveis, onde, forcaRsi, comoVai].filter(Boolean).join(" · ");
+  // longa depois, e os indicadores por ultimo.
+  const razao = [niveis, onde, forcaRsi, comoVai].filter(Boolean).join(", ");
 
   if (!longe) {
     return { classe: "neutro", rotulo: "na média longa", razao };
@@ -4414,7 +4404,7 @@ export function leituraCurta(dia, cfg) {
     return {
       classe: "atencao",
       rotulo: achado.rotulo,
-      razao: [achado.alvo, ...pedacos].join(" · "),
+      razao: [achado.alvo, ...pedacos].join(", "),
     };
   }
 

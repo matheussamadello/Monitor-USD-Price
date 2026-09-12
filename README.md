@@ -719,9 +719,8 @@ Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria
 
 **A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
 
-- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro da faixa manual 76.000–78.000`, `dentro do suporte manual …`, `encostando na`, `perto da` ou `longe das faixas manuais`. **A frase nomeia os limites da faixa**, porque sem isso ela afirmava algo sobre "uma faixa" e obrigava quem lê a procurar o rótulo no cartão, e ainda a lembrar que esta leitura sai do bloco **semanal**, não do diário. Longe de todas, nomear uma não ajudaria, então ali o intervalo não aparece. As casas decimais se ajustam ao par: 76.000 sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas;
-- os quatro fatos saem separados por **ponto médio**, não por vírgula. São fatos independentes, não uma frase corrida, e o separador visual ajuda a ler cada um;
-- uma faixa que as zonas observadas não corroboram é citada **com a ressalva** `(não respeitada)`. Dar destaque a um nível desalinhado sem avisar seria pior que omiti-lo;
+- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro da faixa manual de 76.000 a 78.000`, `dentro da região de suporte manual de …`, `encostando na`, `perto da` ou `longe das faixas manuais`. **A frase nomeia os limites da faixa**, porque sem isso ela afirmava algo sobre "uma faixa" e obrigava quem lê a procurar o rótulo no cartão, e ainda a lembrar que esta leitura sai do bloco **semanal**, não do diário. Longe de todas, nomear uma não ajudaria, então ali o intervalo não aparece. As casas decimais se ajustam ao par: 76.000 sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas;
+- uma faixa que as zonas observadas não corroboram é citada **com a ressalva** `(que o mercado não vem respeitando)`. Dar destaque a um nível desalinhado sem avisar seria pior que omiti-lo;
 - a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
 - o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
 - o RSI vira `momentum esticado`, `normal` ou `muito fraco`, sem o número;
@@ -729,10 +728,6 @@ Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria
 - a estrutura sai da linha. Quando ela muda o veredito, isso já aparece no próprio rótulo.
 
 O ATR continua sendo o que **decide**, e continua inteiro no relatório abaixo, para o agente e para quem consome os campos. Ele só não aparece aqui.
-
-**A redação foi enxugada em 2026-09-12.** A linha mais longa, do XMR/BTC, tinha 153 caracteres e quebrava em quatro ou cinco linhas no celular. Medido no topo do XMR, as duas razões do `longo` respondiam por 264 dos 430 caracteres de leitura, enquanto cada `curto` se resolvia em 27. O corte veio de repetição, não de conteúdo: `de X a Y` virou `X–Y`, `(que o mercado não vem respeitando)` virou `(não respeitada)`, `região de suporte manual` virou `suporte manual`, `da média longa` virou `da média`, e `alta ainda forte` virou `alta forte`. Os quatro fatos continuam todos lá, e `bem acima` e `perto` seguem carregando o critério de 1 ATR, que era o motivo de existirem. A pior linha caiu de 153 para 120 caracteres.
-
-A palavra **manual** foi mantida de propósito, mesmo custando metade do ganho possível. Sem ela o corte seria de 20% em vez de 14%, mas `faixa` sozinha se confunde com zona automática, e a distinção entre as duas é o assunto de metade deste README.
 
 Um efeito colateral que confunde à primeira vista: `bem abaixo (−2,9%)` no dólar e `bem acima (+54,2%)` no Monero podem aparecer lado a lado. Está certo. Perto e longe são medidos contra o quanto **cada par** costuma oscilar, então 3% já é bastante no câmbio e é pouco numa cripto. A nota ao pé da faixa diz isso em uma linha.
 
