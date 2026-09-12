@@ -3913,22 +3913,26 @@ const TITULO_PAGINA = "Monitor USD/BRL";
 // Os botoes nao marcados sao transparentes, entao vao junto; o marcado
 // continua azul, que e' o unico jeito de saber qual esta valendo.
 //
-// SAO DUAS CORES, e confundi-las foi o primeiro erro aqui. A faixa dos
-// botoes nao encosta no grafico: encosta na BARRA DE FERRAMENTAS do
-// widget -- a linha do "D", dos icones e do "Indicadores" --, que o
-// TradingView pinta mais clara que o grafico. Medindo o pixel pintado,
-// a faixa ja era #101829; iguala-la ao fundo do grafico (#131722) mexeu
-// (3, -1, -7) e nao deu para ver. Quem fecha a emenda e' a cor da
-// BARRA.
+// A COR VEIO DE CONTA-GOTAS NA TELA, e nao de deducao. Duas tentativas
+// erraram por deduzir da paleta CLASSICA do TradingView: #131722, o
+// fundo do grafico, mexeu so (3, -1, -7) no pixel pintado e foi
+// invisivel; #1e222d, a barra de ferramentas, ficou claro demais. O
+// widget que carrega hoje usa o tema escuro NOVO, quase preto e neutro,
+// que nao esta naquela paleta. Cor de terceiro se mede, nao se deduz.
+//
+// Os dois tokens seguem separados de proposito. Hoje valem o mesmo no
+// escuro, porque o tema novo pinta a barra e o grafico iguais, mas sao
+// superficies diferentes: se o widget voltar a separa-las, muda um
+// token e nao a regra.
 //
 // No tema claro o embed ja e' quase branco, igual ao painel, e por isso
-// o problema so aparece de noite -- mas os tokens existem nos dois para
-// a regra ser uma so.
+// o problema so aparecia de noite -- mas os tokens existem nos dois
+// para a regra ser uma so.
 //
 // UM lugar so: o CSS e as opcoes do widget saem daqui. Duas copias do
 // mesmo hex divergem no dia em que alguem mexe numa e esquece da outra.
-const TV_FUNDO = { noite: "#131722", claro: "#ffffff" };
-const TV_BARRA = { noite: "#1e222d", claro: "#f1f3f6" };
+const TV_FUNDO = { noite: "#0f0f0f", claro: "#ffffff" };
+const TV_BARRA = { noite: "#0f0f0f", claro: "#f1f3f6" };
 
 const PAGINA_CSS = `
 /* Tema NOITE e' o padrao. O claro so redefine tokens -- nenhuma regra
