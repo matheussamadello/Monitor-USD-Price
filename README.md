@@ -543,9 +543,30 @@ Também existem penalidades multiplicativas para casos como repetidos rompimento
 
 A proximidade do preço não entra no score: ela serve para ordenar quais zonas próximas são publicadas, não para medir a força histórica da zona.
 
+### Ciclo de vida da ficha de cada zona
+
+O desenho das zonas é refeito **do zero a cada execução**, a partir de todo o histórico de preço. O que sobrevive entre execuções é a *ficha* de cada região: id, primeiro toque, contagem de toques, maturidade e situação. É a ficha que faz uma região amadurecer, e é da maturidade dela que o radar de promoção depende.
+
+Cada ficha passa por quatro situações:
+
+| Situação | O que significa |
+| --- | --- |
+| `candidata` | região nova, em observação: ainda não se provou |
+| `ativa` | score alto por duas velas seguidas **e** evidência estrutural independente |
+| `enfraquecida` | score caiu abaixo de 30 **ou** o preço parou de visitar (30 velas no diário, 8 no semanal) |
+| `remover` | passou a carência enfraquecida (15 velas no diário, 4 no semanal) e sai do estado |
+
+Duas correções de 2026-09-12 fecharam buracos nesse ciclo, ambos encontrados por medição e não por leitura:
+
+**A ficha coberta agora dorme, em vez de ser rasgada.** O casamento entre fichas antigas e zonas recalculadas é um para um. Quando uma execução desenha menos zonas que a anterior — três regiões estreitas viram uma larga —, sobram fichas sem dona. A versão anterior descartava na hora as que ficavam cobertas por uma zona calculada, para não publicar a mesma região duas vezes. O efeito real foi outro: varrendo os 244, 162 e 156 commits de `estado.json` dos três monitores, **seis execuções em 18 dias apagaram de 3 a 18 zonas de uma vez, com o código parado**, e elas voltaram na execução seguinte com id novo e maturidade zerada. Num dos casos, rastreado hora a hora: 19 zonas às 20h48, 6 às 23h06, 19 de novo à 1h17 — mas as 13 que voltaram vieram em branco. Agora a ficha coberta fica **dormente**: continua no estado, para poder ser reencontrada com a história inteira, mas não é publicada nem conta como confluência semanal. A duplicata que o descarte evitava continua não existindo, e se o desenho novo veio para ficar, a ficha expira sozinha na carência do timeframe.
+
+**`candidata` também envelhece.** Antes, essa situação só tinha uma saída: virar `ativa`. Uma região que nunca se provou também nunca era descartada — ficava no estado para sempre. Havia zona em observação **sem toque há 435 semanas** no estado do dólar, presente em todas as execuções registradas. E como `candidata` conta para a confluência semanal, que vale pontos no score das zonas diárias, regiões abandonadas anos atrás ainda ajudavam a empurrar o score que o radar usa para recomendar uma faixa manual nova. Agora `candidata` tem o mesmo envelhecimento que `ativa` sempre teve.
+
+Nenhuma das duas muda o que o monitor considera suporte, resistência, rompimento ou reteste. Elas mudam por quanto tempo uma região é lembrada.
+
 ### Radar de promoção
 
-As zonas automáticas são **contexto**. Elas não alimentam a máquina de rompimento e reteste, não entram na linha de gatilhos e não geram alerta de entrada em faixa: isso tudo roda só sobre os níveis manuais. Uma região que o mercado passou a respeitar fica sem máquina de estados até alguém promovê-la a faixa manual. E zonas **expiram** depois de semanas sem toque, enquanto faixas manuais não.
+As zonas automáticas são **contexto**. Elas não alimentam a máquina de rompimento e reteste, não entram na linha de gatilhos e não geram alerta de entrada em faixa: isso tudo roda só sobre os níveis manuais. Uma região que o mercado passou a respeitar fica sem máquina de estados até alguém promovê-la a faixa manual. E zonas **expiram** depois de semanas sem toque, enquanto faixas manuais não — o ciclo inteiro está na seção acima.
 
 `zonas_candidatas_a_faixa` existe para essa promoção não depender de alguém reparar nela. Lista regiões com **score 70 ou mais e pelo menos 5 toques** que nenhuma faixa manual cobre, no máximo três, das de maior score para as menores, dizendo de que lado do preço cada uma está.
 
@@ -741,7 +762,7 @@ Três cuidados que valem conhecer:
 
 - **o relatório completo não é filtrado.** Ele é o fallback do prompt e sai sempre inteiro, com todos os pares. O seletor mexe só no resumo visual;
 - **sem JavaScript nada fica escondido.** A classe que oculta só é aplicada pelo script, então a página servida traz tudo e continua completa se o script não rodar;
-- **o gráfico é redesenhado a cada troca.** O widget do TradingView calcula o tamanho na criação, e um container que nasceu escondido sairia com dimensão zero e ficaria quebrado ao aparecer. Recriar com ele já visível resolve.
+- **o gráfico é redesenhado a cada troca, e só o do par visível.** O widget do TradingView calcula o tamanho na criação, e um container escondido sairia com dimensão zero e ficaria quebrado ao aparecer. Recriar com ele já visível resolve. A carga não redesenha: quem desenha é o tema, uma vez só. Antes disso, a página de dois pares criava **quatro** iframes do TradingView por carga para exibir um gráfico — o seletor desenhava e o tema desenhava de novo, cada rodada passando também pelo cartão escondido.
 
 Dentro de cada caixa, uma linha separa a leitura `longo` da `curto`. São duas leituras de escalas diferentes e a divisória deixa isso óbvio sem precisar de mais texto.
 

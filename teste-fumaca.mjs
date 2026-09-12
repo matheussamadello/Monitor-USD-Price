@@ -4,7 +4,7 @@ import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
   acharPivos, classificarEstrutura, mudancaEstrutura, alinhamentoNiveis,
-  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, EXPLICACOES, forcaTendencia, ondeNosNiveis, zonasCandidatas,
+  registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, EXPLICACOES, reconciliarAnteriores, atualizarCiclo, forcaTendencia, ondeNosNiveis, zonasCandidatas,
 } from "./monitor.mjs";
 
 const DIA = 86400;
@@ -1413,6 +1413,9 @@ console.log("\n== seletor de par: um par por vez ==");
       `na carga aparece so o primeiro par (${comCartao[0].label}), leitura e cartao`);
     ok(bts[0].pressed === "true" && bts[1].pressed === "false",
       "e o botao dele fica marcado");
+    // Na carga o seletor SO esconde. Quem desenha e' o aplica(), uma vez
+    // so -- desenhar aqui tambem criava o widget duas vezes por carga.
+    ok(redesenhos === 0, "a carga nao redesenha: quem desenha e' o tema, uma vez so");
 
     janela.mostrarPar(comCartao[1].label);
     const v2 = caixas.filter((c) => !c.classes.has("oculto"));
@@ -1422,12 +1425,85 @@ console.log("\n== seletor de par: um par por vez ==");
       "e a marcacao acompanha");
     // O widget calcula o tamanho na criacao: um container que nasceu
     // escondido sai quebrado. Redesenhar com ele visivel resolve.
-    ok(redesenhos >= 2, "cada troca redesenha o grafico do par que apareceu");
+    ok(redesenhos === 1, "a troca, essa sim, redesenha o grafico do par que apareceu");
+    janela.mostrarPar(comCartao[0].label);
+    ok(redesenhos === 2, "e cada troca seguinte tambem");
     // Um par que nao existe nao pode apagar a pagina inteira.
     janela.mostrarPar("PAR/INEXISTENTE");
     ok(caixas.filter((c) => !c.classes.has("oculto")).length === 2,
       "pedir um par inexistente nao esconde tudo");
   }
+}
+
+console.log("\n== zona que sumiu do calculo: a ficha dorme, nao e' rasgada ==");
+{
+  // O desenho das zonas e' refeito do zero a cada execucao. Quando ele
+  // sai diferente -- tres regioes estreitas viram uma larga --, sobram
+  // fichas sem dona. Elas tem de sobreviver a carencia, senao a zona
+  // volta na execucao seguinte como recem-nascida e a maturidade que o
+  // radar pressupoe nunca acumula. Foi o que aconteceu seis vezes em
+  // 18 dias nos tres monitores, com o codigo parado.
+  const zona = (id, lo, hi, extra) => ({
+    id, status: "ativa", limites_estruturais: { inferior: lo, superior: hi },
+    ultimaVelaAvaliada: 100, velasEnfraquecida: 0, ...(extra || {}),
+  });
+  const larga = [zona("z9", 10, 16)];
+  const estreitas = [zona("z1", 10, 12), zona("z2", 12, 14), zona("z3", 14, 16)];
+  const orfas = reconciliarAnteriores(estreitas, larga, "diario", 200);
+  ok(orfas.length === 3, "as tres fichas cobertas continuam no estado");
+  ok(orfas.map((o) => o.id).join() === "z1,z2,z3",
+    "com o id de sempre: e' o id que permite reencontra-las depois");
+  ok(orfas.every((o) => o.absorvida === true), "e ficam marcadas como dormentes");
+  ok(orfas.every((o) => o.status === "enfraquecida"),
+    "entram em enfraquecida, que e' o ciclo normal de quem sumiu do calculo");
+
+  // Fora da regiao coberta o comportamento antigo continua valendo.
+  const fora = reconciliarAnteriores([zona("z4", 50, 52)], larga, "diario", 200);
+  ok(fora.length === 1 && fora[0].absorvida === false,
+    "zona que nenhuma calculada cobre e' orfa comum, nao dormente");
+
+  // A carencia expira. No semanal sao 4 velas.
+  const quase = zona("z5", 10, 12, { status: "enfraquecida", velasEnfraquecida: 3 });
+  ok(reconciliarAnteriores([quase], larga, "semanal", 200)[0].status === "remover",
+    "passada a carencia, a ficha dormente e' descartada de vez");
+  // E a contagem so anda quando a vela fechada muda.
+  const mesmaVela = zona("z6", 10, 12, { status: "enfraquecida", velasEnfraquecida: 1 });
+  ok(reconciliarAnteriores([mesmaVela], larga, "semanal", 100)[0].velasEnfraquecida === 1,
+    "reexecucao na mesma vela nao envelhece a ficha");
+
+  // Quem voltou ao calculo nao entra como orfa: ja esta vivo.
+  ok(reconciliarAnteriores([zona("z9", 10, 16)], larga, "diario", 200).length === 0,
+    "zona reencontrada pelo calculo nao vira orfa");
+}
+
+console.log("\n== zona em observacao tambem envelhece ==");
+{
+  // Antes, candidata so tinha uma saida: virar ativa. Uma regiao que
+  // nunca se provou tambem nunca era descartada -- havia zona em
+  // observacao sem toque ha 435 semanas no estado do dolar, contando
+  // como confluencia do prazo maior.
+  const ctx = (semToque) => ({
+    tfKey: "diario", ultimaVelaFechada: 2,
+    velasDesdeUltimoToque: semToque, confluenciaSemanal: false,
+  });
+  const nova = (score) => ({ score, episodios: [] });
+  const ant = (extra) => ({
+    status: "candidata", velasComScoreAlto: 0, velasEnfraquecida: 0,
+    ultimaVelaAvaliada: 1, ...(extra || {}),
+  });
+  ok(atualizarCiclo(nova(60), ant(), ctx(3)).status === "candidata",
+    "zona nova, com score bom e toque recente, segue em observacao");
+  ok(atualizarCiclo(nova(60), ant(), ctx(400)).status === "enfraquecida",
+    "em observacao e sem toque ha muito tempo passa a enfraquecer, igual a ativa");
+  ok(atualizarCiclo(nova(20), ant(), ctx(3)).status === "enfraquecida",
+    "score abaixo do corte enfraquece, tambem igual a ativa");
+  // A promocao continua existindo, e continua exigindo evidencia.
+  const comEvidencia = { score: 60, episodios: [{ rejeitado: true }, { rejeitado: false }] };
+  ok(atualizarCiclo(comEvidencia, ant({ velasComScoreAlto: 1 }), ctx(3)).status === "ativa",
+    "score alto por duas velas e evidencia estrutural ainda promove a ativa");
+  // E nada disso anda na mesma vela.
+  ok(atualizarCiclo(nova(60), ant({ ultimaVelaAvaliada: 2 }), ctx(400)).status === "candidata",
+    "reexecucao na mesma vela nao muda o estado");
 }
 
 console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");

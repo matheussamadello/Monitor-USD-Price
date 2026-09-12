@@ -2601,6 +2601,57 @@ function fundirZonasOpostas(zonas) {
 // execucoes inflaria tudo por um fator de 24.
 // ------------------------------------------------------------
 
+// ------------------------------------------------------------
+// ZONAS ANTERIORES QUE SUMIRAM DO CALCULO
+//
+// O desenho das zonas e' refeito do zero a cada execucao, e de vez em
+// quando ele sai diferente: onde havia tres regioes estreitas, uma
+// execucao ve uma larga. O casamento com as fichas antigas e' um para
+// um, entao nesse dia sobram fichas sem dona.
+//
+// Elas NAO morrem na hora. Entram em enfraquecida e seguem o ciclo: se
+// o desenho voltar ao normal na execucao seguinte, a ficha e'
+// reencontrada com a historia inteira; se o desenho novo veio para
+// ficar, ela expira sozinha na carencia do timeframe.
+//
+// A versao anterior descartava NA HORA a ficha coberta por uma zona
+// calculada ("foi absorvida"), para nao publicar a mesma regiao duas
+// vezes. O efeito medido foi outro: em 18 dias, seis execucoes apagaram
+// de 3 a 18 zonas de uma vez nos tres monitores, sem nenhuma mudanca de
+// codigo, e elas voltaram na execucao seguinte como zonas recem
+// nascidas, com id novo e maturidade zerada -- justo o que o radar de
+// promocao pressupoe que a zona acumulou.
+//
+// Agora a ficha coberta fica DORMENTE: continua no estado, para poder
+// ser reencontrada, mas nao e' publicada nem conta como confluencia
+// semanal. A duplicata que o descarte evitava continua nao existindo.
+export function reconciliarAnteriores(anteriores, zonasCalculadas, tfKey, ultimaVelaFechada) {
+  const par = PARAMS_TF[tfKey] || PARAMS_TF.diario;
+  const calculadas = zonasCalculadas || [];
+  const idsCalculados = new Set(calculadas.map((z) => z.id));
+  const out = [];
+  for (const ant of anteriores || []) {
+    if (idsCalculados.has(ant.id) || ant.status === "remover") continue;
+    const orfa = { ...ant };
+    if (orfa.status === "ativa" || orfa.status === "candidata") {
+      orfa.status = "enfraquecida";
+      orfa.velasEnfraquecida = 0;
+    } else if (orfa.status === "enfraquecida") {
+      if (ant.ultimaVelaAvaliada !== ultimaVelaFechada) {
+        orfa.velasEnfraquecida = (orfa.velasEnfraquecida || 0) + 1;
+      }
+      if (orfa.velasEnfraquecida >= par.enfraquecidaRemove) orfa.status = "remover";
+    }
+    orfa.ultimaVelaAvaliada = ultimaVelaFechada;
+    orfa.orfa = true;
+    orfa.absorvida = calculadas.some(
+      (z) => sobreposicaoFrac(z.limites_estruturais, ant.limites_estruturais) >= 0.5
+    );
+    out.push(orfa);
+  }
+  return out;
+}
+
 function evidenciaEstruturalIndependente(z, confluenciaSemanal) {
   const eps = z.episodios || [];
   const comRejeicao = eps.filter((e) => e.rejeitado).length;
@@ -2610,7 +2661,7 @@ function evidenciaEstruturalIndependente(z, confluenciaSemanal) {
   return false;
 }
 
-function atualizarCiclo(z, anterior, ctx) {
+export function atualizarCiclo(z, anterior, ctx) {
   const par = PARAMS_TF[ctx.tfKey] || PARAMS_TF.diario;
   const velaNova = !anterior || anterior.ultimaVelaAvaliada !== ctx.ultimaVelaFechada;
 
@@ -2636,6 +2687,14 @@ function atualizarCiclo(z, anterior, ctx) {
       evidenciaEstruturalIndependente(z, ctx.confluenciaSemanal)
     ) {
       z.status = "ativa";
+    } else if (z.score < ZONA_SCORE_ENFRAQUECE || semToque > par.semToqueEnfraquece) {
+      // MESMO envelhecimento da ativa. Antes, candidata so tinha uma
+      // saida -- virar ativa --, entao uma regiao que nunca se provou
+      // tambem nunca era descartada: ficava no estado para sempre e
+      // continuava contando como confluencia do prazo maior. Havia
+      // zona em observacao sem toque ha 435 semanas fazendo isso.
+      z.status = "enfraquecida";
+      z.velasEnfraquecida = 0;
     }
   } else if (z.status === "ativa") {
     if (z.score < ZONA_SCORE_ENFRAQUECE || semToque > par.semToqueEnfraquece) {
@@ -2806,8 +2865,11 @@ export function calcularZonas(cfg, tf, d, ctx) {
     const medianaRel = rels.length
       ? rels.slice().sort((a, b) => a - b)[Math.floor(rels.length / 2)]
       : null;
+    // Dormente fora: a ficha esta guardada para poder ser reencontrada,
+    // nao para servir de confirmacao do prazo maior.
     const confl = (ctx.zonasSemanais || []).some(
       (zs) =>
+        !zs.absorvida &&
         (zs.status === "ativa" || zs.status === "candidata") &&
         sobreposicaoFrac(zs.limites_estruturais, z.limites_estruturais) >=
           CONFLUENCIA_SOBREPOSICAO_MIN
@@ -2871,33 +2933,10 @@ export function calcularZonas(cfg, tf, d, ctx) {
     });
   }
 
-  // zonas anteriores que sumiram do calculo nao morrem de imediato:
-  // entram em enfraquecida e seguem o ciclo normal.
-  const idsCalculados = new Set(zonas.map((z) => z.id));
-  const zonasCalculadas = [...zonas];
-  for (const ant of anteriores) {
-    if (idsCalculados.has(ant.id) || ant.status === "remover") continue;
-    // se ja existe zona calculada cobrindo a mesma regiao, a antiga foi
-    // absorvida — nao reinserir como orfa, senao duplica.
-    const absorvida = zonasCalculadas.some(
-      (z) => sobreposicaoFrac(z.limites_estruturais, ant.limites_estruturais) >= 0.5
-    );
-    if (absorvida) continue;
-    const orfa = { ...ant };
-    if (orfa.status === "ativa" || orfa.status === "candidata") {
-      orfa.status = "enfraquecida";
-      orfa.velasEnfraquecida = 0;
-    } else if (orfa.status === "enfraquecida") {
-      const par = PARAMS_TF[tf.key] || PARAMS_TF.diario;
-      if (ant.ultimaVelaAvaliada !== ultimaVelaFechada) {
-        orfa.velasEnfraquecida = (orfa.velasEnfraquecida || 0) + 1;
-      }
-      if (orfa.velasEnfraquecida >= par.enfraquecidaRemove) orfa.status = "remover";
-    }
-    orfa.ultimaVelaAvaliada = ultimaVelaFechada;
-    orfa.orfa = true;
-    zonas.push(orfa);
-  }
+  // Fichas sem dona nesta execucao: dormem, nao sao rasgadas.
+  zonas.push(
+    ...reconciliarAnteriores(anteriores, [...zonas], tf.key, ultimaVelaFechada)
+  );
 
   // ---- duas colecoes distintas ----
   // zonasEstado: TODAS as vivas. Sustentam identidade, matching e ciclo
@@ -2908,9 +2947,18 @@ export function calcularZonas(cfg, tf, d, ctx) {
   // TODAS as vivas. Cortar por score aqui faria uma zona perder ID e
   // historico so por nao estar entre as maiores — a remocao deve vir
   // do ciclo de vida, nunca de um corte silencioso.
-  const estado = vivas.map((z) => limparZona(z));
+  // A marca de dormente nao existe em zona calculada, entao so entra
+  // no estado: o relatorio publicado continua com os mesmos campos.
+  const estado = vivas.map((z) =>
+    z.absorvida ? { ...limparZona(z), absorvida: true } : limparZona(z)
+  );
 
-  const publicaveis = vivas.filter((z) => z.score >= ZONA_SCORE_MIN_PUBLICAR);
+  // Dormente nao e' publicada: a regiao dela ja esta na tela, na zona
+  // calculada que a cobre. Publicar as duas seria a mesma regiao duas
+  // vezes, que e' o que o descarte antigo queria evitar.
+  const publicaveis = vivas.filter(
+    (z) => z.score >= ZONA_SCORE_MIN_PUBLICAR && !z.absorvida
+  );
   const acima = publicaveis
     .filter((z) => z.centro > precoAtual)
     .sort((a, b) => a.centro - b.centro)
@@ -3966,7 +4014,12 @@ dl{margin:0;display:grid;gap:8px}
 .lh .aj{display:inline-flex;align-items:center;justify-content:center;
   align-self:center;width:15px;height:15px;padding:0;border-radius:50%;
   cursor:help;font:700 10px/1 var(--mono);background:none;
-  border:1px solid var(--linha);color:var(--fraco)}
+  border:1px solid var(--linha);color:var(--fraco);position:relative}
+/* Alvo de toque de 26px sem engordar o circulo: 15px e' confortavel
+   no mouse e apertado no dedo. O quadrado invisivel so amplia a area
+   clicavel, e nao muda o desenho nem o espaco ocupado na linha. */
+.lh .aj::after{content:"";position:absolute;left:50%;top:50%;
+  width:26px;height:26px;transform:translate(-50%,-50%)}
 .lh .aj:hover{color:var(--acento);border-color:var(--acento)}
 .lh .aj:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 /* Ancorado na LINHA e nao no botao: assim a caixa ocupa a largura
@@ -4142,15 +4195,6 @@ function pgTimeframe(titulo, b, dec) {
 // para dizer que a tendencia ganhou ou perdeu forca.
 const ADX_FORTE = 25;
 
-// Onde o preco esta em relacao as FAIXAS MANUAIS -- as que o dono do
-// monitor marcou a mao. A lista de prioridade do prompt poe "preco,
-// estrutura e niveis relevantes" em PRIMEIRO lugar e "DMI/ADX + RSI" em
-// quinto, e a faixa de contexto longo nascia apoiada no 3 e no 5,
-// pulando o 1. Estar dentro de uma faixa e' o fato mais decisivo da
-// tela para quem escolhe entre comprar mais e converter.
-//
-// Sai em palavras, sem jargao, e diz "faixa manual" porque e' o termo
-// que o resto do projeto usa: niveis escolhidos a mao, nao calculados.
 // ------------------------------------------------------------
 // RADAR DE PROMOCAO: zonas que amadureceram e nenhuma faixa cobre.
 //
@@ -4218,6 +4262,16 @@ function pgValor(v, dec) {
   return pgNum(v, casasUteis(v, dec));
 }
 
+// Onde o preco esta em relacao as FAIXAS MANUAIS -- as que o dono do
+// monitor marcou a mao. A lista de prioridade do prompt poe "preco,
+// estrutura e niveis relevantes" em PRIMEIRO lugar e "DMI/ADX + RSI" em
+// quinto, e a faixa de contexto longo nascia apoiada no 3 e no 5,
+// pulando o 1. Estar dentro de uma faixa e' o fato mais decisivo da
+// tela para quem escolhe entre comprar mais e converter.
+//
+// Sai em palavras, sem jargao, e diz "faixa manual" porque e' o termo
+// que o resto do projeto usa: niveis escolhidos a mao, nao calculados.
+//
 // `faixa` e' o objeto {label, inferior, superior} da faixa mais proxima.
 // Nomear os limites aqui evita o vaivem que existia: a frase afirmava
 // algo sobre uma faixa sem dizer qual, e quem lia tinha de procurar o
@@ -4751,6 +4805,9 @@ export function toHTML(text, dados) {
         'bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-tf")===iv?"true":"false");' +
         JSON.stringify(comGrafico.map((c) => ({ id: `tv-${c.key}`, s: c.grafico }))) +
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
+        // Container escondido sai com dimensao zero, entao nem vale
+        // criar: quem mostra o par redesenha com ele ja visivel.
+        "if(el.offsetParent===null)return;" +
         "new TradingView.widget({container_id:g.id,symbol:g.s,interval:iv,theme:tema," +
         'style:"1",locale:"br",timezone:"America/Sao_Paulo",autosize:true,' +
         // EMA89 e RSI carregados no widget; o periodo do RSI acompanha
@@ -4811,7 +4868,7 @@ export function toHTML(text, dados) {
     // TradingView calcula o tamanho na criacao, e um container que
     // nasceu escondido sai com dimensao zero e fica quebrado ao
     // aparecer. Recriar com o container ja visivel resolve.
-    'window.mostrarPar=function(par){' +
+    'window.mostrarPar=function(par,semDesenhar){' +
     'var alvos=document.querySelectorAll("[data-par]");var achou=false;' +
     // Confere ANTES de esconder. Esconder primeiro e desistir depois
     // deixava a pagina em branco quando o par pedido nao existia.
@@ -4824,7 +4881,7 @@ export function toHTML(text, dados) {
     'var bs=document.querySelectorAll(".sel-par button");' +
     'for(var k=0;k<bs.length;k++)bs[k].setAttribute("aria-pressed",' +
     'bs[k].getAttribute("data-sel")===par?"true":"false");' +
-    'if(window.desenharGraficos)window.desenharGraficos(' +
+    'if(!semDesenhar&&window.desenharGraficos)window.desenharGraficos(' +
     'r.hasAttribute("data-tema")?"light":"dark")};' +
     'document.addEventListener("click",function(e){' +
     'var t=e.target,alvo=null;while(t&&t!==document){' +
@@ -4832,8 +4889,12 @@ export function toHTML(text, dados) {
     'if(alvo)window.mostrarPar(alvo.getAttribute("data-sel"));});' +
     // Na carga, seleciona o primeiro. So faz sentido quando ha seletor:
     // com um par unico a pagina fica como sempre foi.
+    // Na carga o seletor SO esconde: quem desenha e' o aplica() logo
+    // abaixo, uma vez so. Desenhar aqui tambem criava o widget duas
+    // vezes por carga -- quatro iframes do TradingView na pagina de
+    // dois pares, para um grafico visivel.
     'var prim=document.querySelector(".sel-par button");' +
-    'if(prim)window.mostrarPar(prim.getAttribute("data-sel"));' +
+    'if(prim)window.mostrarPar(prim.getAttribute("data-sel"),true);' +
     'aplica(!r.hasAttribute("data-tema"),false);})();</script>\n' +
     "</body>\n</html>\n"
   );
