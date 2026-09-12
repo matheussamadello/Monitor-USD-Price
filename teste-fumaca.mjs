@@ -1353,8 +1353,13 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
   // Faixa dos botoes e container do grafico na MESMA cor: eram tres
   // tons de escuro empilhados -- cartao, faixa, embed -- e tres escuros
   // em sequencia leem como defeito, nao como desenho.
-  ok(/\.tv-barra\{[^}]*background:var\(--tv-fundo\)/.test(css),
-    "a faixa dos botoes usa a cor da superficie do grafico");
+  const barra = tok(escuro, "--tv-barra");
+  // A faixa NAO encosta no grafico: encosta na barra de ferramentas do
+  // widget, que o TradingView pinta mais clara. Igualar a faixa ao fundo
+  // do grafico mexeu (3, -1, -7) no pixel pintado e nao deu para ver.
+  ok(barra !== noite, `a barra de ferramentas tem cor propria, diferente do grafico (${barra})`);
+  ok(/\.tv-barra\{[^}]*background:var\(--tv-barra\)/.test(css),
+    "a faixa dos botoes usa a cor da BARRA do widget, nao a do grafico");
   ok(/\.tv\{[^}]*background:var\(--tv-fundo\)/.test(css),
     "e o container do grafico usa a mesma");
   ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-linha\)/.test(css),

@@ -3913,13 +3913,22 @@ const TITULO_PAGINA = "Monitor USD/BRL";
 // Os botoes nao marcados sao transparentes, entao vao junto; o marcado
 // continua azul, que e' o unico jeito de saber qual esta valendo.
 //
-// No tema claro o embed ja e' branco, igual ao painel, e por isso o
-// problema so aparece de noite -- mas o token existe nos dois para a
-// regra ser uma so.
+// SAO DUAS CORES, e confundi-las foi o primeiro erro aqui. A faixa dos
+// botoes nao encosta no grafico: encosta na BARRA DE FERRAMENTAS do
+// widget -- a linha do "D", dos icones e do "Indicadores" --, que o
+// TradingView pinta mais clara que o grafico. Medindo o pixel pintado,
+// a faixa ja era #101829; iguala-la ao fundo do grafico (#131722) mexeu
+// (3, -1, -7) e nao deu para ver. Quem fecha a emenda e' a cor da
+// BARRA.
+//
+// No tema claro o embed ja e' quase branco, igual ao painel, e por isso
+// o problema so aparece de noite -- mas os tokens existem nos dois para
+// a regra ser uma so.
 //
 // UM lugar so: o CSS e as opcoes do widget saem daqui. Duas copias do
 // mesmo hex divergem no dia em que alguem mexe numa e esquece da outra.
 const TV_FUNDO = { noite: "#131722", claro: "#ffffff" };
+const TV_BARRA = { noite: "#1e222d", claro: "#f1f3f6" };
 
 const PAGINA_CSS = `
 /* Tema NOITE e' o padrao. O claro so redefine tokens -- nenhuma regra
@@ -3934,7 +3943,7 @@ const PAGINA_CSS = `
   --risco-bg:rgba(248,81,73,.09); --risco-borda:rgba(248,81,73,.30); --risco-txt:#ff8b84;
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
-  --tv-fundo:${TV_FUNDO.noite}; --tv-linha:#2a2e39;
+  --tv-fundo:${TV_FUNDO.noite}; --tv-barra:${TV_BARRA.noite}; --tv-linha:#2a2e39;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -3946,7 +3955,7 @@ html[data-tema="claro"]{
   --risco-bg:rgba(192,54,44,.07); --risco-borda:rgba(192,54,44,.28); --risco-txt:#a3271f;
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
-  --tv-fundo:${TV_FUNDO.claro}; --tv-linha:#d5dfed;
+  --tv-fundo:${TV_FUNDO.claro}; --tv-barra:${TV_BARRA.claro}; --tv-linha:#d5dfed;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -4058,7 +4067,7 @@ dl{margin:0;display:grid;gap:8px}
 .lh.atencao .lr{color:var(--atencao)}
 .leituras .nota{margin:10px 2px 0;font:11px/1.6 var(--mono);color:var(--fraco)}
 .grafico{border-top:1px solid var(--linha)}
-.tv-barra{display:flex;gap:6px;padding:10px 18px;background:var(--tv-fundo);
+.tv-barra{display:flex;gap:6px;padding:10px 18px;background:var(--tv-barra);
   border-bottom:1px solid var(--tv-linha)}
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
   background:none;border:1px solid var(--tv-linha);color:var(--fraco)}
