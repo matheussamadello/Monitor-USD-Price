@@ -1388,8 +1388,8 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
   // As duas cores trocam de papel entre os temas. Ja saiu errado uma
   // vez: no claro os dois textos ficaram invertidos, e o do marcado
   // saiu na mesma cor do preenchimento -- invisivel.
-  ok(tok(escuro, "--tv-btn") === "#e6e6e6" && tok(escuro, "--tv-btn-txt") === "#4f4f4f" &&
-     tok(claro, "--tv-btn") === "#4f4f4f" && tok(claro, "--tv-btn-txt") === "#e6e6e6" &&
+  ok(tok(escuro, "--tv-btn") === "#e6e6e6" && tok(escuro, "--tv-btn-txt") === "#3a3a3a" &&
+     tok(claro, "--tv-btn") === "#3a3a3a" && tok(claro, "--tv-btn-txt") === "#e6e6e6" &&
      tok(escuro, "--tv-btn") === tok(claro, "--tv-btn-txt") &&
      tok(escuro, "--tv-btn-txt") === tok(claro, "--tv-btn"),
     "os quatro estados do botao mantem as cores pedidas");
