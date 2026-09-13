@@ -3951,7 +3951,7 @@ const PAGINA_CSS = `
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
   --tv-fundo:${TV_FUNDO.noite}; --tv-barra:${TV_BARRA.noite}; --tv-linha:#3c4043;
-  --tv-btn:#9aa0a6; --tv-btn-forte:#e8eaed; --tv-btn-ativo:#2f3136;
+  --tv-btn:#d3d3d3; --tv-btn-txt:#777777;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -3964,7 +3964,7 @@ html[data-tema="claro"]{
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
   --tv-fundo:${TV_FUNDO.claro}; --tv-barra:${TV_BARRA.claro}; --tv-linha:#dadce0;
-  --tv-btn:#5f6368; --tv-btn-forte:#202124; --tv-btn-ativo:#e3e5e8;
+  --tv-btn:#777777; --tv-btn-txt:#d3d3d3;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -4081,15 +4081,15 @@ dl{margin:0;display:grid;gap:8px}
 /* Cinza, e nao o azul do resto da pagina: estes botoes moram DENTRO
    do bloco do grafico, que e' territorio do widget e neutro nos dois
    temas. O azul os fazia parecer controle da pagina pousado por cima
-   do embed. Cinza CLARO no escuro e cinza ESCURO no claro, sempre
-   contra o branco/preto que a faixa herda do embed. */
+   do embed. As duas cores se invertem entre os temas -- botao claro
+   com texto escuro de noite, botao escuro com texto claro de dia --,
+   entao sao DOIS tokens e nao quatro. */
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
-  background:none;border:1px solid var(--tv-linha);color:var(--tv-btn)}
-/* O marcado ganha PREENCHIMENTO e texto de contraste maximo: sem o
-   azul, so a cor do texto nao bastaria para saber qual intervalo
-   esta valendo. */
-.tv-tf[aria-pressed="true"]{background:var(--tv-btn-ativo);
-  border-color:var(--tv-btn-ativo);color:var(--tv-btn-forte)}
+  background:var(--tv-btn);border:1px solid var(--tv-btn);color:var(--tv-btn-txt)}
+/* Os dois botoes tem a MESMA cor, entao o marcado precisa de outro
+   sinal. Um anel na cor do proprio texto resolve sem inventar um
+   terceiro cinza: o intervalo que vale fica contornado. */
+.tv-tf[aria-pressed="true"]{border-color:var(--tv-btn-txt)}
 .tv{height:460px;background:var(--tv-fundo);display:flex;align-items:center;
   justify-content:center}
 .tv .tv-off{padding:24px;text-align:center;font-size:13px;color:var(--fraco)}

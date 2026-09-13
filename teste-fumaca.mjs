@@ -1372,18 +1372,27 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
     "a faixa dos botoes usa a cor da BARRA do widget");
   ok(/\.tv\{[^}]*background:var\(--tv-fundo\)/.test(css),
     "e o container do grafico usa a mesma");
-  ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-linha\)/.test(css),
-    "a borda dos botoes acompanha, senao some no fundo novo");
+  // A borda do botao e' a propria cor dele: o botao e' solido agora, e
+  // uma borda de outro cinza so somaria um tom que ninguem pediu.
+  ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-btn\)/.test(css),
+    "a borda do botao e' a cor do proprio botao");
 
   // O botao MARCADO continua azul: e' o unico jeito de saber qual vale.
   // Os botoes sao CINZA, nao azul: moram dentro do bloco do grafico,
   // que e' neutro nos dois temas. Sem o azul, o marcado precisa de
   // PREENCHIMENTO -- so a cor do texto nao diria qual intervalo vale.
-  ok(/\.tv-tf\{[^}]*color:var\(--tv-btn\)/.test(css),
+  ok(/\.tv-tf\{[^}]*background:var\(--tv-btn\)/.test(css) &&
+     /\.tv-tf\{[^}]*color:var\(--tv-btn-txt\)/.test(css),
     "os botoes do grafico usam o cinza do bloco, nao o azul da pagina");
-  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*background:var\(--tv-btn-ativo\)/.test(css) &&
-     /\.tv-tf\[aria-pressed="true"\]\{[^}]*color:var\(--tv-btn-forte\)/.test(css),
-    "e o marcado se distingue por preenchimento, nao so por cor de texto");
+  // As duas cores se invertem entre os temas: botao claro com texto
+  // escuro de noite, botao escuro com texto claro de dia.
+  const btn = [tok(escuro, "--tv-btn"), tok(escuro, "--tv-btn-txt")];
+  const btnC = [tok(claro, "--tv-btn"), tok(claro, "--tv-btn-txt")];
+  ok(btn[0] === btnC[1] && btn[1] === btnC[0],
+    `o botao e o texto trocam de lado entre os temas (${btn} / ${btnC})`);
+  // Com os dois botoes na mesma cor, o marcado precisa de outro sinal.
+  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*border-color:var\(--tv-btn-txt\)/.test(css),
+    "e o marcado se distingue por um anel, nao so pela cor do texto");
   ok(!/\.tv-tf[^}]*var\(--chip-/.test(css),
     "nenhum botao do grafico volta a puxar a cor de destaque da pagina");
 
