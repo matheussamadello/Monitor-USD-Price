@@ -35,5 +35,7 @@ jobs:
             exit 1
           fi
           if [ "$codigo" -eq 2 ]; then
-            echo "::warning::nao deu para verificar tudo; isso nao e' aprovacao"
+            echo "::error::nao deu para verificar tudo; isso nao e' aprovacao"
           fi
+          # So o codigo 0 aprova; preserve tambem erros inesperados.
+          exit "$codigo"
