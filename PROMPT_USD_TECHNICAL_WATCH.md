@@ -154,6 +154,8 @@ Leia, quando disponíveis no relatório:
 
 Campos `*_fechado` têm prioridade como referência confirmada. Campos `*_provisorio` incluem a vela em formação e podem mudar até o fechamento.
 
+`vela_atual_em_formacao` diz se existe uma vela em formação. Com `sim`, o bloco `candle_atual_*` descreve essa vela e os campos `*_provisorio` ainda podem mudar. Com `nao` — fonte com pregão, fora do horário —, **não há vela em formação**: o bloco `candle_atual_*` e a `fracao_periodo_decorrida` saem como `--`, e os campos `*_provisorio` repetem os fechados. Nesse caso a última barra é a que está em `ultimo_fechamento_*` e em `candle_fechado_1`; ela aparece **uma vez só**, como fechada. Nunca conte o mesmo período como duas evidências.
+
 ### Horizontes: tático e estratégico
 
 Este monitor serve **dois horizontes com o mesmo relatório**. Nenhum campo do JSON muda: o que muda é o peso que você dá a cada timeframe.
@@ -1054,8 +1056,8 @@ O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 
 ### USD/BRL
 
-- Fora do pregão, a "vela atual" pode já ser uma vela fechada. Leia `vela_atual_em_formacao` antes de descrevê-la.
-- `vela_atual_em_formacao: nao` significa que não há vela em formação; não significa dia estável.
+- Fora do pregão não há vela em formação. Leia `vela_atual_em_formacao` antes de descrever qualquer coisa como "atual".
+- `vela_atual_em_formacao: nao` significa que não há vela em formação; não significa dia estável. Com `nao`, o bloco `candle_atual_*` vem em branco (`--`) de propósito — a barra está em `ultimo_fechamento_*`, e só lá.
 - O `preco_atual` pode repetir o último fechamento real. Não descreva isso como "dia sem variação".
 - Um `timestamp` novo com os mesmos dados pode ser comportamento normal de mercado fechado e não gera alerta.
 - Uma troca de fonte `query1` para `query2` na cascata do Yahoo é fallback de host e não é alerta.

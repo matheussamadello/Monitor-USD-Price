@@ -29,7 +29,8 @@
 //
 //     node paridade.mjs
 // ------------------------------------------------------------
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { aceitas } from "./paridade-esperada.mjs";
 
 const REPOS = ["Monitor-BTC-Price", "Monitor-XMR-Price", "Monitor-USD-Price"];
@@ -38,21 +39,18 @@ const IDENTICOS = [
   "analisar-historico.mjs",
   "teste-ema89-semanal.mjs",
   "teste-retrato.mjs",
+  "teste-paridade.mjs",
+  "teste-niveis.mjs",
+  "teste-limiares.mjs",
+  // A propria conferencia: um scanner corrigido num repositorio so
+  // deixaria os outros dois verificando menos do que pensam.
+  "paridade.mjs",
+  "paridade-esperada.mjs",
 ];
 const BRUTO = (repo, arq) =>
   `https://raw.githubusercontent.com/matheussamadello/${repo}/main/${arq}`;
 
-// Qual deles somos nos. Sai do proprio monitor.mjs, para o arquivo
-// continuar identico nos tres.
-const meuMonitor = readFileSync("monitor.mjs", "utf8");
-const marca = (meuMonitor.match(/const TITULO_PAGINA = "Monitor ([A-Z]+)/) || [])[1];
-const eu = REPOS.find((r) => r.includes(`-${marca}-`));
-if (!eu) {
-  console.log("FALHA  nao consegui identificar qual monitor e' este");
-  process.exit(2);
-}
-
-async function ler(repo, arq) {
+async function ler(eu, repo, arq) {
   if (repo === eu) return existsSync(arq) ? readFileSync(arq, "utf8") : null;
   for (const p of [`../${repo}/${arq}`, `../${repo.toLowerCase()}/${arq}`])
     if (existsSync(p)) return readFileSync(p, "utf8");
@@ -68,7 +66,7 @@ async function ler(repo, arq) {
 // moram os exemplos de cada par, que divergem DE PROPOSITO -- o BTC
 // fala em 76.000 e o XMR em 0,00656, descrevendo o mesmo codigo. O que
 // nao pode divergir e' o codigo.
-function semComentarios(fonte) {
+export function semComentarios(fonte) {
   return fonte
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("\n")
@@ -81,75 +79,143 @@ function semComentarios(fonte) {
 // inteiro declara no nivel zero, entao um simbolo comeca na coluna 0 e
 // termina quando a profundidade volta a zero. Pega tanto a funcao de
 // trinta linhas quanto a constante de uma linha so.
-function simbolos(fonte) {
+//
+// DUAS ARMADILHAS, as duas descobertas por teste de mutacao -- mutar
+// dentro de build() e dentro do PAGINA_CSS passava como "em paridade":
+//
+//   async   `export async function build(...)` nao casava com a
+//           expressao, e build() e' justamente quem monta o relatorio
+//           inteiro. Era o simbolo mais editado do projeto, e o unico
+//           invisivel.
+//
+//   texto   contar chave por chave conta tambem o que esta DENTRO de
+//           string e de template. `const PAGINA_CSS = \`` nao tem uma
+//           chave sequer na primeira linha, entao a profundidade ja
+//           comecava em zero e o simbolo fechava ali -- as 142 linhas
+//           de CSS ficavam de fora. Por isso a varredura abaixo pula o
+//           conteudo de aspas e de crase.
+const DECLARACAO = /^(?:export )?(?:async )?(?:function|const|class) ([A-Za-z_$][\w$]*)/;
+
+export function simbolos(fonte) {
   const out = new Map();
-  let nome = null, buf = [], prof = 0;
+  const topo = [];
+  let nome = null, buf = [], prof = 0, emTemplate = false;
   for (const l of semComentarios(fonte).split("\n")) {
     if (!nome) {
-      const m = l.match(/^(?:export )?(?:function|const|class) ([A-Za-z_$][\w$]*)/);
-      if (!m) continue;
+      const m = l.match(DECLARACAO);
+      // Fora de qualquer declaracao: imports e o bloco de execucao
+      // direta, onde estao os writeFileSync que publicam a pagina, o
+      // relatorio e o estado. Sao 45 linhas que ninguem conferia.
+      if (!m) { topo.push(l); continue; }
       nome = m[1];
     }
     buf.push(l);
-    for (const c of l) {
+    let i = 0;
+    while (i < l.length) {
+      const c = l[i];
+      if (emTemplate) {
+        if (c === "\\") i++;
+        else if (c === "`") emTemplate = false;
+        i++;
+        continue;
+      }
+      if (c === "`") { emTemplate = true; i++; continue; }
+      if (c === '"' || c === "'") {
+        const aspas = c;
+        i++;
+        while (i < l.length && l[i] !== aspas) { if (l[i] === "\\") i++; i++; }
+        i++;
+        continue;
+      }
       if (c === "{" || c === "[" || c === "(") prof++;
       else if (c === "}" || c === "]" || c === ")") prof--;
+      i++;
     }
-    if (prof <= 0) { out.set(nome, buf.join("\n")); nome = null; buf = []; prof = 0; }
+    // Template aberto continua na linha seguinte: o simbolo so termina
+    // quando a crase fechar.
+    if (prof <= 0 && !emTemplate) {
+      out.set(nome, buf.join("\n")); nome = null; buf = []; prof = 0;
+    }
   }
   if (nome) out.set(nome, buf.join("\n"));
+  // Pseudo-simbolo: nome impossivel em JavaScript, para nunca colidir
+  // com um de verdade.
+  out.set("<topo>", topo.join("\n"));
   return out;
 }
 
-let divergencias = 0, naoVerificados = 0;
-const outros = REPOS.filter((r) => r !== eu);
-console.log(`paridade de ${eu} contra ${outros.join(" e ")}\n`);
+// So confere quando chamado na linha de comando: importado por um
+// teste, o arquivo entrega apenas as funcoes acima.
+const executadoDireto = (() => {
+  try {
+    if (!process.argv[1]) return false;
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
 
-for (const arq of IDENTICOS) {
-  const meu = await ler(eu, arq);
-  if (meu === null) { console.log(`  ?      ${arq}: nao existe aqui`); naoVerificados++; continue; }
+if (executadoDireto) {
+  // Qual deles somos nos. Sai do proprio monitor.mjs, para o arquivo
+  // continuar identico nos tres.
+  const meuMonitor = readFileSync("monitor.mjs", "utf8");
+  const marca = (meuMonitor.match(/const TITULO_PAGINA = "Monitor ([A-Z]+)/) || [])[1];
+  const eu = REPOS.find((r) => r.includes(`-${marca}-`));
+  if (!eu) {
+    console.log("FALHA  nao consegui identificar qual monitor e' este");
+    process.exit(2);
+  }
+
+  let divergencias = 0, naoVerificados = 0;
+  const outros = REPOS.filter((r) => r !== eu);
+  console.log(`paridade de ${eu} contra ${outros.join(" e ")}\n`);
+
+  for (const arq of IDENTICOS) {
+    const meu = await ler(eu, eu, arq);
+    if (meu === null) { console.log(`  ?      ${arq}: nao existe aqui`); naoVerificados++; continue; }
+    for (const outro of outros) {
+      const dele = await ler(eu, outro, arq);
+      if (dele === null) { console.log(`  ?      ${arq} vs ${outro}: nao deu para ler`); naoVerificados++; continue; }
+      if (dele === meu) console.log(`  ok     ${arq} == ${outro}`);
+      else { console.log(`  DIFERE ${arq} != ${outro}`); divergencias++; }
+    }
+  }
+
+  const meus = simbolos(meuMonitor);
   for (const outro of outros) {
-    const dele = await ler(outro, arq);
-    if (dele === null) { console.log(`  ?      ${arq} vs ${outro}: nao deu para ler`); naoVerificados++; continue; }
-    if (dele === meu) console.log(`  ok     ${arq} == ${outro}`);
-    else { console.log(`  DIFERE ${arq} != ${outro}`); divergencias++; }
+    const fonte = await ler(eu, outro, "monitor.mjs");
+    if (fonte === null) { console.log(`  ?      monitor.mjs vs ${outro}: nao deu para ler`); naoVerificados++; continue; }
+    const deles = simbolos(fonte);
+    const comuns = [...meus.keys()].filter((k) => deles.has(k));
+    const ok = aceitas(eu, outro);
+    const todas = comuns.filter((k) => meus.get(k) !== deles.get(k));
+    const difs = todas.filter((k) => !ok.has(k));
+    const voltaram = [...ok].filter((k) => comuns.includes(k) && !todas.includes(k));
+    if (voltaram.length)
+      console.log(`  aviso  ${voltaram.length} simbolo(s) na lista de aceitas ja nao divergem ` +
+        `de ${outro}: ${voltaram.join(", ")}. Podem sair de paridade-esperada.mjs.`);
+    const soMeus = [...meus.keys()].filter((k) => !deles.has(k));
+    const soDeles = [...deles.keys()].filter((k) => !meus.has(k));
+    if (difs.length === 0)
+      console.log(`  ok     monitor.mjs == ${outro} nos ${comuns.length} simbolos comuns ` +
+        `(${todas.length} divergem, todas previstas; ${soMeus.length} so aqui, ${soDeles.length} so la)`);
+    else {
+      console.log(`  DIFERE monitor.mjs != ${outro} em ${difs.length} de ${comuns.length} simbolos comuns:`);
+      for (const k of difs.slice(0, 15)) console.log(`           ${k}`);
+      if (difs.length > 15) console.log(`           ... e mais ${difs.length - 15}`);
+      divergencias += difs.length;
+    }
   }
-}
 
-const meus = simbolos(meuMonitor);
-for (const outro of outros) {
-  const fonte = await ler(outro, "monitor.mjs");
-  if (fonte === null) { console.log(`  ?      monitor.mjs vs ${outro}: nao deu para ler`); naoVerificados++; continue; }
-  const deles = simbolos(fonte);
-  const comuns = [...meus.keys()].filter((k) => deles.has(k));
-  const ok = aceitas(eu, outro);
-  const todas = comuns.filter((k) => meus.get(k) !== deles.get(k));
-  const difs = todas.filter((k) => !ok.has(k));
-  const voltaram = [...ok].filter((k) => comuns.includes(k) && !todas.includes(k));
-  if (voltaram.length)
-    console.log(`  aviso  ${voltaram.length} simbolo(s) na lista de aceitas ja nao divergem ` +
-      `de ${outro}: ${voltaram.join(", ")}. Podem sair de paridade-esperada.mjs.`);
-  const soMeus = [...meus.keys()].filter((k) => !deles.has(k));
-  const soDeles = [...deles.keys()].filter((k) => !meus.has(k));
-  if (difs.length === 0)
-    console.log(`  ok     monitor.mjs == ${outro} nos ${comuns.length} simbolos comuns ` +
-      `(${todas.length} divergem, todas previstas; ${soMeus.length} so aqui, ${soDeles.length} so la)`);
-  else {
-    console.log(`  DIFERE monitor.mjs != ${outro} em ${difs.length} de ${comuns.length} simbolos comuns:`);
-    for (const k of difs.slice(0, 15)) console.log(`           ${k}`);
-    if (difs.length > 15) console.log(`           ... e mais ${difs.length - 15}`);
-    divergencias += difs.length;
+  if (divergencias) {
+    console.log(`\n${divergencias} divergencia(s). O motor tem de ser o mesmo nos tres: ` +
+      `so configuracao pode diferir.`);
+    process.exit(1);
   }
+  if (naoVerificados) {
+    console.log(`\nsem divergencia no que deu para comparar, mas ${naoVerificados} ` +
+      `item(ns) nao foram verificados. Isso nao e' aprovacao.`);
+    process.exit(2);
+  }
+  console.log("\nos tres monitores estao em paridade.");
 }
-
-if (divergencias) {
-  console.log(`\n${divergencias} divergencia(s). O motor tem de ser o mesmo nos tres: ` +
-    `so configuracao pode diferir.`);
-  process.exit(1);
-}
-if (naoVerificados) {
-  console.log(`\nsem divergencia no que deu para comparar, mas ${naoVerificados} ` +
-    `item(ns) nao foram verificados. Isso nao e' aprovacao.`);
-  process.exit(2);
-}
-console.log("\nos tres monitores estao em paridade.");

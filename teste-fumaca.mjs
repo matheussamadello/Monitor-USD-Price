@@ -1,5 +1,6 @@
 // Harness de fumaca: serve series sinteticas de USD/BRL nos dois
 // formatos de fonte e confere que o relatorio sai inteiro.
+import * as monitor from "./monitor.mjs";
 import {
   build, relatorioParaJSON, toHTML, PARES_TESTE, TIMEFRAMES_TESTE, dmiSeries, rsiSeries, parseYahoo, ancorarDia, calcularTrilho, analisarVolume,
   situacaoNiveis, atualizarEstadoNivel, alertasTecnicos, sinteses, inicioSemana,
@@ -294,9 +295,21 @@ await cenario("vela-fantasma de fim de semana", {
   // dias em que as duas series se alinham. Foi o que aconteceu num
   // sabado, derrubando o job de publicar.
   const usdDia = blocoDoPar(r.texto, "GRAFICO DIARIO", "USD/BRL");
+  // Mercado fechado nao tem vela em formacao, entao o bloco candle_atual_*
+  // sai em branco e quem carrega o ultimo pregao e' ultimo_fechamento_*.
+  // Antes os dois traziam a MESMA barra: a sexta-feira aparecia como
+  // "atual, provisoria" e como "ultima fechada" no mesmo relatorio.
   ok(
-    new RegExp(`candle_atual_data: ${dia(ultimoRealDiario.t)}`).test(usdDia),
-    "vela atual e' o ultimo pregao real, nao o fantasma de hoje"
+    /candle_atual_data: --/.test(usdDia),
+    "sem vela em formacao, o bloco candle_atual_* sai em branco"
+  );
+  ok(
+    new RegExp(`ultimo_fechamento_data: ${dia(ultimoRealDiario.t)}`).test(usdDia),
+    "o ultimo pregao real aparece como ultima FECHADA, uma vez so"
+  );
+  ok(
+    !new RegExp(`candle_atual_data: ${dia(ultimoRealDiario.t)}`).test(usdDia),
+    "a mesma barra nao sai tambem como vela atual"
   );
   ok(!new RegExp(`candle_atual_data: ${dia(ancorarDia(Math.floor(Date.now() / 1000)))}`).test(usdDia),
     "o fantasma de hoje nao aparece como vela atual do par de cambio");
@@ -1663,6 +1676,75 @@ ok(ancorarDia(1756436400, -10800) === 1756425600, "carimbo em fuso -03 cai na da
 Date.now = relogioOriginal;
 await import("./teste-regressoes.mjs");
 await import("./teste-ema89-semanal.mjs");
+await import("./teste-paridade.mjs");
+await import("./teste-niveis.mjs");
+await import("./teste-limiares.mjs");
+
+// ------------------------------------------------------------
+// CALIBRAGEM DESTE PAR
+//
+// Estes cinco numeros sao os unicos que MUDAM de um monitor para o
+// outro -- o resto do motor e' identico e esta preso em
+// teste-limiares.mjs, que e' o mesmo arquivo nos tres. Por serem
+// diferentes, eles nao cabem la: um arquivo identico nos tres nao pode
+// afirmar "0,3%" sem quebrar no monitor que usa 0,15%.
+//
+// Sem este bloco eram os ultimos numeros do projeto que podiam mudar
+// sozinhos sem nenhum teste reclamar.
+// ------------------------------------------------------------
+console.log("\n== calibragem deste par ==");
+{
+  // Largura da zona: piso e teto em % do centro.
+  const semAtr = monitor.limitesOperacionais(1000, 0);
+  ok(Math.abs(1000 - semAtr.inferior - 0.8) < 1e-9,
+    `sem ATR a meia-largura da zona e' o piso de 0.8 (${(1000 - semAtr.inferior).toFixed(4)})`);
+  const atrEnorme = monitor.limitesOperacionais(1000, 1e9);
+  ok(Math.abs(atrEnorme.superior - 1000 - 10.0) < 1e-9,
+    `com ATR enorme a meia-largura para no teto de 10.0 (${(atrEnorme.superior - 1000).toFixed(4)})`);
+
+  // Reteste sem ATR: tolerancia e reset caem para percentual do nivel.
+  // Tempos crescentes: a maquina so avanca uma vez por vela fechada, e
+  // repetir o mesmo carimbo faria toda transicao abaixo ser ignorada.
+  const T0 = 1_700_000_000, DIA = 86400;
+  const velaEm = (close, open, k = 1) => ({
+    time: T0 + k * DIA, open, close,
+    high: Math.max(open, close), low: Math.min(open, close),
+  });
+  const ctx = (vela) => ({ nivel: 1000, direcao: "alta", vela, tolAtr: 0.25, resetAtr: 1.5, atr: 0, maxCandles: 30, segundos: DIA });
+  const rompeu = monitor.atualizarEstadoNivel(null, ctx(velaEm(1060, 1010, 0)));
+  const tol = 1000 * 0.25 / 100;
+  const dentro = monitor.atualizarEstadoNivel(rompeu, ctx(velaEm(1000 + tol * 0.8, 1050)));
+  ok(dentro.estado === "em_reteste",
+    `sem ATR, a ${(tol * 0.8).toFixed(3)} do nivel (dentro de 0.25%) e' reteste (${dentro.estado})`);
+  const fora = monitor.atualizarEstadoNivel(rompeu, ctx(velaEm(1000 + tol * 1.2, 1050)));
+  ok(fora.estado !== "em_reteste",
+    `sem ATR, a ${(tol * 1.2).toFixed(3)} do nivel (fora de 0.25%) nao e' reteste (${fora.estado})`);
+
+  const reset = 1000 * 1.5 / 100;
+  const perto = monitor.atualizarEstadoNivel(rompeu, ctx(velaEm(1000 + reset * 0.9, 1000 + reset * 0.5)));
+  ok(perto.afastado === false,
+    `sem ATR, a ${(reset * 0.9).toFixed(3)} (aquem de 1.5%) o nivel nao esta afastado`);
+  const longe = monitor.atualizarEstadoNivel(rompeu, ctx(velaEm(1000 + reset * 1.1, 1000 + reset * 0.5)));
+  ok(longe.afastado === true,
+    `sem ATR, a ${(reset * 1.1).toFixed(3)} (alem de 1.5%) o nivel esta afastado`);
+
+  // Piso de variacao de preco para uma divergencia valer.
+  const n = 200, ult = n - 1;
+  const highs = Array(n).fill(103);
+  const div = (pct) => {
+    const lows = Array(n).fill(100);
+    lows[ult - 20] = 100;
+    lows[ult - 14] = 100 * (1 - pct / 100);
+    const rsi = Array(n).fill(50);
+    rsi[ult - 20] = 25; rsi[ult - 14] = 40;
+    return monitor.detectarDivergencias(highs, lows, rsi, { altos: [], baixos: [ult - 20, ult - 14] });
+  };
+  ok(div(0.15 * 1.2).length === 1,
+    `fundo ${(0.15 * 1.2).toFixed(3)}% mais baixo (acima de 0.15%) e' divergencia`);
+  ok(div(0.15 * 0.8).length === 0,
+    `fundo ${(0.15 * 0.8).toFixed(3)}% mais baixo (abaixo de 0.15%) nao e'`);
+}
+
 
 // O retrato vai por ULTIMO e mexe no relogio global, entao nada roda
 // depois dele. Ele sai do processo com codigo 1 por conta propria se o

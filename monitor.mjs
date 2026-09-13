@@ -450,6 +450,13 @@ const MAX_VELAS = 720; // mesmo horizonte que os monitores de cripto usam
 // no papel, e mais do que havia na pratica.
 const HOSTS_YAHOO = ["query1", "query2"];
 
+// Identificacao nas chamadas as fontes. Fica AQUI, no bloco de
+// configuracao, e nao embutida na chamada: com o texto solto dentro da
+// busca, a funcao divergia entre os tres repositorios por causa de tres
+// letras, e a conferencia de paridade nao teria como separar isso de
+// uma correcao aplicada num repositorio so.
+const AGENTE_HTTP = "usd-monitor/1.0";
+
 const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
   nome: `yahoo/${host}`,
   url: (cfg, tf) =>
@@ -791,7 +798,7 @@ export async function buscarSerie(fetchImpl, cfg, tf) {
   for (const fonte of cfg.fontes) {
     try {
       const res = await fetchImpl(fonte.url(cfg, tf), {
-        headers: { "User-Agent": "usd-monitor/1.0" },
+        headers: { "User-Agent": AGENTE_HTTP },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const parsed = fonte.parse(await res.text(), tf);
@@ -822,7 +829,11 @@ function num(v, dec) {
 // Anatomia de vela e padroes
 // ------------------------------------------------------------
 
-function anatomia(o, h, l, c) {
+// Exportadas para teste. Sao as definicoes geometricas que o relatorio
+// publica -- "vela compradora forte", "contexto antes do trio" --, e os
+// numeros que as governam nao estavam presos por nada: mudar o corpo
+// minimo de 0,55 para 0,82 do range nao quebrava um teste sequer.
+export function anatomia(o, h, l, c) {
   const corpo = Math.abs(c - o);
   const amplitude = h - l;
   return {
@@ -875,7 +886,7 @@ const FECHA_PERTO_MAX = 0.70; // (close - low) / (high - low)
 const SOMBRA_SUP_MAX = 0.40; // sombra superior / corpo
 const CORPO_VS_MEDIANA = 0.75; // corpo / mediana dos ultimos 20 corpos
 
-function compradoraForte(v, mediana) {
+export function compradoraForte(v, mediana) {
   if (!v.alta) return false;
   if (!(v.amplitude > 0) || !(v.corpo > 0)) return false;
   if (v.corpo / v.amplitude < CORPO_RANGE_MIN) return false;
@@ -885,7 +896,7 @@ function compradoraForte(v, mediana) {
   return true;
 }
 
-function vendedoraForte(v, mediana) {
+export function vendedoraForte(v, mediana) {
   if (!v.baixa) return false;
   if (!(v.amplitude > 0) || !(v.corpo > 0)) return false;
   if (v.corpo / v.amplitude < CORPO_RANGE_MIN) return false;
@@ -998,7 +1009,7 @@ function padraoEmFormacao(v, live, mediana) {
 
 const CTX_LOOKBACK = 10;
 
-function contextoAntesDoTrio(closes, idxReferencia, lookback = CTX_LOOKBACK) {
+export function contextoAntesDoTrio(closes, idxReferencia, lookback = CTX_LOOKBACK) {
   const fim = idxReferencia;
   const ini = fim - lookback;
   if (ini < 0 || fim < 0 || fim >= closes.length) return "indefinido";
@@ -2286,7 +2297,9 @@ function limitesEstruturais(membros) {
   };
 }
 
-function limitesOperacionais(centro, atrAtual) {
+// Exportada para teste: o piso e o teto de largura sao calibrados por
+// par, e eram o unico lugar onde esses dois numeros apareciam.
+export function limitesOperacionais(centro, atrAtual) {
   let meia = ZONA_MEIA_LARGURA_ATR * (atrAtual || 0);
   const piso = (ZONA_LARGURA_MIN_PCT / 100) * Math.abs(centro);
   const teto = (ZONA_LARGURA_MAX_PCT / 100) * Math.abs(centro);
@@ -2762,6 +2775,13 @@ export function atualizarCiclo(z, anterior, ctx) {
 // Pipeline completo por par/timeframe
 // ------------------------------------------------------------
 
+// O peso do centro anterior, isolado numa funcao para poder ser testado:
+// dentro da montagem das zonas ele so era alcancavel por uma serie
+// sintetica inteira, e por isso nao era alcancado por teste nenhum.
+export function suavizarCentro(anterior, novo) {
+  return SUAVIZA_CENTRO * anterior + (1 - SUAVIZA_CENTRO) * novo;
+}
+
 export function calcularZonas(cfg, tf, d, ctx) {
   const { highs, lows, closes, times, opens } = d;
   const anteriores = ctx.zonasAnteriores || [];
@@ -2824,7 +2844,7 @@ export function calcularZonas(cfg, tf, d, ctx) {
       // estado_atual e distancia, que sao explicitamente contextuais.
       z.centro = par.ant.ultimaVelaAvaliada === ultimaVelaFechada
         ? par.ant.centro
-        : SUAVIZA_CENTRO * par.ant.centro + (1 - SUAVIZA_CENTRO) * z.centro;
+        : suavizarCentro(par.ant.centro, z.centro);
       z.limites_operacionais = limitesOperacionais(z.centro, atrAtual);
       z.role_reversal = z.role_reversal || par.ant.role_reversal || par.trocouTipo;
       z.cruzamento_confirmado = par.ant.cruzamento_confirmado || false;
@@ -3118,7 +3138,12 @@ function detalheDiv(x, times, dec, timeViva) {
   );
 }
 
-function readPair(cfg, d, tf, opts = {}) {
+// Exportada para teste: a tolerancia e a distancia de reset do reteste
+// sao MONTADAS aqui, a partir das constantes em ATR, e entregues prontas
+// a maquina de estado. Testar so a maquina nao alcanca esses numeros --
+// era por isso que mudar RETEST_TOLERANCIA_ATR de 0,25 para 0,40 nao
+// quebrava nenhum teste.
+export function readPair(cfg, d, tf, opts = {}) {
   const estadoAnt = opts.estadoNiveis || {};
   const estadoNovo = {};
   const { highs, lows, closes, opens, times, live } = d;
@@ -3284,6 +3309,17 @@ function readPair(cfg, d, tf, opts = {}) {
     );
   }
 
+  // VELA EM FORMACAO x VELA FECHADA. Cripto nao fecha, entao a ultima
+  // barra esta SEMPRE em formacao e isto e' sempre sim. Fonte com
+  // pregao (cambio) e' outra historia: na sexta a semana acaba, e a
+  // partir dali a ultima barra ja e' uma barra FECHADA. Publicar o
+  // bloco candle_atual_* assim mesmo fazia o mesmo periodo sair duas
+  // vezes no relatorio -- uma como "atual", com close_provisorio e
+  // fracao do periodo, outra como "ultimo fechamento" --, e quem le
+  // contava a mesma semana como duas evidencias.
+  const emFormacao = d.emFormacao !== false;
+  const seEmFormacao = (v) => (emFormacao ? v : "--");
+
   // ---- volume parcial ----
   const fracao = fracaoPeriodo(live, tf.segundos);
   const parcial = d.emFormacao !== false;
@@ -3376,12 +3412,16 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(cfg.label);
   L.push(`timeframe: ${tf.key}`);
   L.push(`preco_atual: ${num(live.close, D)}`);
-  L.push(`candle_atual_data: ${fmtDia(live.time)}`);
-  L.push(`candle_atual_open: ${num(live.open, D)}`);
-  L.push(`candle_atual_high: ${num(live.high, D)}`);
-  L.push(`candle_atual_low: ${num(live.low, D)}`);
-  L.push(`candle_atual_close_provisorio: ${num(live.close, D)}`);
-  L.push(`candle_atual_var_pct_desde_abertura: ${num(varAbertura, 2)}`);
+  // A bandeira vem ANTES dos campos que ela qualifica: quem le de cima
+  // para baixo -- pessoa ou agente -- precisa saber que nao ha vela em
+  // formacao antes de ler os campos dela, nao depois.
+  L.push(`vela_atual_em_formacao: ${emFormacao ? "sim" : "nao"}`);
+  L.push(`candle_atual_data: ${seEmFormacao(fmtDia(live.time))}`);
+  L.push(`candle_atual_open: ${seEmFormacao(num(live.open, D))}`);
+  L.push(`candle_atual_high: ${seEmFormacao(num(live.high, D))}`);
+  L.push(`candle_atual_low: ${seEmFormacao(num(live.low, D))}`);
+  L.push(`candle_atual_close_provisorio: ${seEmFormacao(num(live.close, D))}`);
+  L.push(`candle_atual_var_pct_desde_abertura: ${seEmFormacao(num(varAbertura, 2))}`);
   L.push(`ema89: ${num(emaAtual, D)}`);
   L.push(
     `posicao_vs_ema89: ${
@@ -3429,8 +3469,13 @@ function readPair(cfg, d, tf, opts = {}) {
     }`
   );
   L.push("");
-  L.push("# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o");
-  L.push(`# fechamento ${tf.key}. NAO sao a referencia principal.`);
+  if (emFormacao) {
+    L.push("# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o");
+    L.push(`# fechamento ${tf.key}. NAO sao a referencia principal.`);
+  } else {
+    L.push("# PROVISORIOS: sem vela em formacao, sao IGUAIS aos fechados");
+    L.push(`# acima. Nao ha o que mudar ate o proximo periodo ${tf.key}.`);
+  }
   L.push(`rsi_provisorio: ${num(rsiP[k], 2)}`);
   L.push(`di_plus_provisorio: ${num(dmiP.plusDI[k], 2)}`);
   L.push(`di_minus_provisorio: ${num(dmiP.minusDI[k], 2)}`);
@@ -3494,11 +3539,11 @@ function readPair(cfg, d, tf, opts = {}) {
 
   // ---- periodo e volume ----
   L.push("");
-  L.push(`fracao_periodo_decorrida: ${fracao === null ? "--" : fracao.toFixed(3)}`);
-  // Fora do pregao (fim de semana, feriado, ou fonte fim-de-dia) a
-  // "vela atual" ja e' uma vela fechada. Esta linha e' o que separa os
-  // dois casos para quem le so o JSON.
-  L.push(`vela_atual_em_formacao: ${parcial ? "sim" : "nao"}`);
+  L.push(
+    `fracao_periodo_decorrida: ${
+      fracao === null ? "--" : seEmFormacao(fracao.toFixed(3))
+    }`
+  );
   if (d.temVolume) {
     L.push(`volume_parcial: ${parcial ? "sim" : "nao"}`);
     L.push(`volume_atual: ${num(vol.atual, 4)}`);
@@ -3577,11 +3622,11 @@ function readPair(cfg, d, tf, opts = {}) {
     L.push(`sombra_inf_vs_corpo: ${num(mFechada.sombraInfVsCorpo, 2)}`);
   }
   if (mViva) {
-    L.push(`candle_atual_corpo_pct_range: ${num(mViva.corpoPctRange, 2)}`);
-    L.push(`candle_atual_sombra_sup_pct_range: ${num(mViva.sombraSupPctRange, 2)}`);
-    L.push(`candle_atual_sombra_inf_pct_range: ${num(mViva.sombraInfPctRange, 2)}`);
-    L.push(`candle_atual_sombra_sup_vs_corpo: ${num(mViva.sombraSupVsCorpo, 2)}`);
-    L.push(`candle_atual_sombra_inf_vs_corpo: ${num(mViva.sombraInfVsCorpo, 2)}`);
+    L.push(`candle_atual_corpo_pct_range: ${seEmFormacao(num(mViva.corpoPctRange, 2))}`);
+    L.push(`candle_atual_sombra_sup_pct_range: ${seEmFormacao(num(mViva.sombraSupPctRange, 2))}`);
+    L.push(`candle_atual_sombra_inf_pct_range: ${seEmFormacao(num(mViva.sombraInfPctRange, 2))}`);
+    L.push(`candle_atual_sombra_sup_vs_corpo: ${seEmFormacao(num(mViva.sombraSupVsCorpo, 2))}`);
+    L.push(`candle_atual_sombra_inf_vs_corpo: ${seEmFormacao(num(mViva.sombraInfVsCorpo, 2))}`);
   }
 
   L.push("");
@@ -3960,6 +4005,9 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
 }
 
 const TITULO_PAGINA = "Monitor USD/BRL";
+// Cabecalho do alerta.txt. Mesma razao do AGENTE_HTTP: texto solto no
+// meio do codigo fazia o bloco de execucao divergir entre os tres.
+const TITULO_ALERTA = "ALERTA USD/BRL";
 
 // ------------------------------------------------------------
 // Pagina publicada (docs/index.html)
@@ -4213,8 +4261,17 @@ dl{margin:0;display:grid;gap:8px}
 }
 `;
 
+// Escapa para ATRIBUTO, nao so para texto: aspas incluidas. Os rotulos
+// de hoje nao tem nenhuma, entao a saida nao muda -- mas basta um par
+// novo chamado 5" ou um rotulo com apostrofo para o atributo fechar no
+// meio e o resto virar marcacao.
 function pgEsc(v) {
-  return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Milhar com ponto e decimal com virgula, na mao. toLocaleString
@@ -4955,11 +5012,18 @@ export function toHTML(text, dados) {
         // novo, quem so troca o tema reaproveita o que ja esta valendo.
         `window.rsiPorIntervalo=${JSON.stringify(rsiPorIntervalo)};` +
         'window.intervaloGrafico="D";' +
-        "window.desenharGraficos=function(tema,intervalo){if(!window.TradingView)return;" +
+        // O intervalo escolhido e o estado dos botoes sao da PAGINA, nao
+        // do widget: valem mesmo quando o tv.js nao carrega (rede fora,
+        // bloqueador, TradingView fora do ar). Com o `return` antes
+        // desta parte, o clique em Semanal nao fazia absolutamente
+        // nada, sem grafico e sem aviso -- e o botao continuava
+        // marcando Diario.
+        "window.desenharGraficos=function(tema,intervalo){" +
         "if(intervalo)window.intervaloGrafico=intervalo;" +
         "var iv=window.intervaloGrafico,rsi=window.rsiPorIntervalo[iv];" +
         'var bs=document.querySelectorAll(".tv-tf");for(var k=0;k<bs.length;k++)' +
         'bs[k].setAttribute("aria-pressed",bs[k].getAttribute("data-tf")===iv?"true":"false");' +
+        "if(!window.TradingView)return;" +
         JSON.stringify(comGrafico.map((c) => ({ id: `tv-${c.key}`, s: c.grafico }))) +
         ".forEach(function(g){var el=document.getElementById(g.id);if(!el)return;el.innerHTML='';" +
         // Container escondido sai com dimensao zero, entao nem vale
@@ -5124,7 +5188,7 @@ if (executadoDireto) {
   if (novos.length) {
     writeFileSync(
       "alerta.txt",
-      "ALERTA USD/BRL\n\n" + novos.map((g) => "- " + g.msg).join("\n") + "\n"
+      TITULO_ALERTA + "\n\n" + novos.map((g) => "- " + g.msg).join("\n") + "\n"
     );
     console.log("NOVOS GATILHOS:", novos.map((g) => g.id).join(", "));
   } else {
