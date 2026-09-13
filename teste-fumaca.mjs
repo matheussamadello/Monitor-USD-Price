@@ -1372,18 +1372,27 @@ console.log("\n== superficie do grafico: uma cor so para faixa, container e embe
     "a faixa dos botoes usa a cor da BARRA do widget");
   ok(/\.tv\{[^}]*background:var\(--tv-fundo\)/.test(css),
     "e o container do grafico usa a mesma");
-  ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-linha\)/.test(css),
-    "a borda dos botoes acompanha, senao some no fundo novo");
+  ok(/\.tv-tf\{[^}]*border:1px solid var\(--tv-btn\)/.test(css),
+    "a borda do botao e a cor de preenchimento dele sao a mesma");
 
-  // O botao MARCADO continua azul: e' o unico jeito de saber qual vale.
   // Os botoes sao CINZA, nao azul: moram dentro do bloco do grafico,
-  // que e' neutro nos dois temas. Sem o azul, o marcado precisa de
-  // PREENCHIMENTO -- so a cor do texto nao diria qual intervalo vale.
+  // que e' neutro nos dois temas. O marcado se distingue por
+  // PREENCHIMENTO -- e' o unico sinal que sobra sem o azul.
   ok(/\.tv-tf\{[^}]*color:var\(--tv-btn\)/.test(css),
     "os botoes do grafico usam o cinza do bloco, nao o azul da pagina");
-  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*background:var\(--tv-btn-ativo\)/.test(css) &&
-     /\.tv-tf\[aria-pressed="true"\]\{[^}]*color:var\(--tv-btn-forte\)/.test(css),
+  ok(/\.tv-tf\[aria-pressed="true"\]\{[^}]*background:var\(--tv-btn\)/.test(css) &&
+     /\.tv-tf\[aria-pressed="true"\]\{[^}]*color:var\(--tv-btn-txt\)/.test(css),
     "e o marcado se distingue por preenchimento, nao so por cor de texto");
+  // As quatro cores sao escolha do dono do monitor. Ficam cravadas aqui
+  // para que uma mexida distraida nos tokens apareca no teste.
+  // As duas cores trocam de papel entre os temas. Ja saiu errado uma
+  // vez: no claro os dois textos ficaram invertidos, e o do marcado
+  // saiu na mesma cor do preenchimento -- invisivel.
+  ok(tok(escuro, "--tv-btn") === "#d3d3d3" && tok(escuro, "--tv-btn-txt") === "#777777" &&
+     tok(claro, "--tv-btn") === "#777777" && tok(claro, "--tv-btn-txt") === "#d3d3d3" &&
+     tok(escuro, "--tv-btn") === tok(claro, "--tv-btn-txt") &&
+     tok(escuro, "--tv-btn-txt") === tok(claro, "--tv-btn"),
+    "os quatro estados do botao mantem as cores pedidas");
   ok(!/\.tv-tf[^}]*var\(--chip-/.test(css),
     "nenhum botao do grafico volta a puxar a cor de destaque da pagina");
 
