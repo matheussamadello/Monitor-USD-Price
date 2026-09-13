@@ -1,0 +1,39 @@
+# Confere que os tres monitores continuam com o mesmo motor.
+#
+# SEPARADO do monitor.yml de proposito. A conferencia busca o codigo
+# dos outros dois no GitHub, e durante uma publicacao em serie existe
+# uma janela de minutos em que eles legitimamente diferem. Se isso
+# rodasse junto da publicacao, uma divergencia passageira impediria o
+# relatorio de sair -- e o relatorio importa mais.
+#
+# Por isso: uma vez por dia, fora dos minutos em que os monitores
+# rodam (XMR :00, BTC :20, USD :40). Divergencia que dura um dia e' a
+# que interessa: alguem corrigiu um repositorio so.
+name: Paridade
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Conferir paridade com os outros dois monitores
+        run: |
+          set +e
+          node paridade.mjs
+          codigo=$?
+          set -e
+          if [ "$codigo" -eq 1 ]; then
+            echo "::error::o motor divergiu entre os monitores"
+            exit 1
+          fi
+          if [ "$codigo" -eq 2 ]; then
+            echo "::warning::nao deu para verificar tudo; isso nao e' aprovacao"
+          fi

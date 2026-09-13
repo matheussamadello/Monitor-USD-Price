@@ -874,6 +874,20 @@ node teste-fumaca.mjs
 
 Ele encadeia mais três arquivos no final: `teste-regressoes.mjs`, `teste-ema89-semanal.mjs` e `teste-retrato.mjs`. Rodar o de fumaça roda os quatro.
 
+### Paridade entre os três monitores
+
+`paridade.mjs` confere que os três continuam com o mesmo motor. Compara arquivo inteiro para os que devem ser idênticos em todos, e **símbolo a símbolo** no `monitor.mjs` — só os que existem nos três, porque o que é de um repositório só é configuração, não divergência. Pega o código dos outros dois do diretório irmão, quando os três estão clonados lado a lado, e do GitHub quando não estão.
+
+Ao automatizar isso, apareceu que "só a configuração muda" nunca foi literalmente verdade. As divergências legítimas estão listadas em `paridade-esperada.mjs`, com o motivo, e o teste falha quando diverge um símbolo **fora** dessa lista — que é o caso de alguém corrigir um bug num repositório só.
+
+Uma delas merece atenção e está registrada lá: o código da **resistência macro existe apenas no XMR**. Nos outros dois, preencher `resistenciaMacro` na configuração não faz nada, porque o código que leria esse campo não está presente.
+
+Roda como workflow próprio, uma vez por dia, e **não** junto da publicação: durante uma publicação em série existe uma janela de minutos em que os três legitimamente diferem, e uma divergência passageira não pode impedir o relatório de sair. Três códigos de saída: `0` em paridade, `1` divergência, `2` não deu para verificar — que não é aprovação.
+
+```bash
+node paridade.mjs
+```
+
 ### Teste de retrato
 
 `teste-retrato.mjs` cobre o que o de fumaça não cobre. O de fumaça verifica propriedades que alguém lembrou de verificar; o retrato gera o **relatório inteiro** sobre uma entrada fixa e compara linha a linha com `teste-retrato.txt`. Campo que muda de valor, de nome, de ordem ou que some sem ninguém ter pedido quebra o teste.
