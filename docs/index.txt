@@ -1,4 +1,4 @@
-timestamp: 2026-09-13 02:20 UTC
+timestamp: 2026-09-13 02:23 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -67,17 +67,17 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.098
+fracao_periodo_decorrida: 0.100
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 5091075.9000
+volume_atual: 5105059.4000
 volume_ultima_fechada: 19228669.6000
 volume_media20: 56828565.9400
 volume_vs_media_pct: -66.16
 volume_referencia: ultima_vela_fechada
 volume_classificacao: contracao_forte
 volume_tendencia_3_fechadas: decrescente
-trades_vela_atual: 3072
+trades_vela_atual: 3105
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -115,8 +115,8 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: regiao_suporte_5_12_5_16, perda_suporte_confirmada_fraca_5_15, adx_subindo_com_di_minus_dominante
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=83 estrutural=5.194800-5.220000 operacional=5.192333-5.222198 centro=5.207266 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.09 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=59 estrutural=5.237379-5.265921 operacional=5.234760-5.264624 centro=5.249692 toques=7 rejeicoes=5 role_reversal=nao dist_pct=-1.89 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=83 estrutural=5.194800-5.220000 operacional=5.192374-5.222238 centro=5.207306 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.09 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=59 estrutural=5.237379-5.265921 operacional=5.235347-5.265212 centro=5.250279 toques=7 rejeicoes=5 role_reversal=nao dist_pct=-1.90 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 zona_auto_3: id=usdt|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.275500-5.344800 operacional=5.295218-5.325082 centro=5.310150 toques=13 rejeicoes=11 role_reversal=sim dist_pct=-3.00 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=em_teste score=85 estrutural=5.122000-5.161000 operacional=5.126568-5.156432 centro=5.141500 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.18 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_5: id=usdt|diario|z3 tipo=suporte status=enfraquecida estado=acima score=74 estrutural=5.039600-5.087600 operacional=5.048668-5.078532 centro=5.063600 toques=3 rejeicoes=2 role_reversal=sim dist_pct=1.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
@@ -297,14 +297,14 @@ zonas_candidatas_a_faixa: nenhuma
 fracao_periodo_decorrida: 0.871
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 370802471.6000
+volume_atual: 370816455.1000
 volume_ultima_fechada: 433041368.0000
 volume_media20: 408937080.8550
 volume_vs_media_pct: 5.89
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 244511
+trades_vela_atual: 244544
 volume_semana_dias_fechados: 6
 volume_semana_soma_dias_fechados: 365711395.7000
 volume_semanas_anteriores_mesmos_dias_media: 381564398.8625

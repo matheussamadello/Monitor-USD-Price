@@ -17,7 +17,7 @@
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
   --tv-fundo:#0f0f0f; --tv-barra:#0f0f0f; --tv-linha:#3c4043;
-  --tv-btn:#e6e6e6; --tv-btn-txt:#666666;
+  --tv-btn:#eeeeee; --tv-btn-txt:#5e5e5e;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -30,7 +30,7 @@ html[data-tema="claro"]{
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
   --tv-fundo:#ffffff; --tv-barra:#ffffff; --tv-linha:#dadce0;
-  --tv-btn:#666666; --tv-btn-txt:#e6e6e6;
+  --tv-btn:#5e5e5e; --tv-btn-txt:#eeeeee;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -152,21 +152,26 @@ dl{margin:0;display:grid;gap:8px}
    AS QUATRO CORES SAO ESCOLHA DO DONO DO MONITOR, pedidas uma a uma:
 
                     fundo          borda      texto
-     noite  solto   transparente   #e6e6e6    #e6e6e6
-     noite  marcado #e6e6e6        #e6e6e6    #666666
-     claro  solto   transparente   #666666    #666666
-     claro  marcado #666666        #666666    #e6e6e6
+     noite  solto   transparente   #eeeeee    #eeeeee
+     noite  marcado #eeeeee        #eeeeee    #5e5e5e
+     claro  solto   transparente   #5e5e5e    #5e5e5e
+     claro  marcado #5e5e5e        #5e5e5e    #eeeeee
 
    Sao DUAS cores que trocam de papel, e por isso dois tokens e nao
    quatro. --tv-btn desenha a borda, o texto do solto e, quando
    marcado, o PREENCHIMENTO; --tv-btn-txt e' o texto do marcado, que
    so existe para contrastar com esse preenchimento.
 
-   CONTRASTE MEDIDO: 15,4:1 no solto do escuro, 5,7:1 no solto do claro
-   e 4,6:1 nos dois marcados. O par comecou em #d3d3d3/#777777, que
-   dava 3,0:1 entre si; os dois andaram um passo em direcoes opostas
-   ate cruzar os 4,5:1 que se recomenda para texto de 11px, que e' o
-   motivo de PARAREM exatamente aqui e nao antes. */
+   CONTRASTE MEDIDO: 16,5:1 no solto do escuro, 6,5:1 no solto do claro
+   e 5,6:1 nos dois marcados.
+
+   O par foi aberto em dois passos, sempre simetricos, a pedido do
+   dono do monitor: #d3d3d3/#777777 dava 3,0:1 entre si, #e6e6e6/
+   #666666 levou a 4,6:1 -- que e' o minimo recomendado para texto de
+   11px --, e o passo atual, de 8 pontos em cada cor, chegou a 5,6:1.
+   Este ultimo nao tem limiar tecnico por tras: e' escolha de
+   aparencia, e o proximo passo comecaria a virar branco contra preto
+   em vez de cinza claro contra cinza escuro. */
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
   background:none;border:1px solid var(--tv-btn);color:var(--tv-btn)}
 .tv-tf[aria-pressed="true"]{background:var(--tv-btn);color:var(--tv-btn-txt)}
@@ -190,11 +195,11 @@ dl{margin:0;display:grid;gap:8px}
 <script id="tema-inicial">try{var t=localStorage.getItem("tema");if(t==="claro"||(!t&&!matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-tema","claro")}catch(e){}</script>
 <body>
 <div class="pagina">
-<header class="topo"><h1>Monitor <b>USD/BRL</b></h1><div class="carimbo"><time datetime="2026-09-13T02:20:00Z">2026-09-13 02:20 UTC</time><span class="idade" id="idade" data-ts="2026-09-13T02:20:00Z"></span><button type="button" class="btn-tema" id="btn-tema" aria-pressed="true" title="Alternar night mode" aria-label="Alternar night mode"><svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div></header>
+<header class="topo"><h1>Monitor <b>USD/BRL</b></h1><div class="carimbo"><time datetime="2026-09-13T02:23:00Z">2026-09-13 02:23 UTC</time><span class="idade" id="idade" data-ts="2026-09-13T02:23:00Z"></span><button type="button" class="btn-tema" id="btn-tema" aria-pressed="true" title="Alternar night mode" aria-label="Alternar night mode"><svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></div></header>
 <section class="leituras"><h2>Contexto</h2><div class="leitura" data-par="USDT/BRL"><span class="lp">USDT/BRL</span><div class="lh acumular"><span class="lt">longo</span><span class="lr">barato ante a média longa</span><button type="button" class="aj" aria-describedby="aj-usdt-longo" aria-label="O que significa: barato ante a média longa">?</button><span class="ajt" id="aj-usdt-longo" role="tooltip">O fechamento está bem abaixo da média das últimas 89 semanas, e nada indica queda em andamento.</span><span class="lz">dentro da faixa manual de 5,17 a 5,22, bem abaixo da média longa (−2,9%), momentum normal, sem tendência firme</span></div><div class="lh atencao"><span class="lt">curto</span><span class="lr">reteste em curso</span><button type="button" class="aj" aria-describedby="aj-usdt-curto" aria-label="O que significa: reteste em curso">?</button><span class="ajt" id="aj-usdt-curto" role="tooltip">O preço passou de uma faixa manual e voltou para testá-la. Ainda não dá para dizer se ela segura.</span><span class="lz">suporte de 5,15, 0,2% abaixo da média diária</span></div></div><p class="nota"><b>Longo</b> compara o fechamento semanal com a média das últimas 89 semanas. <b>Curto</b> diz o que aconteceu no fechamento diário, o timeframe de timing, calibrado para 1 a 6 semanas e não para o dia. Perto e longe levam em conta o quanto cada par oscila; amarelo quer dizer <b>vale olhar</b>, não bom nem ruim. Não é recomendação.</p></section>
 <section class="pares"><article class="par" data-par="USDT/BRL"><header><h2>USDT/BRL</h2><div class="preco">5,1507</div></header><div class="tfs"><div class="tf"><h3>Diário</h3><dl><div class="m"><dt>Último fechamento</dt><dd class="">5,1438<small>2026-09-12</small></dd></div><div class="m"><dt>EMA89 (fechado)</dt><dd class="baixa">abaixo<small>0,20%</small></dd></div><div class="m"><dt>RSI(21)</dt><dd class="">47,9</dd></div><div class="m"><dt>ADX / DI (28/42)</dt><dd class="baixa">10,8<small>+18,3 / −24,5</small></dd></div><div class="m"><dt>Estrutura</dt><dd class="baixa">baixa</dd></div><div class="m"><dt>Níveis manuais</dt><dd class="alta">atual<small>regiao_suporte_5_12_5_16</small></dd></div></dl><div class="chips"><span class="chip">regiao_suporte_5_12_5_16</span><span class="chip">perda_suporte_confirmada_fraca_5_15</span><span class="chip">adx_subindo_com_di_minus_dominante</span><span class="chip risco">estrutura_de_baixa</span><span class="chip risco">di_minus_dominante_com_estrutura_nao_altista</span></div></div><div class="tf"><h3>Semanal</h3><dl><div class="m"><dt>Último fechamento</dt><dd class="">5,1713<small>2026-08-31</small></dd></div><div class="m"><dt>EMA89 (fechado)</dt><dd class="baixa">abaixo<small>2,86%</small></dd></div><div class="m"><dt>RSI(14)</dt><dd class="">49,6</dd></div><div class="m"><dt>ADX / DI (14/21)</dt><dd class="alta">14,1<small>+18,3 / −16,8</small></dd></div><div class="m"><dt>Estrutura</dt><dd class="fraco">lateral_contracao</dd></div><div class="m"><dt>Níveis manuais</dt><dd class="alta">atual<small>faixa_5_17_5_22</small></dd></div></dl><div class="chips"><span class="chip">regiao_suporte_5_12_5_16</span><span class="chip">toque_suporte_intradiario_5_15</span><span class="chip">novo_HL_apos_fundo_mais_baixo</span><span class="chip">topo_mais_baixo_apos_HH</span></div></div></div><div class="grafico"><div class="tv-barra" role="group" aria-label="Timeframe do gráfico"><button type="button" class="tv-tf" data-tf="D" aria-pressed="true">Diário</button><button type="button" class="tv-tf" data-tf="W" aria-pressed="false">Semanal</button></div><div class="tv" id="tv-usdt"><span class="tv-off">Gráfico indisponível — abra em <a href="https://www.tradingview.com/chart/?symbol=BINANCE%3AUSDTBRL" target="_blank" rel="noopener">BINANCE:USDTBRL</a>.</span></div><p>Série da Binance (BINANCE:USDTBRL) desenhada pelo TradingView — a mesma fonte primária do relatório acima.</p></div></article></section>
 <section class="relatorio"><h2>Relatório completo</h2>
-<pre>timestamp: 2026-09-13 02:20 UTC
+<pre>timestamp: 2026-09-13 02:23 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -263,17 +268,17 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.098
+fracao_periodo_decorrida: 0.100
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 5091075.9000
+volume_atual: 5105059.4000
 volume_ultima_fechada: 19228669.6000
 volume_media20: 56828565.9400
 volume_vs_media_pct: -66.16
 volume_referencia: ultima_vela_fechada
 volume_classificacao: contracao_forte
 volume_tendencia_3_fechadas: decrescente
-trades_vela_atual: 3072
+trades_vela_atual: 3105
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -311,8 +316,8 @@ padrao_em_formacao: nenhum
 alertas_tecnicos: regiao_suporte_5_12_5_16, perda_suporte_confirmada_fraca_5_15, adx_subindo_com_di_minus_dominante
 
 zonas_automaticas_total: 6
-zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=83 estrutural=5.194800-5.220000 operacional=5.192333-5.222198 centro=5.207266 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.09 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=59 estrutural=5.237379-5.265921 operacional=5.234760-5.264624 centro=5.249692 toques=7 rejeicoes=5 role_reversal=nao dist_pct=-1.89 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=83 estrutural=5.194800-5.220000 operacional=5.192374-5.222238 centro=5.207306 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-1.09 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=59 estrutural=5.237379-5.265921 operacional=5.235347-5.265212 centro=5.250279 toques=7 rejeicoes=5 role_reversal=nao dist_pct=-1.90 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 zona_auto_3: id=usdt|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.275500-5.344800 operacional=5.295218-5.325082 centro=5.310150 toques=13 rejeicoes=11 role_reversal=sim dist_pct=-3.00 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=em_teste score=85 estrutural=5.122000-5.161000 operacional=5.126568-5.156432 centro=5.141500 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.18 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_5: id=usdt|diario|z3 tipo=suporte status=enfraquecida estado=acima score=74 estrutural=5.039600-5.087600 operacional=5.048668-5.078532 centro=5.063600 toques=3 rejeicoes=2 role_reversal=sim dist_pct=1.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
@@ -493,14 +498,14 @@ zonas_candidatas_a_faixa: nenhuma
 fracao_periodo_decorrida: 0.871
 vela_atual_em_formacao: sim
 volume_parcial: sim
-volume_atual: 370802471.6000
+volume_atual: 370816455.1000
 volume_ultima_fechada: 433041368.0000
 volume_media20: 408937080.8550
 volume_vs_media_pct: 5.89
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 244511
+trades_vela_atual: 244544
 volume_semana_dias_fechados: 6
 volume_semana_soma_dias_fechados: 365711395.7000
 volume_semanas_anteriores_mesmos_dias_media: 381564398.8625
