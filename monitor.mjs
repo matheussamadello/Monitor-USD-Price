@@ -157,8 +157,10 @@ export function serieParaTrilho(d) {
     time: t,
     close: d.closes[i],
     volume: d.volumes[i],
+    fechada: true,
   }));
-  linhas.push({ time: d.live.time, close: d.live.close, volume: d.live.volume });
+  if (d.emFormacao !== false)
+    linhas.push({ time: d.live.time, close: d.live.close, volume: d.live.volume, fechada: false });
   return linhas;
 }
 
@@ -220,7 +222,7 @@ export function calcularTrilho(usdt, usd) {
   // de dias INTEIROS daria um "volume 100x abaixo da mediana" que so
   // significa que o dia mal comecou. Entao a referencia e' a ultima
   // vela FECHADA, e a mediana exclui a que esta em formacao.
-  const fechadas = usdt.slice(0, -1);
+  const fechadas = usdt.filter((l, i) => l.fechada ?? (i < usdt.length - 1));
   const ultimaFechada = fechadas[fechadas.length - 1] || null;
   const vols = fechadas
     .slice(-30)
@@ -611,7 +613,10 @@ export function inicioSemana(epochSeconds) {
   return epochSeconds - desde;
 }
 
-function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
+function montarSerie(linhas, {
+  temVolume = false, periodo = 86400, ignorarSemAmplitude = false,
+  fimPeriodo = (r) => r.time + periodo,
+} = {}) {
   // Uma entrada por instante, a ultima vence: o Yahoo repete a vela do
   // dia corrente a cada chamada e o Stooq pode repetir a borda.
   //
@@ -625,26 +630,17 @@ function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
   //
   // No semanal a chave passa a ser a segunda-feira da semana, e pedacos
   // da mesma semana se fundem: abertura do primeiro, extremos do
-  // conjunto, fechamento do ultimo. E' o unico calendario embutido
-  // aqui, e e' o das tres fontes deste monitor -- para barra que ja vem
+  // conjunto, fechamento do ultimo. A ancoragem e' compartilhada
+  // pelas tres fontes deste monitor -- para barra que ja vem
   // ancorada na segunda (Binance, MB) a chave e' identidade e nada muda.
   const chave = periodo === SEMANA ? inicioSemana : (t) => t;
   const porTempo = new Map();
   for (const l of linhas) {
     if (![l.open, l.high, l.low, l.close].every((v) => Number.isFinite(v))) continue;
-    // VELA-FANTASMA. Fora do pregao — fim de semana, feriado — o Yahoo
-    // acrescenta uma vela carimbada AGORA com o ultimo preco repetido
-    // nas quatro pontas, amplitude zero. Nao e' sessao: entrando na
-    // serie, ela vira a "vela em formacao" de sabado, faz o relatorio
-    // publicar um preco que nao fechou em lugar nenhum e diz
-    // vela_atual_em_formacao: sim com o mercado fechado.
-    //
-    // Amplitude zero e' o criterio porque nao depende de calendario:
-    // pega feriado e meio-pregao do mesmo jeito, sem embutir o
-    // calendario de nenhuma praca. Um dia inteiro de USD/BRL ou de
-    // USDT/BRL sem UM pip de variacao nao existe, entao nao ha vela
-    // legitima sendo descartada aqui.
-    if (l.high === l.low) continue;
+    // O Yahoo pode repetir o ultimo preco fora do pregao. Esta
+    // heuristica e' exclusiva dele: uma kline cripto recem-aberta pode
+    // legitimamente ter amplitude zero e continua em formacao.
+    if (ignorarSemAmplitude && l.high === l.low) continue;
     const k = chave(l.time);
     const ant = porTempo.get(k);
     if (!ant || ant.carimbo === l.time) {
@@ -661,6 +657,7 @@ function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
         close: ultimo.close,
         volume: (ant.volume || 0) + (l.volume || 0),
         trades: (ant.trades || 0) + (l.trades || 0),
+        fim: Math.max(ant.fim || 0, l.fim || 0),
       });
     }
   }
@@ -671,7 +668,11 @@ function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
     throw new Error("velas insuficientes para calcular os indicadores");
   }
   const liveRow = rows[rows.length - 1];
-  const closed = rows.slice(0, -1);
+  const fim = liveRow.fim > liveRow.time ? liveRow.fim : fimPeriodo(liveRow);
+  const emFormacao = Date.now() / 1000 < fim;
+  // live significa ultima cotacao disponivel. Fora do pregao ela JA
+  // esta nas fechadas e nao pode ser anexada novamente aos indicadores.
+  const closed = emFormacao ? rows.slice(0, -1) : rows;
   // VOLUME. Quem decide e' a provedora, nao este arquivo. O cambio a
   // vista e' balcao e nao tem tape consolidado publico: as fontes de
   // USD/BRL ou mandam zero ou nao mandam o campo, e temVolume: false e'
@@ -681,6 +682,7 @@ function montarSerie(linhas, { temVolume = false, periodo = null } = {}) {
   // com livro e tape: ali o volume e' real e entra na analise.
   return {
     temVolume,
+    emFormacao,
     live: {
       time: liveRow.time,
       open: liveRow.open,
@@ -720,7 +722,27 @@ export function parseYahoo(texto, tf) {
       close: Number(q.close && q.close[i]),
     });
   }
-  return montarSerie(linhas, { periodo: tf && tf.segundos });
+  const periodo = tf?.segundos || 86400;
+  const sessao = r.meta?.currentTradingPeriod?.regular;
+  return montarSerie(linhas, {
+    periodo,
+    ignorarSemAmplitude: true,
+    fimPeriodo: (row) => {
+      // O fim publicado pela fonte vale apenas para a sessao desta
+      // vela. No semanal, fechar a quinta nao fecha a semana inteira.
+      if (Number.isFinite(sessao?.start) && Number.isFinite(sessao?.end)) {
+        const diaSessao = ancorarDia(sessao.start, off);
+        const corresponde = periodo === SEMANA
+          ? inicioSemana(diaSessao) === row.time && new Date(diaSessao * 1000).getUTCDay() === 5
+          : diaSessao === row.time;
+        if (corresponde && sessao.end > sessao.start) return sessao.end;
+      }
+      // Sem metadado aplicavel, espera o fim do dia local; no semanal
+      // de cambio, a virada de sexta para sabado. Nao inventa feriados
+      // nem uma vela durante o fechamento do mercado.
+      return row.time + (periodo === SEMANA ? 5 * 86400 : periodo) - off;
+    },
+  });
 }
 
 export function parseBinance(texto, tf) {
@@ -737,8 +759,9 @@ export function parseBinance(texto, tf) {
       close: Number(x[4]),
       volume: Number(x[5]),
       trades: Number(x[8]),
+      fim: Math.floor(Number(x[6]) / 1000) + 1,
     })),
-    { temVolume: true, periodo: tf && tf.segundos }
+    { temVolume: true, periodo: tf?.segundos || 86400 }
   );
 }
 
@@ -754,7 +777,7 @@ export function parseMercadoBitcoin(texto, tf) {
       close: Number(j.c[i]),
       volume: Number(j.v[i]),
     })),
-    { temVolume: true, periodo: tf && tf.segundos }
+    { temVolume: true, periodo: tf?.segundos || 86400 }
   );
 }
 
@@ -1456,7 +1479,7 @@ export function alertasTecnicos(cfg, d, ind) {
           ? `rompimento_confirmado_${nv.resistenciaLabel}`
           : `rompimento_confirmado_fraco_${nv.resistenciaLabel}`
       );
-    } else if (d.live.high > R || p > R) {
+    } else if (d.emFormacao !== false && (d.live.high > R || p > R)) {
       a.push(`rompimento_intradiario_${nv.resistenciaLabel}`);
     }
   }
@@ -1474,7 +1497,7 @@ export function alertasTecnicos(cfg, d, ind) {
           ? `perda_suporte_confirmada_${nv.suporteLabel}`
           : `perda_suporte_confirmada_fraca_${nv.suporteLabel}`
       );
-    } else if (d.live.low < S || p < S)
+    } else if (d.emFormacao !== false && (d.live.low < S || p < S))
       a.push(`toque_suporte_intradiario_${nv.suporteLabel}`);
   }
 
@@ -1504,14 +1527,14 @@ export function alertasTecnicos(cfg, d, ind) {
   // --- volume como CONFIRMACAO, nunca sozinho ---
   const vol = ind.volume;
   const houveRompimento = a.some((x) => x.startsWith("rompimento_"));
-  const houvePerda = a.some((x) => x.startsWith("perda_suporte_") || x.startsWith("toque_suporte_"));
-  // Nao ha mais o que suprimir por vela parcial: vol.vsMediaPct compara
-  // vela FECHADA com media de velas fechadas, entao vale a qualquer hora
-  // em que a execucao rode.
+  const rompimentoFechado = a.some((x) => x.startsWith("rompimento_confirmado_"));
+  const perdaFechada = a.some((x) => x.startsWith("perda_suporte_confirmada_"));
+  // Este volume pertence a ultima FECHADA: confirma apenas um evento
+  // daquela mesma vela, nunca a maxima/minima da barra em formacao.
   if (vol && vol.vsMediaPct !== null) {
-    if (houveRompimento && vol.vsMediaPct >= 20) a.push("rompimento_com_volume_acima_da_media");
-    if (houveRompimento && vol.vsMediaPct <= -20) a.push("rompimento_com_volume_fraco");
-    if (houvePerda && vol.vsMediaPct >= 50) a.push("queda_com_expansao_de_volume");
+    if (rompimentoFechado && vol.vsMediaPct >= 20) a.push("rompimento_com_volume_acima_da_media");
+    if (rompimentoFechado && vol.vsMediaPct <= -20) a.push("rompimento_com_volume_fraco");
+    if (perdaFechada && vol.vsMediaPct >= 50) a.push("queda_com_expansao_de_volume");
   }
   if (
     vol &&
@@ -1592,6 +1615,13 @@ export function chaveNivel(parKey, tfKey, nivel) {
 // Devolve o novo registro (ou null para descartar).
 export function atualizarEstadoNivel(anterior, ctx) {
   const { nivel, direcao, vela, tolAtr, resetAtr, atr, maxCandles, segundos } = ctx;
+  // Uma transicao por vela fechada. Reexecucao, retry ou resposta antiga
+  // nao transformam a sombra do proprio rompimento em reteste posterior.
+  // Correcao da fonte sobre a mesma barra nao reescreve o ciclo ja emitido.
+  if (anterior && Number.isFinite(anterior.atualizado) && vela.time <= anterior.atualizado) {
+    return { ...anterior, historico: [...(anterior.historico || [])],
+      ...(anterior.mudancasNaVela ? { mudancasNaVela: [...anterior.mudancasNaVela] } : {}) };
+  }
   const temAtr = atr > 0;
   const tol = temAtr
     ? atr * tolAtr
@@ -1635,6 +1665,7 @@ export function atualizarEstadoNivel(anterior, ctx) {
       dataRompimento: vela.time,
       ultimoContato: vela.time,
       atualizado: vela.time,
+      afastado: Math.abs(vela.close - nivel) > limiteReset,
       historico: [],
     };
   }
@@ -1863,7 +1894,9 @@ function volumeSemanaEquivalente(dadosSemanal, dadosDiario, semanasAtras = 8) {
   if (k < 1) return null;
   const somaAtual = diasAtuais.reduce((a, b) => a + b, 0);
 
-  const inicios = dadosSemanal.times.slice(-semanasAtras);
+  // Se a ultima semana ja fechou, ela tambem esta em times. A base de
+  // comparacao continua sendo exclusivamente as semanas ANTERIORES.
+  const inicios = dadosSemanal.times.filter((t) => t < inicioSemana).slice(-semanasAtras);
   const somas = [];
   for (const ini of inicios) {
     const dias = [];
@@ -1925,6 +1958,14 @@ export function sinteses(ctx) {
   } = ctx;
 
   const tem = (p) => alertas.some((x) => x.startsWith(p));
+  // Strings legadas nao informam direcao: podem dar contexto neutro,
+  // mas nunca confirmar entrada ou deterioracao direcional.
+  const niveis = (estadosNivel || []).map((n) =>
+    typeof n === "string" ? { estado: n, direcao: null } : n
+  ).filter(Boolean);
+  const temNivel = (estado, direcao = null) => niveis.some((n) =>
+    n.estado === estado && (direcao === null || n.direcao === direcao)
+  );
   const entrada = [];
   const pullback = [];
   const riscos = [];
@@ -1936,7 +1977,7 @@ export function sinteses(ctx) {
   // par, entao "existe forte e nao existe fraca" e' exato.
   if (tem("rompimento_confirmado") && !tem("rompimento_confirmado_fraco"))
     entrada.push("rompimento_confirmado_por_fechamento");
-  if (estadosNivel.includes("reteste_confirmado")) entrada.push("reteste_confirmado");
+  if (temNivel("reteste_confirmado", "alta")) entrada.push("reteste_confirmado");
   if (alertas.includes("rompimento_com_volume_acima_da_media"))
     entrada.push("volume_acima_da_media_no_rompimento");
   if (estrutura.tendencia === "alta") entrada.push("estrutura_de_alta_preservada");
@@ -1945,7 +1986,7 @@ export function sinteses(ctx) {
 
   // --- confluencia de pullback ---
   if (estrutura.tendencia === "alta") pullback.push("tendencia_hh_hl_preservada");
-  if (estadosNivel.includes("em_reteste")) pullback.push("em_reteste_de_nivel");
+  if (temNivel("em_reteste", "alta")) pullback.push("em_reteste_de_nivel");
   if (estruturaEventos.includes("novo_HL_apos_fundo_mais_baixo"))
     pullback.push("novo_HL_formado");
   if (rsiFech !== null && rsiAnt !== null && rsiFech < rsiAnt && rsiFech > 40)
@@ -1965,13 +2006,13 @@ export function sinteses(ctx) {
   if (tem("toque_suporte") || tem("perda_suporte")) riscos.push("suporte_sob_pressao");
   if (alertas.includes("queda_com_expansao_de_volume"))
     riscos.push("volume_expandindo_na_queda");
-  if (estadosNivel.includes("em_reteste")) riscos.push("nivel_em_teste");
+  if (temNivel("em_reteste")) riscos.push("nivel_em_teste");
 
   // --- deterioracao de tendencia (so o estrutural) ---
   if (estruturaEventos.includes("perda_estrutura_alta_novo_LL"))
     deterioracao.push("perda_estrutura_alta_novo_LL");
   if (estrutura.tendencia === "baixa") deterioracao.push("estrutura_de_baixa");
-  if (estadosNivel.includes("rompimento_falhou")) deterioracao.push("rompimento_falhou");
+  if (temNivel("rompimento_falhou", "alta")) deterioracao.push("rompimento_falhou");
   if (tem("perda_suporte_confirmada") && !tem("perda_suporte_confirmada_fraca"))
     deterioracao.push("perda_de_suporte_confirmada");
   if (
@@ -2767,7 +2808,9 @@ export function calcularZonas(cfg, tf, d, ctx) {
   }
 
   // casamento com as zonas anteriores (identidade estavel)
-  const pares = casarZonas(anteriores, zonas, atrAtual);
+  const pares = casarZonas(anteriores.filter((z) =>
+    z.status !== "remover" || z.ultimaVelaAvaliada === ultimaVelaFechada
+  ), zonas, atrAtual);
   const mapaAnt = new Map(pares.map((p) => [p.nova, p]));
   let proximoId = ctx.proximoId || 1;
 
@@ -2775,8 +2818,12 @@ export function calcularZonas(cfg, tf, d, ctx) {
     const par = mapaAnt.get(z);
     if (par) {
       z.id = par.ant.id;
-      // suaviza o centro para o valor nao oscilar a cada vela
-      z.centro = SUAVIZA_CENTRO * par.ant.centro + (1 - SUAVIZA_CENTRO) * z.centro;
+      // Suaviza UMA vez por vela nova, nao a cada retry do workflow.
+      // Na mesma barra o centro fica fixo; preco vivo ainda pode mudar
+      // estado_atual e distancia, que sao explicitamente contextuais.
+      z.centro = par.ant.ultimaVelaAvaliada === ultimaVelaFechada
+        ? par.ant.centro
+        : SUAVIZA_CENTRO * par.ant.centro + (1 - SUAVIZA_CENTRO) * z.centro;
       z.limites_operacionais = limitesOperacionais(z.centro, atrAtual);
       z.role_reversal = z.role_reversal || par.ant.role_reversal || par.trocouTipo;
       z.cruzamento_confirmado = par.ant.cruzamento_confirmado || false;
@@ -2949,9 +2996,12 @@ export function calcularZonas(cfg, tf, d, ctx) {
   // do ciclo de vida, nunca de um corte silencioso.
   // A marca de dormente nao existe em zona calculada, entao so entra
   // no estado: o relatorio publicado continua com os mesmos campos.
-  const estado = vivas.map((z) =>
-    z.absorvida ? { ...limparZona(z), absorvida: true } : limparZona(z)
-  );
+  // Guarda a remocao ate a proxima vela. Sem esta ficha, o mesmo
+  // cluster seria recriado com outro ID no retry imediatamente seguinte.
+  // Fichas removidas nunca sao publicadas nem contam como confluencia.
+  const estado = zonas.filter((z) =>
+    z.status !== "remover" || z.ultimaVelaAvaliada === ultimaVelaFechada
+  ).map((z) => z.absorvida ? { ...limparZona(z), absorvida: true } : limparZona(z));
 
   // Dormente nao e' publicada: a regiao dela ja esta na tela, na zona
   // calculada que a cobre. Publicar as duas seria a mesma regiao duas
@@ -3092,9 +3142,9 @@ function readPair(cfg, d, tf, opts = {}) {
   const j = i - 1;
 
   // --- indicadores PROVISORIOS (incluindo a vela em formacao) ---
-  const closesP = closes.concat([live.close]);
-  const highsP = highs.concat([live.high]);
-  const lowsP = lows.concat([live.low]);
+  const closesP = d.emFormacao === false ? closes : closes.concat([live.close]);
+  const highsP = d.emFormacao === false ? highs : highs.concat([live.high]);
+  const lowsP = d.emFormacao === false ? lows : lows.concat([live.low]);
   const rsiP = rsiSeries(closesP, tf.rsi.length);
   const dmiP = dmiSeries(highsP, lowsP, closesP, tf.dmi.diLen, tf.dmi.adxLen);
   const k = closesP.length - 1;
@@ -3121,7 +3171,7 @@ function readPair(cfg, d, tf, opts = {}) {
   const ult = velasFechadas(d, 3);
   const medCorpo = medianaCorpos(opens, closes, 20);
   const padroes = detectarPadroes(ult, medCorpo);
-  const formacao = padraoEmFormacao(ult, live, medCorpo);
+  const formacao = d.emFormacao === false ? [] : padraoEmFormacao(ult, live, medCorpo);
 
 
   // --- pivos, estrutura, divergencias e volume (SO velas fechadas) ---
@@ -3129,7 +3179,7 @@ function readPair(cfg, d, tf, opts = {}) {
   const estrutura = classificarEstrutura(highs, lows, pivos);
   const estruturaEventos = mudancaEstrutura(highs, lows, pivos);
   const divergencias = detectarDivergencias(highs, lows, rsi, pivos);
-  const divProvisorias = divergenciaProvisoria(
+  const divProvisorias = d.emFormacao === false ? [] : divergenciaProvisoria(
     highs,
     lows,
     rsi,
@@ -3191,11 +3241,22 @@ function readPair(cfg, d, tf, opts = {}) {
       maxCandles: tf.retestMaxCandles,
       segundos: tf.segundos,
     });
-    if (depois) estadoNovo[chave] = depois;
-    if (depois && antes && depois.estado !== antes.estado)
-      mudancasNivel.push(`${depois.estado}_${nv.label}`);
-    if (depois && !antes && depois.estado === "rompido")
-      mudancasNivel.push(`rompido_${nv.label}`);
+    if (depois) {
+      const velaNova = !antes || !Number.isFinite(antes.atualizado) ||
+        velaFechada.time > antes.atualizado;
+      if (velaNova) {
+        depois.mudancasNaVela = [];
+        if (antes && depois.estado !== antes.estado)
+          depois.mudancasNaVela.push(`${depois.estado}_${nv.label}`);
+        if (!antes && depois.estado === "rompido")
+          depois.mudancasNaVela.push(`rompido_${nv.label}`);
+      }
+      estadoNovo[chave] = depois;
+      // O evento pertence a esta VELA, nao apenas a primeira execucao.
+      // O consumidor deduplica por par/timeframe/vela/nivel/tipo.
+      if (depois.atualizado === velaFechada.time)
+        mudancasNivel.push(...(depois.mudancasNaVela || []));
+    }
 
     linhasNivel.push(
       `nivel_${nv.label}_estado: ${depois ? depois.estado : "sem_registro"}`
@@ -3224,7 +3285,7 @@ function readPair(cfg, d, tf, opts = {}) {
 
   // ---- volume parcial ----
   const fracao = fracaoPeriodo(live, tf.segundos);
-  const parcial = fracao !== null && fracao < 0.98;
+  const parcial = d.emFormacao !== false;
   const volSemana =
     tf.key === "semanal" ? volumeSemanaEquivalente(d, opts.dadosDiario) : null;
 
@@ -3265,7 +3326,9 @@ function readPair(cfg, d, tf, opts = {}) {
   const zonasAutomaticas = zonasRes.zonas;
   const zonasEstadoPar = zonasRes.zonasEstado || [];
 
-  const estadosNivel = Object.values(estadoNovo).map((x) => x.estado);
+  // Preserva a direcao: a falha de uma perda de suporte nao e' a falha
+  // de um rompimento de resistencia.
+  const estadosNivel = Object.values(estadoNovo);
   const sint = sinteses({
     alertas,
     estrutura,

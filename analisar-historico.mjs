@@ -55,7 +55,14 @@ function retorno(par, tf, vela, atr) {
 // chave: XMR/USD e XMR/BTC, por exemplo, sao mercados diferentes e nao
 // podem compartilhar a mesma amostra so porque publicaram o mesmo nome.
 const balde = new Map();
-const anota = (nome, par, tf, r) => {
+const observacoes = new Set();
+const anota = (nome, par, tf, vela, r) => {
+  // O arquivo guarda snapshots, mas a amostra e' a condicao por VELA.
+  // A referencia tambem conta uma unica vez por vela, independentemente
+  // de quantas condicoes intradiarias mudaram ou de quantos retries houve.
+  const observacao = JSON.stringify([par, tf, vela, nome]);
+  if (observacoes.has(observacao)) return;
+  observacoes.add(observacao);
   const k = `${par} | ${tf} | ${nome}`;
   if (!balde.has(k)) balde.set(k, []);
   balde.get(k).push(r);
@@ -64,14 +71,14 @@ let semFuturo = 0;
 for (const e of entradas) {
   const r = retorno(e.par, e.tf, e.vela, e.atr);
   if (r === null) { semFuturo++; continue; }
-  for (const a of e.alertas) anota(`alerta:${a}`, e.par, e.tf, r);
-  for (const a of e.deterioracao) anota(`deterioracao:${a}`, e.par, e.tf, r);
-  for (const a of e.conf_entrada) anota(`conf_entrada:${a}`, e.par, e.tf, r);
-  for (const a of e.conf_pullback) anota(`conf_pullback:${a}`, e.par, e.tf, r);
-  for (const a of e.niveis_mud) anota(`nivel:${a}`, e.par, e.tf, r);
-  if (e.estrutura) anota(`estrutura=${e.estrutura}`, e.par, e.tf, r);
-  if (e.ema89_cruz && e.ema89_cruz !== "nenhum") anota(`ema89_cruzou=${e.ema89_cruz}`, e.par, e.tf, r);
-  anota("TODAS AS VELAS (referencia)", e.par, e.tf, r);
+  for (const a of e.alertas) anota(`alerta:${a}`, e.par, e.tf, e.vela, r);
+  for (const a of e.deterioracao) anota(`deterioracao:${a}`, e.par, e.tf, e.vela, r);
+  for (const a of e.conf_entrada) anota(`conf_entrada:${a}`, e.par, e.tf, e.vela, r);
+  for (const a of e.conf_pullback) anota(`conf_pullback:${a}`, e.par, e.tf, e.vela, r);
+  for (const a of e.niveis_mud) anota(`nivel:${a}`, e.par, e.tf, e.vela, r);
+  if (e.estrutura) anota(`estrutura=${e.estrutura}`, e.par, e.tf, e.vela, r);
+  if (e.ema89_cruz && e.ema89_cruz !== "nenhum") anota(`ema89_cruzou=${e.ema89_cruz}`, e.par, e.tf, e.vela, r);
+  anota("TODAS AS VELAS (referencia)", e.par, e.tf, e.vela, r);
 }
 
 const mediana = (xs) => {
@@ -82,6 +89,7 @@ const mediana = (xs) => {
 
 console.log(`Historico: ${entradas.length} entradas, ${ordenadas.size} series.`);
 console.log(`Horizonte: ${HORIZONTE} velas fechadas. Retorno em ATR da vela do sinal.`);
+console.log("Amostras unicas por par, timeframe, vela e condicao; snapshots repetidos nao aumentam n.");
 console.log(`Sem futuro suficiente para medir: ${semFuturo} entradas.\n`);
 
 // Agora ha uma referencia independente por par e timeframe. Basta que

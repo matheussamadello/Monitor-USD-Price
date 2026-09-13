@@ -7,6 +7,11 @@ import {
   registrarHistorico, entradaHistorico, assinaturaHistorico, leituraLonga, leituraCurta, EXPLICACOES, reconciliarAnteriores, atualizarCiclo, forcaTendencia, ondeNosNiveis, zonasCandidatas,
 } from "./monitor.mjs";
 
+// As fixtures que alteram a ultima vela exigem um pregao em andamento.
+// Os cenarios de mercado fechado ficam em teste-regressoes.mjs.
+const relogioOriginal = Date.now;
+Date.now = () => Date.parse("2026-09-10T12:00:00Z");
+
 const DIA = 86400;
 let seed = 42;
 const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -1654,6 +1659,9 @@ ok(!/NaN|undefined/.test(r2.texto), "segunda execucao le o estado anterior sem q
 console.log("\n== ancoragem de fuso ==");
 ok(ancorarDia(1756425600, 0) === 1756425600, "meia-noite UTC continua na propria data");
 ok(ancorarDia(1756436400, -10800) === 1756425600, "carimbo em fuso -03 cai na data local, nao no dia seguinte");
+
+Date.now = relogioOriginal;
+await import("./teste-regressoes.mjs");
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\ntudo passou");
 process.exit(falhas ? 1 : 0);

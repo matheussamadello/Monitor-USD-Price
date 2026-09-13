@@ -80,7 +80,8 @@ O mesmo vale, em graus diferentes, para as outras fontes que o TradingView exibe
 
 O câmbio à vista não negocia sábado e domingo, e os dois monitores anteriores nunca precisaram lidar com isso — cripto negocia todo dia. Aqui há duas consequências práticas:
 
-- Fora do pregão, a "vela atual" já é uma vela fechada. A linha `vela_atual_em_formacao: nao` é o que separa os dois casos para quem lê só o JSON.
+- Depois do encerramento, a última cotação disponível também pertence à série fechada: a sexta-feira entra nos indicadores durante o fim de semana. `vela_atual_em_formacao: nao` identifica esse caso. Os campos provisórios repetem os indicadores fechados, sem anexar a mesma vela duas vezes; não são gerados padrões, divergências ou toques intradiários de uma vela inexistente.
+- No Yahoo, o encerramento usa `currentTradingPeriod.regular.end` quando o metadado corresponde à vela. Para fechar a semana, exige uma sessão de sexta-feira. Sem metadado aplicável, espera conservadoramente a virada do dia no fuso informado pela fonte, ou de sexta para sábado no semanal. Sem calendário de feriados, um encerramento antecipado pode ser reconhecido apenas nessa virada. Binance usa `closeTime`; Mercado Bitcoin usa o limite do período de 24 horas/7 dias. A semana cripto continua em formação no domingo.
 - `retestMaxCandles` conta **dias corridos**, não pregões. Os 30 do diário valem cerca de 21 velas diárias reais.
 
 ### A vela-fantasma
@@ -89,7 +90,7 @@ Fora do pregão o Yahoo não simplesmente para de mandar velas: ele **acrescenta
 
 Isso apareceu na primeira execução real, num sábado. Se a vela entra na série, ela vira a "vela em formação" do sábado, o relatório publica como `preco_atual` um número que não fechou em lugar nenhum, e `vela_atual_em_formacao` diz `sim` com o mercado fechado.
 
-O monitor descarta qualquer vela de **amplitude zero** (`high === low`). O critério é esse, e não o calendário, porque assim pega fim de semana, feriado e meio-pregão do mesmo jeito, sem precisar embutir o calendário de nenhuma praça. Um dia inteiro de USD/BRL sem um pip de variação não existe, então nenhuma vela legítima é descartada.
+O parser do Yahoo mantém o filtro de **amplitude zero** (`high === low`) para essas repetições. É uma heurística da fonte, não uma prova de que houve ou não pregão. O filtro não se aplica à Binance ou ao Mercado Bitcoin: uma vela cripto recém-aberta pode legitimamente estar plana. O fim da vela é verificado separadamente, como descrito acima.
 
 O **diário** é o timeframe principal para timing de pullbacks, rompimentos, retestes, perda/recuperação de níveis, candles e mudanças de momentum.
 
@@ -101,7 +102,7 @@ O Yahoo tem um segundo defeito de carimbo, só no semanal: a barra da semana **e
 
 Foi flagrado em 2026-09-10, quinta, com `ultimo_fechamento_data: 2026-09-07` no semanal e uma `candle_atual_data: 2026-09-10`. O histórico mostrou que vinha oscilando desde terça, e a máquina de estados já tinha registrado um rompimento semanal de 5,13 sobre um fechamento que não existiu.
 
-No semanal, `montarSerie` passou a agrupar as barras pela **segunda-feira da semana** (`inicioSemana`) e a fundir pedaços da mesma semana: abertura do primeiro, extremos do conjunto, fechamento do último. É o único calendário embutido no monitor, e é o das três fontes; para barra que já vem ancorada na segunda (Binance, Mercado Bitcoin) a chave é identidade e nada muda. O diário não é afetado. `fracao_periodo_decorrida` do semanal, que era medida a partir do carimbo errado, passa a ser medida da segunda.
+No semanal, `montarSerie` passou a agrupar as barras pela **segunda-feira da semana** (`inicioSemana`) e a fundir pedaços da mesma semana: abertura do primeiro, extremos do conjunto, fechamento do último. Essa ancoragem semanal é compartilhada pelas três fontes; para barra que já vem ancorada na segunda (Binance, Mercado Bitcoin) a chave é identidade e nada muda. O diário não é afetado. `fracao_periodo_decorrida` do semanal, que era medida a partir do carimbo errado, passa a ser medida da segunda.
 
 ## Trilho de execução (USDT/BRL)
 
@@ -1028,3 +1029,18 @@ São duas camadas separadas:
 - **`PROMPT_USD_TECHNICAL_WATCH.md`** define como uma LLM/agente deve interpretar snapshots sucessivos para decidir se existe uma mudança nova e material que merece uma mensagem.
 
 O prompt não é necessário para gerar `relatorio.json`; ele serve como camada externa de interpretação e notificação.
+
+## Consistência entre execuções e regressões
+
+O monitor pode rodar várias vezes sobre a mesma vela fechada. As regras abaixo evitam que a frequência de execução altere a leitura:
+
+- A máquina de níveis processa cada fechamento uma vez. Repetir a consulta não transforma a sombra do rompimento em um reteste posterior; respostas de velas anteriores também não regridem o estado.
+- `niveis_mudancas_nesta_vela` permanece disponível durante a mesma vela, inclusive após reiniciar o processo. O estado salva esses eventos em `mudancasNaVela`; consumidores deduplicam por par, timeframe, data da vela, nível e tipo de evento. Estados antigos continuam legíveis e não geram anúncios retroativos.
+- As sínteses consideram a direção do nível. Um reteste de uma perda de suporte não confirma entrada compradora; recuperar um suporte perdido não representa falha de um rompimento de alta.
+- O centro das zonas é suavizado uma vez por nova vela fechada. Uma ficha de remoção é mantida até a próxima vela para impedir que um retry recrie a zona com outro ID. Distância e posição em relação ao preço atual continuam podendo variar.
+- O volume da última vela fechada confirma apenas rompimentos ou perdas daquela mesma vela. Toques e rompimentos intradiários não recebem confirmação pelo volume do dia anterior.
+- `analisar-historico.mjs` conta uma observação por par, timeframe, vela e condição, incluindo a referência. Snapshots repetidos não aumentam a amostra; uma condição que aparece depois na mesma vela continua sendo registrada uma vez. Isso corrige a contagem, sem transformar a análise descritiva em backtest de execução.
+
+Execute `node teste-fumaca.mjs` para rodar a suíte existente e as regressões de `teste-regressoes.mjs`, sem rede. Para executar somente as reproduções dos defeitos, use `node teste-regressoes.mjs`. O workflow existente já roda o teste de fumaça antes de gerar o relatório.
+
+As correções preservam períodos dos indicadores, tolerâncias e níveis manuais. O estado histórico não é reescrito: transições falsas já registradas precisam ser distinguidas das novas leituras, corrigidas pelo código.
