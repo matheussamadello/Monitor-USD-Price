@@ -758,19 +758,37 @@ A leitura confirmada vem pronta no relatório, calculada só com semanas fechada
 - `ema89_cruzamento_fechado` — `acima`, `abaixo` ou `nenhum`;
 - `distancia_ema89_fechada_atr` — distância entre o fechamento e a média, em ATR do próprio timeframe.
 
+O acompanhamento persistente acrescenta, somente no bloco semanal:
+
+- `ema89_semanal_estado`: `neutra`, `pendente`, `confirmada`, `cancelada` ou `indisponivel`;
+- `ema89_semanal_direcao`: direção do ciclo (`acima`/`abaixo`) ou `nenhuma`;
+- `ema89_semanal_cruzou_em`, `ema89_semanal_confirmada_em` e `ema89_semanal_cancelada_em`: datas das semanas correspondentes, quando existirem;
+- `ema89_semanal_confirmacao`: evento confirmado **nesta semana fechada**, ou `nenhum`;
+- `ema89_semanal_evento_id`: identidade da confirmação, incluindo par, direção e semanas de origem/confirmação. O monitor identifica o evento; a memória do agente registra se ele já foi enviado.
+
+`ema89_cruzamento_fechado` continua descrevendo apenas a mudança de lado entre dois fechamentos consecutivos. Ele pode ser `nenhum` numa confirmação posterior válida.
+
 **Só esses campos valem para os alertas abaixo.** Não reconstrua a comparação por conta própria.
 
 ### Condições comuns aos dois alertas macro
 
-1. `ema89_cruzamento_fechado` do bloco semanal é `acima` ou `abaixo` — nunca `nenhum`. Esse campo já compara a semana fechada anterior com a atual usando a EMA89 correspondente a cada uma. Cruzamento intrassemanal não entra nele.
-2. `distancia_ema89_fechada_atr` do bloco semanal é de pelo menos **0,25**. Sem essa margem, o preço apenas encostou na média, e o alerta alternaria toda semana.
-3. A travessia ainda não foi comunicada.
+1. `ema89_semanal_confirmacao` do bloco semanal é `acima` ou `abaixo`, com `ema89_semanal_evento_id` preenchido. Esse é o evento de confirmação calculado e persistido pelo monitor, tanto na semana da travessia quanto numa semana posterior.
+2. A confirmação exige **fechamento semanal** do lado da travessia, a pelo menos **0,25 ATR** da EMA89. O código aplica essa margem antes de arredondar o relatório; não reconstrua a decisão usando o valor arredondado de `distancia_ema89_fechada_atr`.
+3. Esse `ema89_semanal_evento_id` ainda não foi comunicado. Registre o identificador na memória de alertas enviados, por par, para deduplicar as consultas da mesma semana.
 
 Cumpridas as três, dispare — mesmo que nenhuma outra regra tenha disparado. Estes alertas **têm precedência sobre os alertas de mercado**: se um deles couber, ele ocupa a vaga estratégica da execução.
 
 ### Cruzou mas não confirmou
 
-Quando `ema89_cruzamento_fechado` for `acima` ou `abaixo` mas `distancia_ema89_fechada_atr` for **menor que 0,25**, o estado é **cruzou mas não confirmou**. Não é `nenhum` e não é alerta: é silêncio. Não invente um alerta intermediário nem antecipe o macro dizendo que "está prestes a". Se a semana seguinte fechar do lado novo com margem suficiente, o alerta dispara então.
+Quando `ema89_semanal_estado` for `pendente`, a travessia ainda aguarda a margem exigida. O monitor salva a direção e a semana de origem em `docs/estado.json`, separadamente para cada par. Reinícios e consultas repetidas não apagam a pendência. Não envie alerta intermediário nem antecipe o macro.
+
+A pendência continua enquanto os fechamentos permanecerem do lado novo. Na primeira semana posterior que fechar desse lado com margem de pelo menos **0,25 ATR**, `ema89_semanal_confirmacao` passa a indicar a direção, mesmo que `ema89_cruzamento_fechado` seja `nenhum`. **Não exija um novo cruzamento na semana da confirmação.**
+
+Se um fechamento semanal voltar ao lado anterior antes da confirmação, a pendência é cancelada: `ema89_semanal_estado` fica `cancelada`, sem evento macro. Esse retorno não confirma uma travessia oposta. Uma nova travessia posterior inicia outro ciclo. Movimentos intrassemanas não confirmam nem cancelam a pendência.
+
+Enquanto a vela de confirmação for a última semana fechada disponível, o evento permanece no relatório, com ID estável. Em semanas seguintes, `ema89_semanal_estado: confirmada` descreve o ciclo anterior, mas `ema89_semanal_confirmacao: nenhum` não autoriza outro alerta. Pendência e cancelamento também não geram alerta por si sós.
+
+Se os novos campos estiverem ausentes ou o estado for `indisponivel`, não infira uma confirmação macro a partir do cruzamento bruto. Na primeira execução sem estado, o monitor avalia apenas a última semana fechada; não anuncia confirmações históricas. Após indisponibilidade, processa as semanas novas em ordem quando há continuidade dos dados. Se uma semana estiver ausente, reinicia a referência sem presumir que a pendência sobreviveu ao intervalo.
 
 ### CONTEXTO MACRO ALTERADO — EMA89 SEMANAL PERDIDA NO FECHAMENTO
 
@@ -1067,7 +1085,7 @@ Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, ma
 
 Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual cobre: zona com score 70 ou mais e pelo menos 5 toques, sem sobreposição com faixa nenhuma. No semanal ele não roda, porque a estrutura fica em outro patamar e um único conjunto de faixas serve aos dois timeframes.
 
-Quando esse campo trouxer algo, **diga ao usuário em linguagem simples**, como manutenção e não como alerta de mercado: que região é, quantas vezes o preço reagiu nela, e que ela está sem máquina de rompimento e reteste até virar faixa manual. Vale mencionar que zonas automáticas expiram depois de semanas sem toque e faixas manuais não, que é a razão de promover. Isto não consome a cota de mensagens de mercado, e o rodapé de registro dele sai com `MANUTENÇÃO`, nunca com `TÁTICO`. Não deve ser repetido a cada execução: uma vez por região é suficiente, enquanto ela continuar na lista.
+Quando esse campo trouxer algo, **diga ao usuário em linguagem simples**, como manutenção e não como alerta de mercado: que região é, quantas vezes o preço reagiu nela e por que merece entrar na configuração manual. Promover uma zona a faixa manual mantém essa região como referência nas leituras e nas regras de faixas, mas **não cria um ciclo próprio de rompimento e reteste**. Esse acompanhamento persistente existe somente para os preços pontuais configurados como suporte e resistência. Zonas automáticas podem expirar pelo ciclo de vida; faixas manuais permanecem até revisão explícita da configuração. A promoção é uma sugestão de manutenção, não uma alteração automática nem uma promessa de acompanhar retestes em cada faixa. Isto não consome a cota de mensagens de mercado, e o rodapé de registro dele sai com `MANUTENÇÃO`, nunca com `TÁTICO`. Não deve ser repetido a cada execução: uma vez por região é suficiente, enquanto ela continuar na lista.
 
 Não alerte só porque:
 

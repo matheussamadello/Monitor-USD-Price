@@ -78,6 +78,8 @@ for (const e of entradas) {
   for (const a of e.niveis_mud) anota(`nivel:${a}`, e.par, e.tf, e.vela, r);
   if (e.estrutura) anota(`estrutura=${e.estrutura}`, e.par, e.tf, e.vela, r);
   if (e.ema89_cruz && e.ema89_cruz !== "nenhum") anota(`ema89_cruzou=${e.ema89_cruz}`, e.par, e.tf, e.vela, r);
+  if (e.ema89_evento_id && ["acima", "abaixo"].includes(e.ema89_confirmacao))
+    anota(`ema89_confirmou=${e.ema89_confirmacao}`, e.par, e.tf, e.vela, r);
   anota("TODAS AS VELAS (referencia)", e.par, e.tf, e.vela, r);
 }
 

@@ -21,6 +21,7 @@
 
 import { writeFileSync, appendFileSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { acompanharTravessiaEma89, camposTravessiaEma89 } from "./ema89-semanal.mjs";
 
 const PERIOD = 14;
 const EMA_PERIOD = 89;
@@ -3364,6 +3365,9 @@ function readPair(cfg, d, tf, opts = {}) {
     emaAtual === null || !(atr[i] > 0)
       ? null
       : Math.abs(closes[i] - emaAtual) / atr[i];
+  const estadoEma89 = tf.key === "semanal"
+    ? acompanharTravessiaEma89(opts.estadoEma89 || null, { times, closes, emas: ema, atrs: atr })
+    : null;
   const varAbertura = ((live.close - live.open) / live.open) * 100;
   const distEma =
     emaAtual === null ? null : ((live.close - emaAtual) / emaAtual) * 100;
@@ -3411,6 +3415,10 @@ function readPair(cfg, d, tf, opts = {}) {
   L.push(`ema89_fechada_anterior: ${num(emaAnterior, D)}`);
   L.push(`ema89_cruzamento_fechado: ${cruzamentoFechado}`);
   L.push(`distancia_ema89_fechada_atr: ${num(distEmaAtr, 2)}`);
+  if (estadoEma89) {
+    for (const [campo, valor] of Object.entries(camposTravessiaEma89(estadoEma89, times[i], cfg.key)))
+      L.push(`${campo}: ${valor}`);
+  }
   // Em unidade de preco E em porcentagem. O percentual e' o que permite
   // comparar volatilidade entre pares e entre epocas -- 0,05 nao diz
   // nada sozinho, 1,2% diz.
@@ -3607,6 +3615,7 @@ function readPair(cfg, d, tf, opts = {}) {
   return {
     texto: L.join("\n"),
     estadoNiveis: estadoNovo,
+    estadoEma89,
     zonasAutomaticas,
     zonasEstadoPar,
     proximoIdZona: zonasRes.proximoId,
@@ -3724,6 +3733,8 @@ export function entradaHistorico(par, tfKey, bloco, agora) {
           : "abaixo"
         : null,
     ema89_cruz: bloco.ema89_cruzamento_fechado || null,
+    ema89_confirmacao: bloco.ema89_semanal_confirmacao || null,
+    ema89_evento_id: bloco.ema89_semanal_evento_id || null,
     ema89_dist_atr: bloco.distancia_ema89_fechada_atr,
     alertas: lista(bloco.alertas_tecnicos),
     deterioracao: lista(bloco.deterioracao_tendencia),
@@ -3745,6 +3756,7 @@ export function assinaturaHistorico(e) {
     e.vela,
     e.estrutura,
     e.ema89_cruz,
+    e.ema89_evento_id || "",
     e.ema89_lado,
     e.alertas.join("|"),
     e.deterioracao.join("|"),
@@ -3779,6 +3791,8 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   const blocks = [];
   const dados = {};
   const estadoNiveis = {};
+  const ema89SemanalAnt = estadoAnterior?.ema89Semanal || {};
+  const estadoEma89Semanal = { ...ema89SemanalAnt };
   const estadoAnt = (estadoAnterior && estadoAnterior.niveis) || {};
   const zonasAnt = (estadoAnterior && estadoAnterior.zonas) || {};
   const contadoresZona = { ...((estadoAnterior && estadoAnterior.contadoresZona) || {}) };
@@ -3871,6 +3885,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       const chaveZ = `${cfg.key}|${tf.key}`;
       const r = readPair(cfg, bruto.parsed, tf, {
         estadoNiveis: estadoAnt,
+        estadoEma89: ema89SemanalAnt[cfg.key],
         dadosDiario: (dados.diario || {})[cfg.key],
         zonasAnteriores: zonasAnt[chaveZ] || [],
         zonasSemanais: tf.key === "diario" ? zonasSemanaisPorPar[cfg.key] || [] : [],
@@ -3879,6 +3894,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       blocosPorTf[tf.key].push(r.texto);
       blocosPorTf[tf.key].push("");
       Object.assign(estadoNiveis, r.estadoNiveis || {});
+      if (tf.key === "semanal" && r.estadoEma89) estadoEma89Semanal[cfg.key] = r.estadoEma89;
       zonasPublicadas[chaveZ] = r.zonasAutomaticas || [];
       zonasNovas[chaveZ] = (r.zonasEstadoPar || []).map(zonaParaEstado);
       contadoresZona[chaveZ] = Math.max(
@@ -3936,6 +3952,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
     texto: blocks.join("\n"),
     gatilhos,
     estadoNiveis,
+    estadoEma89Semanal,
     zonas: zonasPublicadas,
     zonasEstado: zonasNovas,
     contadoresZona,
@@ -4341,8 +4358,8 @@ const ADX_FORTE = 25;
 // As zonas automaticas sao CONTEXTO: nao alimentam a maquina de
 // rompimento/reteste, nao entram na linha de gatilhos e nao geram
 // alerta de entrada em faixa. Isso tudo roda so sobre os niveis
-// manuais. Entao uma regiao que o mercado passou a respeitar fica sem
-// maquina de estados ate alguem promove-la a faixa manual -- e zonas
+// manuais. O ciclo persistente acompanha so suporte e resistencia
+// pontuais: promover uma zona a faixa manual nao cria outro ciclo. Zonas
 // expiram (30 velas sem toque enfraquece, mais 15 remove), enquanto
 // faixas manuais nao.
 //
@@ -5063,7 +5080,7 @@ if (executadoDireto) {
   }
   const anteriores = estadoPrev.ativos || [];
 
-  const { texto, gatilhos, estadoNiveis, zonas, zonasEstado, contadoresZona } =
+  const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona } =
     await build(fetch, estadoPrev);
   mkdirSync("docs", { recursive: true });
   const ativos = gatilhos.map((g) => g.id);
@@ -5094,6 +5111,7 @@ if (executadoDireto) {
         ativos,
         em: new Date().toISOString(),
         niveis: estadoNiveis,
+        ema89Semanal: estadoEma89Semanal,
         zonas: zonasEstado,
         contadoresZona,
         historicoAssinaturas: hist.assinaturas,

@@ -163,7 +163,7 @@ function mockFetch() {
     return { ok: true, text: async () => text, json: async () => JSON.parse(text) };
   };
 }
-const estadoDe = (r) => clone({ niveis: r.estadoNiveis, zonas: r.zonasEstado, contadoresZona: r.contadoresZona });
+const estadoDe = (r) => clone({ ema89Semanal: r.estadoEma89Semanal, niveis: r.estadoNiveis, zonas: r.zonasEstado, contadoresZona: r.contadoresZona });
 const jsonDe = (r) => m.relatorioParaJSON(r.texto, r.zonas);
 
 await teste("eventos persistem entre execucoes e expiram na vela seguinte", async () => {
@@ -212,6 +212,7 @@ await teste("historico conta condicao e referencia uma vez por vela", () => {
     const precos = [100, 110, 109, 107, 108, 106, 111];
     const serie = (par, tf) => precos.map((fech, i) => ({ par, tf, vela: `2026-01-0${i + 1}`,
       fech, atr: 1, alertas: ["constante"], deterioracao: [], conf_entrada: [],
+      ema89_confirmacao: "acima", ema89_evento_id: `${par}|${tf}|${i}`,
       conf_pullback: [], niveis_mud: [], estrutura: "alta", ema89_cruz: "nenhum" }));
     const rows = [];
     for (const [par, tf] of [["P/Q", "diario"], ["R/Q", "diario"], ["P/Q", "semanal"]]) {
@@ -222,7 +223,7 @@ await teste("historico conta condicao e referencia uma vez por vela", () => {
     }
     const texto = medir(rows);
     for (const [par, tf] of [["P/Q", "diario"], ["R/Q", "diario"], ["P/Q", "semanal"]])
-      for (const condicao of ["alerta:constante", "alerta:posterior", "TODAS AS VELAS (referencia)"]) {
+      for (const condicao of ["alerta:constante", "alerta:posterior", "ema89_confirmou=acima", "TODAS AS VELAS (referencia)"]) {
         const linha = texto.split("\n").find((l) => l.startsWith(`${par} | ${tf} | ${condicao}`));
         assert.ok(linha, `${par}/${tf}/${condicao} presente`);
         assert.match(linha, /\s6\s+0\.00\s+50%$/, linha);

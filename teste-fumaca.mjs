@@ -1662,6 +1662,7 @@ ok(ancorarDia(1756436400, -10800) === 1756425600, "carimbo em fuso -03 cai na da
 
 Date.now = relogioOriginal;
 await import("./teste-regressoes.mjs");
+await import("./teste-ema89-semanal.mjs");
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\ntudo passou");
 process.exit(falhas ? 1 : 0);
