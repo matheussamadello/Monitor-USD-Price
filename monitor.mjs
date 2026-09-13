@@ -3951,7 +3951,7 @@ const PAGINA_CSS = `
   --alta:#3fb950; --baixa:#f85149; --atencao:#d29922;
   --pre-txt:#9fbde0; --sombra:none;
   --tv-fundo:${TV_FUNDO.noite}; --tv-barra:${TV_BARRA.noite}; --tv-linha:#3c4043;
-  --tv-btn:#d3d3d3; --tv-btn-txt:#777777;
+  --tv-btn:#e6e6e6; --tv-btn-txt:#666666;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 html[data-tema="claro"]{
@@ -3964,7 +3964,7 @@ html[data-tema="claro"]{
   --alta:#12783a; --baixa:#c0362c; --atencao:#8a5d00;
   --pre-txt:#22364f; --sombra:0 1px 2px rgba(16,32,56,.06);
   --tv-fundo:${TV_FUNDO.claro}; --tv-barra:${TV_BARRA.claro}; --tv-linha:#dadce0;
-  --tv-btn:#777777; --tv-btn-txt:#d3d3d3;
+  --tv-btn:#666666; --tv-btn-txt:#e6e6e6;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);
@@ -4086,21 +4086,21 @@ dl{margin:0;display:grid;gap:8px}
    AS QUATRO CORES SAO ESCOLHA DO DONO DO MONITOR, pedidas uma a uma:
 
                     fundo          borda      texto
-     noite  solto   transparente   #d3d3d3    #d3d3d3
-     noite  marcado #d3d3d3        #d3d3d3    #777777
-     claro  solto   transparente   #777777    #777777
-     claro  marcado #777777        #777777    #d3d3d3
+     noite  solto   transparente   #e6e6e6    #e6e6e6
+     noite  marcado #e6e6e6        #e6e6e6    #666666
+     claro  solto   transparente   #666666    #666666
+     claro  marcado #666666        #666666    #e6e6e6
 
    Sao DUAS cores que trocam de papel, e por isso dois tokens e nao
    quatro. --tv-btn desenha a borda, o texto do solto e, quando
    marcado, o PREENCHIMENTO; --tv-btn-txt e' o texto do marcado, que
    so existe para contrastar com esse preenchimento.
 
-   CONTRASTE MEDIDO: 12,8:1 no solto do escuro e 4,5:1 no solto do
-   claro, ambos folgados; 3,0:1 nos dois marcados, abaixo dos 4,5:1
-   recomendados para texto de 11px. Os 3,0:1 foram avisados e
-   confirmados pelo dono do monitor: nao sao descuido, e nao devem ser
-   "corrigidos" sem perguntar. */
+   CONTRASTE MEDIDO: 15,4:1 no solto do escuro, 5,7:1 no solto do claro
+   e 4,6:1 nos dois marcados. O par comecou em #d3d3d3/#777777, que
+   dava 3,0:1 entre si; os dois andaram um passo em direcoes opostas
+   ate cruzar os 4,5:1 que se recomenda para texto de 11px, que e' o
+   motivo de PARAREM exatamente aqui e nao antes. */
 .tv-tf{font:11px/1 var(--mono);padding:6px 11px;border-radius:6px;cursor:pointer;
   background:none;border:1px solid var(--tv-btn);color:var(--tv-btn)}
 .tv-tf[aria-pressed="true"]{background:var(--tv-btn);color:var(--tv-btn-txt)}
