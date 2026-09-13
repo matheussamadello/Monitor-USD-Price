@@ -872,6 +872,28 @@ Rode com:
 node teste-fumaca.mjs
 ```
 
+Ele encadeia mais três arquivos no final: `teste-regressoes.mjs`, `teste-ema89-semanal.mjs` e `teste-retrato.mjs`. Rodar o de fumaça roda os quatro.
+
+### Teste de retrato
+
+`teste-retrato.mjs` cobre o que o de fumaça não cobre. O de fumaça verifica propriedades que alguém lembrou de verificar; o retrato gera o **relatório inteiro** sobre uma entrada fixa e compara linha a linha com `teste-retrato.txt`. Campo que muda de valor, de nome, de ordem ou que some sem ninguém ter pedido quebra o teste.
+
+A entrada não vem do gerador aleatório do harness, e sim de um **cassete**: as respostas das fontes foram gravadas uma vez em `teste-retrato-cassete.json`. Assim o retrato não se mexe quando alguém ajusta a semente ou o formato das séries sintéticas — só quando o relatório muda de verdade. O relógio também é fixo, senão `timestamp` e a fração do período fariam o retrato quebrar sozinho a cada execução.
+
+São **duas execuções**: a primeira parte de estado vazio, a segunda recebe o estado da primeira. É a segunda que exercita o casamento das zonas, o ciclo de vida e a máquina de níveis — onde bug já apareceu mais de uma vez neste projeto.
+
+A página HTML fica de fora de propósito. Ela é quase toda CSS, e qualquer ajuste de cor quebraria o retrato sem que o relatório tivesse mudado.
+
+Quando a mudança for intencional:
+
+```bash
+node teste-retrato.mjs --atualizar
+```
+
+e o diff do retrato entra no mesmo commit. Esse diff é a revisão mais honesta que existe aqui, porque mostra tudo que mudou.
+
+**O que ele não alcança:** só cobre os caminhos que a entrada fixa exercita. Numa prova de mutação, ele pegou mudanças nos pesos do score, no período do RSI e nos limites de uma faixa manual, mas **não** pegou uma alteração na tolerância de reteste — porque naquele cassete nenhum nível está em reteste. Retrato não substitui teste de caso.
+
 O workflow roda esse teste **antes** de gerar o relatório: se um refactor quebrou o parse de alguma das fontes, o job para ali em vez de publicar um relatório pela metade.
 
 ## GitHub Actions

@@ -1,0 +1,1029 @@
+===== EXECUCAO 1 (estado vazio) =====
+timestamp: 2026-09-10 12:00 UTC
+fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
+fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
+indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
+volume: USD/BRL nao_aplicavel (cambio a vista e' balcao, sem tape publico) | USDT/BRL real (negocia em corretora)
+nota: campos *_fechado usam apenas velas fechadas; *_provisorio inclui a vela em formacao
+nota: a linha "eventos:" existe so no bloco diario; no semanal ela se chama "eventos_semanal:"
+
+========== GRAFICO DIARIO ==========
+
+USDT/BRL
+timeframe: diario
+preco_atual: 5.5296
+candle_atual_data: 2026-09-11
+candle_atual_open: 5.5265
+candle_atual_high: 5.5435
+candle_atual_low: 5.5135
+candle_atual_close_provisorio: 5.5296
+candle_atual_var_pct_desde_abertura: 0.06
+ema89: 5.5541
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.44
+
+# principais: calculados SOMENTE com velas fechadas
+rsi_length: 21
+rsi_fechado: 48.33
+dmi_di_length: 28
+dmi_adx_smoothing: 42
+di_plus_fechado: 38.01
+di_minus_fechado: 39.56
+adx_fechado: 2.91
+ultimo_fechamento_data: 2026-09-10
+ultimo_fechamento_close: 5.5158
+ema89_fechada_atual: 5.5541
+ema89_fechada_anterior: 5.5549
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 0.71
+atr14: 0.0536
+atr14_pct: 0.97
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento diario. NAO sao a referencia principal.
+rsi_provisorio: 49.13
+di_plus_provisorio: 38.12
+di_minus_provisorio: 38.80
+adx_provisorio: 2.87
+
+candle_fechado_1: data=2026-09-10 open=5.5145 high=5.5303 low=5.5141 close=5.5158 direcao=alta corpo=0.0013 sombra_sup=0.0145 sombra_inf=0.0004 volume=34415.2080
+candle_fechado_2: data=2026-09-09 open=5.4871 high=5.5101 low=5.4870 close=5.4958 direcao=alta corpo=0.0087 sombra_sup=0.0143 sombra_inf=0.0001 volume=27361.2987
+candle_fechado_3: data=2026-09-08 open=5.5845 high=5.6007 low=5.5733 close=5.5764 direcao=baixa corpo=0.0081 sombra_sup=0.0162 sombra_inf=0.0031 volume=51555.4535
+
+
+nivel_5_31_estado: rompido
+nivel_5_31_direcao: alta
+nivel_5_31_preco_rompimento: 5.5158
+nivel_5_31_rompeu_em: 2026-09-10
+nivel_5_31_ultimo_contato: 2026-09-10
+nivel_5_31_afastado: sim
+nivel_5_31_historico: nenhum
+nivel_5_15_estado: sem_registro
+nivel_5_15_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_31
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_27_5_35
+niveis_manuais_distancia_atr: 3.09
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 3
+zonas_candidatas_a_faixa: 5.4442-5.4818 score=82 toques=25 (abaixo do preco) | 5.5770-5.6145 score=79 toques=74 (acima do preco) | 5.5052-5.5427 score=79 toques=40 (no preco do preco)
+
+fracao_periodo_decorrida: 0.000
+vela_atual_em_formacao: sim
+volume_parcial: sim
+volume_atual: 34190.4831
+volume_ultima_fechada: 34415.2080
+volume_media20: 38990.0080
+volume_vs_media_pct: -11.73
+volume_referencia: ultima_vela_fechada
+volume_classificacao: normal
+volume_tendencia_3_fechadas: irregular
+trades_vela_atual: 1866
+
+estrutura_preco: HH_LL
+estrutura_tendencia: lateral_expansao
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: LL
+estrutura_eventos: novo_HH_apos_topo_mais_baixo
+pivos_fractal: 5/5
+pivos_topos_recentes: 2026-08-12=5.6179 2026-08-21=5.6063 2026-09-01=5.6276
+pivos_fundos_recentes: 2026-08-07=5.4608 2026-08-18=5.4825 2026-08-25=5.4647
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 8.15
+sombra_sup_pct_range: 89.33
+sombra_inf_pct_range: 2.52
+sombra_sup_vs_corpo: 10.96
+sombra_inf_vs_corpo: 0.31
+candle_atual_corpo_pct_range: 10.30
+candle_atual_sombra_sup_pct_range: 46.34
+candle_atual_sombra_inf_pct_range: 43.36
+candle_atual_sombra_sup_vs_corpo: 4.50
+candle_atual_sombra_inf_vs_corpo: 4.21
+
+eventos: nenhum cruzamento nesta vela
+mediana_corpo_20: 0.004608
+contexto_antes_do_trio: lateral
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: nenhuma
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: shooting_star
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_31, novo_HH_apos_topo_mais_baixo, rompido_5_31
+
+zonas_automaticas_total: 5
+zona_auto_1: id=usdt|diario|z1 tipo=resistencia status=candidata estado=abaixo score=79 estrutural=5.559032-5.632510 operacional=5.576995-5.614547 centro=5.595771 toques=74 rejeicoes=69 role_reversal=sim dist_pct=-1.18 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usdt|diario|z2 tipo=resistencia status=enfraquecida estado=abaixo score=68 estrutural=5.617689-5.691122 operacional=5.635630-5.673181 centro=5.654405 toques=45 rejeicoes=41 role_reversal=sim dist_pct=-2.21 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usdt|diario|z3 tipo=resistencia status=enfraquecida estado=abaixo score=60 estrutural=5.683178-5.759986 operacional=5.702806-5.740358 centro=5.721582 toques=39 rejeicoes=38 role_reversal=nao dist_pct=-3.36 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usdt|diario|z6 tipo=suporte status=candidata estado=em_teste score=79 estrutural=5.487052-5.560857 operacional=5.505179-5.542730 centro=5.523954 toques=40 rejeicoes=35 role_reversal=sim dist_pct=0.10 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usdt|diario|z5 tipo=suporte status=candidata estado=acima score=82 estrutural=5.421328-5.504687 operacional=5.444232-5.481783 centro=5.463007 toques=25 rejeicoes=25 role_reversal=nao dist_pct=1.22 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: nenhuma
+riscos_tecnicos: nenhum
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+USD/BRL
+timeframe: diario
+preco_atual: 5.5379
+candle_atual_data: 2026-09-10
+candle_atual_open: 5.5320
+candle_atual_high: 5.5423
+candle_atual_low: 5.5212
+candle_atual_close_provisorio: 5.5379
+candle_atual_var_pct_desde_abertura: 0.11
+ema89: 5.5421
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.08
+
+# principais: calculados SOMENTE com velas fechadas
+rsi_length: 21
+rsi_fechado: 50.92
+dmi_di_length: 28
+dmi_adx_smoothing: 42
+di_plus_fechado: 17.51
+di_minus_fechado: 20.72
+adx_fechado: 10.96
+ultimo_fechamento_data: 2026-09-09
+ultimo_fechamento_close: 5.5320
+ema89_fechada_atual: 5.5421
+ema89_fechada_anterior: 5.5423
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 0.56
+atr14: 0.0180
+atr14_pct: 0.33
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento diario. NAO sao a referencia principal.
+rsi_provisorio: 52.74
+di_plus_provisorio: 17.64
+di_minus_provisorio: 19.90
+adx_provisorio: 10.84
+
+candle_fechado_1: data=2026-09-09 open=5.5373 high=5.5379 low=5.5213 close=5.5320 direcao=baixa corpo=0.0053 sombra_sup=0.0006 sombra_inf=0.0106
+candle_fechado_2: data=2026-09-08 open=5.5332 high=5.5432 low=5.5295 close=5.5373 direcao=alta corpo=0.0041 sombra_sup=0.0059 sombra_inf=0.0037
+candle_fechado_3: data=2026-09-07 open=5.5325 high=5.5340 low=5.5215 close=5.5332 direcao=alta corpo=0.0007 sombra_sup=0.0008 sombra_inf=0.0110
+
+
+nivel_5_30_estado: rompido
+nivel_5_30_direcao: alta
+nivel_5_30_preco_rompimento: 5.5320
+nivel_5_30_rompeu_em: 2026-09-09
+nivel_5_30_ultimo_contato: 2026-09-09
+nivel_5_30_afastado: sim
+nivel_5_30_historico: nenhum
+nivel_5_13_estado: sem_registro
+nivel_5_13_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_30
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_25_5_36
+niveis_manuais_distancia_atr: 9.56
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 4
+zonas_candidatas_a_faixa: 5.5413-5.5538 score=85 toques=12 (acima do preco) | 5.4826-5.4951 score=78 toques=8 (abaixo do preco) | 5.5196-5.5322 score=76 toques=8 (no preco do preco)
+
+fracao_periodo_decorrida: 0.500
+vela_atual_em_formacao: sim
+volume_disponivel: nao
+
+estrutura_preco: HH_HL
+estrutura_tendencia: alta
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: HL
+estrutura_eventos: nenhum
+pivos_fractal: 5/5
+pivos_topos_recentes: 2026-08-04=5.5411 2026-08-13=5.5458 2026-09-02=5.5460
+pivos_fundos_recentes: 2026-07-24=5.4772 2026-08-18=5.4945 2026-08-26=5.5055
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 31.92
+sombra_sup_pct_range: 3.91
+sombra_inf_pct_range: 64.17
+sombra_sup_vs_corpo: 0.12
+sombra_inf_vs_corpo: 2.01
+candle_atual_corpo_pct_range: 27.86
+candle_atual_sombra_sup_pct_range: 21.04
+candle_atual_sombra_inf_pct_range: 51.10
+candle_atual_sombra_sup_vs_corpo: 0.76
+candle_atual_sombra_inf_vs_corpo: 1.83
+
+eventos: nenhum cruzamento nesta vela
+mediana_corpo_20: 0.006186
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: confirma
+padrao_trio_evidencias_fraqueza: nenhuma
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: hammer
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_30, rompido_5_30
+
+zonas_automaticas_total: 6
+zona_auto_1: id=usd|diario|z4 tipo=resistencia status=candidata estado=abaixo score=85 estrutural=5.536756-5.558333 operacional=5.541251-5.553837 centro=5.547544 toques=12 rejeicoes=7 role_reversal=sim dist_pct=-0.17 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usd|diario|z5 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.567545-5.588985 operacional=5.571972-5.584558 centro=5.578265 toques=13 rejeicoes=7 role_reversal=sim dist_pct=-0.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usd|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.589826-5.609871 operacional=5.593555-5.606141 centro=5.599848 toques=13 rejeicoes=6 role_reversal=sim dist_pct=-1.11 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usd|diario|z15 tipo=suporte status=candidata estado=acima score=76 estrutural=5.513057-5.538782 operacional=5.519627-5.532212 centro=5.525920 toques=8 rejeicoes=3 role_reversal=nao dist_pct=0.22 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usd|diario|z14 tipo=suporte status=candidata estado=acima score=68 estrutural=5.491319-5.513856 operacional=5.496294-5.508880 centro=5.502587 toques=10 rejeicoes=8 role_reversal=sim dist_pct=0.64 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usd|diario|z3 tipo=suporte status=candidata estado=acima score=78 estrutural=5.481347-5.496339 operacional=5.482550-5.495136 centro=5.488843 toques=8 rejeicoes=7 role_reversal=sim dist_pct=0.89 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento, estrutura_de_alta_preservada
+confluencia_pullback: tendencia_hh_hl_preservada, rsi_esfriando
+riscos_tecnicos: nenhum
+deterioracao_tendencia: nenhuma
+
+========== GRAFICO SEMANAL ==========
+
+USDT/BRL
+timeframe: semanal
+preco_atual: 5.5217
+candle_atual_data: 2026-09-14
+candle_atual_open: 5.5178
+candle_atual_high: 5.5319
+candle_atual_low: 5.5176
+candle_atual_close_provisorio: 5.5217
+candle_atual_var_pct_desde_abertura: 0.07
+ema89: 5.5226
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.02
+
+# principais: calculados SOMENTE com velas semanais fechadas
+rsi_length: 14
+rsi_fechado: 44.87
+dmi_di_length: 14
+dmi_adx_smoothing: 21
+di_plus_fechado: 37.11
+di_minus_fechado: 44.42
+adx_fechado: 7.55
+ultimo_fechamento_data: 2026-09-07
+ultimo_fechamento_close: 5.5015
+ema89_fechada_atual: 5.5226
+ema89_fechada_anterior: 5.5231
+ema89_cruzamento_fechado: abaixo
+distancia_ema89_fechada_atr: 0.37
+ema89_semanal_estado: confirmada
+ema89_semanal_direcao: abaixo
+ema89_semanal_cruzou_em: 2026-09-07
+ema89_semanal_confirmada_em: 2026-09-07
+ema89_semanal_cancelada_em: --
+ema89_semanal_confirmacao: abaixo
+ema89_semanal_evento_id: usdt|semanal|ema89|abaixo|1788739200|1788739200
+atr14: 0.0579
+atr14_pct: 1.05
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento semanal. NAO sao a referencia principal.
+rsi_provisorio: 46.68
+di_plus_provisorio: 37.26
+di_minus_provisorio: 42.69
+adx_provisorio: 7.52
+
+candle_fechado_1: data=2026-09-07 open=5.5058 high=5.5195 low=5.4942 close=5.5015 direcao=baixa corpo=0.0043 sombra_sup=0.0137 sombra_inf=0.0073 volume=22406.0106
+candle_fechado_2: data=2026-08-31 open=5.6125 high=5.6240 low=5.6026 close=5.6035 direcao=baixa corpo=0.0090 sombra_sup=0.0115 sombra_inf=0.0009 volume=35185.9629
+candle_fechado_3: data=2026-08-24 open=5.5383 high=5.5489 low=5.5261 close=5.5424 direcao=alta corpo=0.0042 sombra_sup=0.0065 sombra_inf=0.0122 volume=31873.6982
+
+
+nivel_5_31_estado: rompido
+nivel_5_31_direcao: alta
+nivel_5_31_preco_rompimento: 5.5015
+nivel_5_31_rompeu_em: 2026-09-07
+nivel_5_31_ultimo_contato: 2026-09-07
+nivel_5_31_afastado: sim
+nivel_5_31_historico: nenhum
+nivel_5_15_estado: sem_registro
+nivel_5_15_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_31
+niveis_manuais_situacao: monitorar
+niveis_manuais_faixa_mais_proxima: faixa_5_27_5_35
+niveis_manuais_distancia_atr: 2.61
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 3
+zonas_candidatas_a_faixa: nenhuma
+
+fracao_periodo_decorrida: 0.000
+vela_atual_em_formacao: sim
+volume_parcial: sim
+volume_atual: 26527.6538
+volume_ultima_fechada: 22406.0106
+volume_media20: 37860.3817
+volume_vs_media_pct: -40.82
+volume_referencia: ultima_vela_fechada
+volume_classificacao: abaixo_da_media
+volume_tendencia_3_fechadas: irregular
+trades_vela_atual: 1712
+
+estrutura_preco: HH_LL
+estrutura_tendencia: lateral_expansao
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: LL
+estrutura_eventos: nenhum
+pivos_fractal: 2/2
+pivos_topos_recentes: 2026-04-20=5.6092 2026-05-25=5.6358 2026-08-10=5.6427
+pivos_fundos_recentes: 2026-04-27=5.4642 2026-06-08=5.5251 2026-06-29=5.5113
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 17.04
+sombra_sup_pct_range: 54.18
+sombra_inf_pct_range: 28.78
+sombra_sup_vs_corpo: 3.18
+sombra_inf_vs_corpo: 1.69
+candle_atual_corpo_pct_range: 27.51
+candle_atual_sombra_sup_pct_range: 71.51
+candle_atual_sombra_inf_pct_range: 0.98
+candle_atual_sombra_sup_vs_corpo: 2.60
+candle_atual_sombra_inf_vs_corpo: 0.04
+
+eventos_semanal: DI+ cruzou ABAIXO de DI- nesta vela
+mediana_corpo_20: 0.005696
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: sombras_superiores_crescentes
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: nenhum
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_31, di_minus_cruzando_acima_di_plus, adx_subindo_com_di_minus_dominante, rompido_5_31, rompimento_com_volume_fraco
+
+zonas_automaticas_total: 6
+zona_auto_1: id=usdt|semanal|z2 tipo=suporte status=candidata estado=em_teste score=79 estrutural=5.495990-5.555577 operacional=5.505510-5.546057 centro=5.525783 toques=42 rejeicoes=36 role_reversal=sim dist_pct=-0.07 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usdt|semanal|z3 tipo=resistencia status=candidata estado=abaixo score=67 estrutural=5.550295-5.605341 operacional=5.557544-5.598092 centro=5.577818 toques=13 rejeicoes=10 role_reversal=nao dist_pct=-1.01 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usdt|semanal|z4 tipo=resistencia status=candidata estado=abaixo score=85 estrutural=5.601388-5.650479 operacional=5.605659-5.646207 centro=5.625933 toques=12 rejeicoes=12 role_reversal=nao dist_pct=-1.85 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usdt|semanal|z1 tipo=suporte status=candidata estado=acima score=78 estrutural=5.439893-5.509105 operacional=5.454225-5.494773 centro=5.474499 toques=36 rejeicoes=29 role_reversal=sim dist_pct=0.86 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usdt|semanal|z6 tipo=suporte status=enfraquecida estado=acima score=67 estrutural=5.378148-5.442484 operacional=5.390042-5.430590 centro=5.410316 toques=33 rejeicoes=32 role_reversal=nao dist_pct=2.06 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usdt|semanal|z5 tipo=suporte status=enfraquecida estado=acima score=69 estrutural=5.323332-5.394768 operacional=5.338776-5.379324 centro=5.359050 toques=22 rejeicoes=22 role_reversal=nao dist_pct=3.04 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: rsi_esfriando
+riscos_tecnicos: sombras_superiores_crescentes
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+USD/BRL
+timeframe: semanal
+preco_atual: 5.5428
+candle_atual_data: 2026-09-07
+candle_atual_open: 5.5501
+candle_atual_high: 5.5563
+candle_atual_low: 5.5417
+candle_atual_close_provisorio: 5.5428
+candle_atual_var_pct_desde_abertura: -0.13
+ema89: 5.5010
+posicao_vs_ema89: acima
+distancia_ema89_pct: 0.76
+
+# principais: calculados SOMENTE com velas semanais fechadas
+rsi_length: 14
+rsi_fechado: 54.04
+dmi_di_length: 14
+dmi_adx_smoothing: 21
+di_plus_fechado: 17.08
+di_minus_fechado: 17.46
+adx_fechado: 14.90
+ultimo_fechamento_data: 2026-08-31
+ultimo_fechamento_close: 5.5501
+ema89_fechada_atual: 5.5010
+ema89_fechada_anterior: 5.4999
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 2.39
+ema89_semanal_estado: neutra
+ema89_semanal_direcao: nenhuma
+ema89_semanal_cruzou_em: --
+ema89_semanal_confirmada_em: --
+ema89_semanal_cancelada_em: --
+ema89_semanal_confirmacao: nenhum
+ema89_semanal_evento_id: --
+atr14: 0.0206
+atr14_pct: 0.37
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento semanal. NAO sao a referencia principal.
+rsi_provisorio: 51.01
+di_plus_provisorio: 16.19
+di_minus_provisorio: 16.55
+adx_provisorio: 14.24
+
+candle_fechado_1: data=2026-08-31 open=5.5668 high=5.5698 low=5.5406 close=5.5501 direcao=baixa corpo=0.0167 sombra_sup=0.0030 sombra_inf=0.0095
+candle_fechado_2: data=2026-08-24 open=5.5628 high=5.5704 low=5.5562 close=5.5668 direcao=alta corpo=0.0040 sombra_sup=0.0035 sombra_inf=0.0066
+candle_fechado_3: data=2026-08-17 open=5.5467 high=5.5702 low=5.5426 close=5.5628 direcao=alta corpo=0.0161 sombra_sup=0.0074 sombra_inf=0.0042
+
+
+nivel_5_30_estado: rompido
+nivel_5_30_direcao: alta
+nivel_5_30_preco_rompimento: 5.5501
+nivel_5_30_rompeu_em: 2026-08-31
+nivel_5_30_ultimo_contato: 2026-08-31
+nivel_5_30_afastado: sim
+nivel_5_30_historico: nenhum
+nivel_5_13_estado: sem_registro
+nivel_5_13_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_30
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_25_5_36
+niveis_manuais_distancia_atr: 9.25
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 4
+zonas_candidatas_a_faixa: nenhuma
+
+fracao_periodo_decorrida: 0.500
+vela_atual_em_formacao: sim
+volume_disponivel: nao
+
+estrutura_preco: LH_HL
+estrutura_tendencia: lateral_contracao
+estrutura_ultimo_topo: LH
+estrutura_ultimo_fundo: HL
+estrutura_eventos: topo_mais_baixo_apos_HH
+pivos_fractal: 2/2
+pivos_topos_recentes: 2026-04-20=5.5525 2026-06-01=5.5591 2026-07-06=5.5522
+pivos_fundos_recentes: 2026-03-30=5.5120 2026-04-27=5.5153 2026-07-20=5.5249
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 57.07
+sombra_sup_pct_range: 10.40
+sombra_inf_pct_range: 32.53
+sombra_sup_vs_corpo: 0.18
+sombra_inf_vs_corpo: 0.57
+candle_atual_corpo_pct_range: 49.71
+candle_atual_sombra_sup_pct_range: 42.45
+candle_atual_sombra_inf_pct_range: 7.84
+candle_atual_sombra_sup_vs_corpo: 0.85
+candle_atual_sombra_inf_vs_corpo: 0.16
+
+eventos_semanal: DI+ cruzou ABAIXO de DI- nesta vela
+mediana_corpo_20: 0.008933
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: estrutura_topo_mais_baixo_apos_HH
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: nenhum
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_30, di_minus_cruzando_acima_di_plus, topo_mais_baixo_apos_HH, rompido_5_30
+
+zonas_automaticas_total: 4
+zona_auto_1: id=usd|semanal|z7 tipo=resistencia status=candidata estado=abaixo score=86 estrutural=5.549225-5.562576 operacional=5.548708-5.563094 centro=5.555901 toques=4 rejeicoes=3 role_reversal=nao dist_pct=-0.24 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usd|semanal|z6 tipo=suporte status=candidata estado=acima score=61 estrutural=5.525840-5.543346 operacional=5.527400-5.541786 centro=5.534593 toques=3 rejeicoes=1 role_reversal=nao dist_pct=0.15 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usd|semanal|z5 tipo=suporte status=enfraquecida estado=acima score=64 estrutural=5.504574-5.524948 operacional=5.507568-5.521954 centro=5.514761 toques=5 rejeicoes=2 role_reversal=sim dist_pct=0.51 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usd|semanal|z4 tipo=suporte status=enfraquecida estado=acima score=62 estrutural=5.476203-5.488489 operacional=5.475153-5.489539 centro=5.482346 toques=8 rejeicoes=3 role_reversal=nao dist_pct=1.10 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: rsi_esfriando
+riscos_tecnicos: nenhum
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+========== TRILHO DE EXECUCAO ==========
+
+# USDT/BRL. NAO entra em nenhum indicador: e' o custo de
+# atravessar, nao a leitura tecnica do dolar.
+# Premio ALTO encarece dolarizar (comprar USDT) e favorece
+# desdolarizar (vender USDT). Premio BAIXO, o contrario.
+trilho_disponivel: sim
+trilho_par: USDT/BRL
+trilho_fonte: binance
+trilho_preco: 5.5296
+trilho_dia: 2026-09-11
+trilho_premio_pct: -0.15
+trilho_usd_referencia: 5.5379
+trilho_usd_referencia_dia: 2026-09-10
+trilho_premio_defasagem_dias: 1
+trilho_premio_comparavel: nao
+trilho_premio_janela_dias: 180
+trilho_premio_dias_comparados: 180
+trilho_premio_percentil: 32
+trilho_premio_mediana: 0.36
+trilho_premio_p25: -0.32
+trilho_premio_p75: 1.03
+trilho_premio_classificacao: normal
+trilho_volume_usdt_ultimo_fechado: 34415
+trilho_volume_usdt_ultimo_fechado_dia: 2026-09-10
+trilho_volume_usdt_mediana_30d: 38428
+
+GATILHOS ATIVOS: usdt_rompe_5_31, usd_rompe_5_30
+
+fim do relatorio
+
+===== EXECUCAO 2 (estado da primeira) =====
+timestamp: 2026-09-10 12:00 UTC
+fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
+fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
+indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
+volume: USD/BRL nao_aplicavel (cambio a vista e' balcao, sem tape publico) | USDT/BRL real (negocia em corretora)
+nota: campos *_fechado usam apenas velas fechadas; *_provisorio inclui a vela em formacao
+nota: a linha "eventos:" existe so no bloco diario; no semanal ela se chama "eventos_semanal:"
+
+========== GRAFICO DIARIO ==========
+
+USDT/BRL
+timeframe: diario
+preco_atual: 5.5296
+candle_atual_data: 2026-09-11
+candle_atual_open: 5.5265
+candle_atual_high: 5.5435
+candle_atual_low: 5.5135
+candle_atual_close_provisorio: 5.5296
+candle_atual_var_pct_desde_abertura: 0.06
+ema89: 5.5541
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.44
+
+# principais: calculados SOMENTE com velas fechadas
+rsi_length: 21
+rsi_fechado: 48.33
+dmi_di_length: 28
+dmi_adx_smoothing: 42
+di_plus_fechado: 38.01
+di_minus_fechado: 39.56
+adx_fechado: 2.91
+ultimo_fechamento_data: 2026-09-10
+ultimo_fechamento_close: 5.5158
+ema89_fechada_atual: 5.5541
+ema89_fechada_anterior: 5.5549
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 0.71
+atr14: 0.0536
+atr14_pct: 0.97
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento diario. NAO sao a referencia principal.
+rsi_provisorio: 49.13
+di_plus_provisorio: 38.12
+di_minus_provisorio: 38.80
+adx_provisorio: 2.87
+
+candle_fechado_1: data=2026-09-10 open=5.5145 high=5.5303 low=5.5141 close=5.5158 direcao=alta corpo=0.0013 sombra_sup=0.0145 sombra_inf=0.0004 volume=34415.2080
+candle_fechado_2: data=2026-09-09 open=5.4871 high=5.5101 low=5.4870 close=5.4958 direcao=alta corpo=0.0087 sombra_sup=0.0143 sombra_inf=0.0001 volume=27361.2987
+candle_fechado_3: data=2026-09-08 open=5.5845 high=5.6007 low=5.5733 close=5.5764 direcao=baixa corpo=0.0081 sombra_sup=0.0162 sombra_inf=0.0031 volume=51555.4535
+
+
+nivel_5_31_estado: rompido
+nivel_5_31_direcao: alta
+nivel_5_31_preco_rompimento: 5.5158
+nivel_5_31_rompeu_em: 2026-09-10
+nivel_5_31_ultimo_contato: 2026-09-10
+nivel_5_31_afastado: sim
+nivel_5_31_historico: nenhum
+nivel_5_15_estado: sem_registro
+nivel_5_15_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_31
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_27_5_35
+niveis_manuais_distancia_atr: 3.09
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 3
+zonas_candidatas_a_faixa: 5.4442-5.4818 score=82 toques=25 (abaixo do preco) | 5.5770-5.6145 score=79 toques=74 (acima do preco) | 5.5052-5.5427 score=79 toques=40 (no preco do preco)
+
+fracao_periodo_decorrida: 0.000
+vela_atual_em_formacao: sim
+volume_parcial: sim
+volume_atual: 34190.4831
+volume_ultima_fechada: 34415.2080
+volume_media20: 38990.0080
+volume_vs_media_pct: -11.73
+volume_referencia: ultima_vela_fechada
+volume_classificacao: normal
+volume_tendencia_3_fechadas: irregular
+trades_vela_atual: 1866
+
+estrutura_preco: HH_LL
+estrutura_tendencia: lateral_expansao
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: LL
+estrutura_eventos: novo_HH_apos_topo_mais_baixo
+pivos_fractal: 5/5
+pivos_topos_recentes: 2026-08-12=5.6179 2026-08-21=5.6063 2026-09-01=5.6276
+pivos_fundos_recentes: 2026-08-07=5.4608 2026-08-18=5.4825 2026-08-25=5.4647
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 8.15
+sombra_sup_pct_range: 89.33
+sombra_inf_pct_range: 2.52
+sombra_sup_vs_corpo: 10.96
+sombra_inf_vs_corpo: 0.31
+candle_atual_corpo_pct_range: 10.30
+candle_atual_sombra_sup_pct_range: 46.34
+candle_atual_sombra_inf_pct_range: 43.36
+candle_atual_sombra_sup_vs_corpo: 4.50
+candle_atual_sombra_inf_vs_corpo: 4.21
+
+eventos: nenhum cruzamento nesta vela
+mediana_corpo_20: 0.004608
+contexto_antes_do_trio: lateral
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: nenhuma
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: shooting_star
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_31, novo_HH_apos_topo_mais_baixo, rompido_5_31
+
+zonas_automaticas_total: 5
+zona_auto_1: id=usdt|diario|z1 tipo=resistencia status=candidata estado=abaixo score=79 estrutural=5.559032-5.632510 operacional=5.576995-5.614547 centro=5.595771 toques=74 rejeicoes=69 role_reversal=sim dist_pct=-1.18 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usdt|diario|z2 tipo=resistencia status=enfraquecida estado=abaixo score=68 estrutural=5.617689-5.691122 operacional=5.635630-5.673181 centro=5.654405 toques=45 rejeicoes=41 role_reversal=sim dist_pct=-2.21 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usdt|diario|z3 tipo=resistencia status=enfraquecida estado=abaixo score=60 estrutural=5.683178-5.759986 operacional=5.702806-5.740358 centro=5.721582 toques=39 rejeicoes=38 role_reversal=nao dist_pct=-3.36 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usdt|diario|z6 tipo=suporte status=candidata estado=em_teste score=79 estrutural=5.487052-5.560857 operacional=5.505179-5.542730 centro=5.523954 toques=40 rejeicoes=35 role_reversal=sim dist_pct=0.10 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usdt|diario|z5 tipo=suporte status=candidata estado=acima score=82 estrutural=5.421328-5.504687 operacional=5.444232-5.481783 centro=5.463007 toques=25 rejeicoes=25 role_reversal=nao dist_pct=1.22 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: nenhuma
+riscos_tecnicos: nenhum
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+USD/BRL
+timeframe: diario
+preco_atual: 5.5379
+candle_atual_data: 2026-09-10
+candle_atual_open: 5.5320
+candle_atual_high: 5.5423
+candle_atual_low: 5.5212
+candle_atual_close_provisorio: 5.5379
+candle_atual_var_pct_desde_abertura: 0.11
+ema89: 5.5421
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.08
+
+# principais: calculados SOMENTE com velas fechadas
+rsi_length: 21
+rsi_fechado: 50.92
+dmi_di_length: 28
+dmi_adx_smoothing: 42
+di_plus_fechado: 17.51
+di_minus_fechado: 20.72
+adx_fechado: 10.96
+ultimo_fechamento_data: 2026-09-09
+ultimo_fechamento_close: 5.5320
+ema89_fechada_atual: 5.5421
+ema89_fechada_anterior: 5.5423
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 0.56
+atr14: 0.0180
+atr14_pct: 0.33
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento diario. NAO sao a referencia principal.
+rsi_provisorio: 52.74
+di_plus_provisorio: 17.64
+di_minus_provisorio: 19.90
+adx_provisorio: 10.84
+
+candle_fechado_1: data=2026-09-09 open=5.5373 high=5.5379 low=5.5213 close=5.5320 direcao=baixa corpo=0.0053 sombra_sup=0.0006 sombra_inf=0.0106
+candle_fechado_2: data=2026-09-08 open=5.5332 high=5.5432 low=5.5295 close=5.5373 direcao=alta corpo=0.0041 sombra_sup=0.0059 sombra_inf=0.0037
+candle_fechado_3: data=2026-09-07 open=5.5325 high=5.5340 low=5.5215 close=5.5332 direcao=alta corpo=0.0007 sombra_sup=0.0008 sombra_inf=0.0110
+
+
+nivel_5_30_estado: rompido
+nivel_5_30_direcao: alta
+nivel_5_30_preco_rompimento: 5.5320
+nivel_5_30_rompeu_em: 2026-09-09
+nivel_5_30_ultimo_contato: 2026-09-09
+nivel_5_30_afastado: sim
+nivel_5_30_historico: nenhum
+nivel_5_13_estado: sem_registro
+nivel_5_13_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_30
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_25_5_36
+niveis_manuais_distancia_atr: 9.56
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 4
+zonas_candidatas_a_faixa: 5.5413-5.5538 score=85 toques=12 (acima do preco) | 5.4826-5.4951 score=78 toques=8 (abaixo do preco) | 5.5196-5.5322 score=76 toques=8 (no preco do preco)
+
+fracao_periodo_decorrida: 0.500
+vela_atual_em_formacao: sim
+volume_disponivel: nao
+
+estrutura_preco: HH_HL
+estrutura_tendencia: alta
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: HL
+estrutura_eventos: nenhum
+pivos_fractal: 5/5
+pivos_topos_recentes: 2026-08-04=5.5411 2026-08-13=5.5458 2026-09-02=5.5460
+pivos_fundos_recentes: 2026-07-24=5.4772 2026-08-18=5.4945 2026-08-26=5.5055
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 31.92
+sombra_sup_pct_range: 3.91
+sombra_inf_pct_range: 64.17
+sombra_sup_vs_corpo: 0.12
+sombra_inf_vs_corpo: 2.01
+candle_atual_corpo_pct_range: 27.86
+candle_atual_sombra_sup_pct_range: 21.04
+candle_atual_sombra_inf_pct_range: 51.10
+candle_atual_sombra_sup_vs_corpo: 0.76
+candle_atual_sombra_inf_vs_corpo: 1.83
+
+eventos: nenhum cruzamento nesta vela
+mediana_corpo_20: 0.006186
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: confirma
+padrao_trio_evidencias_fraqueza: nenhuma
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: hammer
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_30, rompido_5_30
+
+zonas_automaticas_total: 6
+zona_auto_1: id=usd|diario|z4 tipo=resistencia status=candidata estado=abaixo score=85 estrutural=5.536756-5.558333 operacional=5.541251-5.553837 centro=5.547544 toques=12 rejeicoes=7 role_reversal=sim dist_pct=-0.17 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usd|diario|z5 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.567545-5.588985 operacional=5.571972-5.584558 centro=5.578265 toques=13 rejeicoes=7 role_reversal=sim dist_pct=-0.72 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usd|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.589826-5.609871 operacional=5.593555-5.606141 centro=5.599848 toques=13 rejeicoes=6 role_reversal=sim dist_pct=-1.11 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usd|diario|z15 tipo=suporte status=candidata estado=acima score=76 estrutural=5.513057-5.538782 operacional=5.519627-5.532212 centro=5.525920 toques=8 rejeicoes=3 role_reversal=nao dist_pct=0.22 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usd|diario|z14 tipo=suporte status=candidata estado=acima score=68 estrutural=5.491319-5.513856 operacional=5.496294-5.508880 centro=5.502587 toques=10 rejeicoes=8 role_reversal=sim dist_pct=0.64 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usd|diario|z3 tipo=suporte status=candidata estado=acima score=78 estrutural=5.481347-5.496339 operacional=5.482550-5.495136 centro=5.488843 toques=8 rejeicoes=7 role_reversal=sim dist_pct=0.89 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento, estrutura_de_alta_preservada
+confluencia_pullback: tendencia_hh_hl_preservada, rsi_esfriando
+riscos_tecnicos: nenhum
+deterioracao_tendencia: nenhuma
+
+========== GRAFICO SEMANAL ==========
+
+USDT/BRL
+timeframe: semanal
+preco_atual: 5.5217
+candle_atual_data: 2026-09-14
+candle_atual_open: 5.5178
+candle_atual_high: 5.5319
+candle_atual_low: 5.5176
+candle_atual_close_provisorio: 5.5217
+candle_atual_var_pct_desde_abertura: 0.07
+ema89: 5.5226
+posicao_vs_ema89: abaixo
+distancia_ema89_pct: -0.02
+
+# principais: calculados SOMENTE com velas semanais fechadas
+rsi_length: 14
+rsi_fechado: 44.87
+dmi_di_length: 14
+dmi_adx_smoothing: 21
+di_plus_fechado: 37.11
+di_minus_fechado: 44.42
+adx_fechado: 7.55
+ultimo_fechamento_data: 2026-09-07
+ultimo_fechamento_close: 5.5015
+ema89_fechada_atual: 5.5226
+ema89_fechada_anterior: 5.5231
+ema89_cruzamento_fechado: abaixo
+distancia_ema89_fechada_atr: 0.37
+ema89_semanal_estado: confirmada
+ema89_semanal_direcao: abaixo
+ema89_semanal_cruzou_em: 2026-09-07
+ema89_semanal_confirmada_em: 2026-09-07
+ema89_semanal_cancelada_em: --
+ema89_semanal_confirmacao: abaixo
+ema89_semanal_evento_id: usdt|semanal|ema89|abaixo|1788739200|1788739200
+atr14: 0.0579
+atr14_pct: 1.05
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento semanal. NAO sao a referencia principal.
+rsi_provisorio: 46.68
+di_plus_provisorio: 37.26
+di_minus_provisorio: 42.69
+adx_provisorio: 7.52
+
+candle_fechado_1: data=2026-09-07 open=5.5058 high=5.5195 low=5.4942 close=5.5015 direcao=baixa corpo=0.0043 sombra_sup=0.0137 sombra_inf=0.0073 volume=22406.0106
+candle_fechado_2: data=2026-08-31 open=5.6125 high=5.6240 low=5.6026 close=5.6035 direcao=baixa corpo=0.0090 sombra_sup=0.0115 sombra_inf=0.0009 volume=35185.9629
+candle_fechado_3: data=2026-08-24 open=5.5383 high=5.5489 low=5.5261 close=5.5424 direcao=alta corpo=0.0042 sombra_sup=0.0065 sombra_inf=0.0122 volume=31873.6982
+
+
+nivel_5_31_estado: rompido
+nivel_5_31_direcao: alta
+nivel_5_31_preco_rompimento: 5.5015
+nivel_5_31_rompeu_em: 2026-09-07
+nivel_5_31_ultimo_contato: 2026-09-07
+nivel_5_31_afastado: sim
+nivel_5_31_historico: nenhum
+nivel_5_15_estado: sem_registro
+nivel_5_15_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_31
+niveis_manuais_situacao: monitorar
+niveis_manuais_faixa_mais_proxima: faixa_5_27_5_35
+niveis_manuais_distancia_atr: 2.61
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 3
+zonas_candidatas_a_faixa: nenhuma
+
+fracao_periodo_decorrida: 0.000
+vela_atual_em_formacao: sim
+volume_parcial: sim
+volume_atual: 26527.6538
+volume_ultima_fechada: 22406.0106
+volume_media20: 37860.3817
+volume_vs_media_pct: -40.82
+volume_referencia: ultima_vela_fechada
+volume_classificacao: abaixo_da_media
+volume_tendencia_3_fechadas: irregular
+trades_vela_atual: 1712
+
+estrutura_preco: HH_LL
+estrutura_tendencia: lateral_expansao
+estrutura_ultimo_topo: HH
+estrutura_ultimo_fundo: LL
+estrutura_eventos: nenhum
+pivos_fractal: 2/2
+pivos_topos_recentes: 2026-04-20=5.6092 2026-05-25=5.6358 2026-08-10=5.6427
+pivos_fundos_recentes: 2026-04-27=5.4642 2026-06-08=5.5251 2026-06-29=5.5113
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 17.04
+sombra_sup_pct_range: 54.18
+sombra_inf_pct_range: 28.78
+sombra_sup_vs_corpo: 3.18
+sombra_inf_vs_corpo: 1.69
+candle_atual_corpo_pct_range: 27.51
+candle_atual_sombra_sup_pct_range: 71.51
+candle_atual_sombra_inf_pct_range: 0.98
+candle_atual_sombra_sup_vs_corpo: 2.60
+candle_atual_sombra_inf_vs_corpo: 0.04
+
+eventos_semanal: DI+ cruzou ABAIXO de DI- nesta vela
+mediana_corpo_20: 0.005696
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: sombras_superiores_crescentes
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: nenhum
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_31, di_minus_cruzando_acima_di_plus, adx_subindo_com_di_minus_dominante, rompido_5_31, rompimento_com_volume_fraco
+
+zonas_automaticas_total: 6
+zona_auto_1: id=usdt|semanal|z2 tipo=suporte status=candidata estado=em_teste score=79 estrutural=5.495990-5.555577 operacional=5.505510-5.546057 centro=5.525783 toques=42 rejeicoes=36 role_reversal=sim dist_pct=-0.07 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usdt|semanal|z3 tipo=resistencia status=candidata estado=abaixo score=67 estrutural=5.550295-5.605341 operacional=5.557544-5.598092 centro=5.577818 toques=13 rejeicoes=10 role_reversal=nao dist_pct=-1.01 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usdt|semanal|z4 tipo=resistencia status=candidata estado=abaixo score=85 estrutural=5.601388-5.650479 operacional=5.605659-5.646207 centro=5.625933 toques=12 rejeicoes=12 role_reversal=nao dist_pct=-1.85 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usdt|semanal|z1 tipo=suporte status=candidata estado=acima score=78 estrutural=5.439893-5.509105 operacional=5.454225-5.494773 centro=5.474499 toques=36 rejeicoes=29 role_reversal=sim dist_pct=0.86 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_5: id=usdt|semanal|z6 tipo=suporte status=enfraquecida estado=acima score=67 estrutural=5.378148-5.442484 operacional=5.390042-5.430590 centro=5.410316 toques=33 rejeicoes=32 role_reversal=nao dist_pct=2.06 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usdt|semanal|z5 tipo=suporte status=enfraquecida estado=acima score=69 estrutural=5.323332-5.394768 operacional=5.338776-5.379324 centro=5.359050 toques=22 rejeicoes=22 role_reversal=nao dist_pct=3.04 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: rsi_esfriando
+riscos_tecnicos: sombras_superiores_crescentes
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+USD/BRL
+timeframe: semanal
+preco_atual: 5.5428
+candle_atual_data: 2026-09-07
+candle_atual_open: 5.5501
+candle_atual_high: 5.5563
+candle_atual_low: 5.5417
+candle_atual_close_provisorio: 5.5428
+candle_atual_var_pct_desde_abertura: -0.13
+ema89: 5.5010
+posicao_vs_ema89: acima
+distancia_ema89_pct: 0.76
+
+# principais: calculados SOMENTE com velas semanais fechadas
+rsi_length: 14
+rsi_fechado: 54.04
+dmi_di_length: 14
+dmi_adx_smoothing: 21
+di_plus_fechado: 17.08
+di_minus_fechado: 17.46
+adx_fechado: 14.90
+ultimo_fechamento_data: 2026-08-31
+ultimo_fechamento_close: 5.5501
+ema89_fechada_atual: 5.5010
+ema89_fechada_anterior: 5.4999
+ema89_cruzamento_fechado: nenhum
+distancia_ema89_fechada_atr: 2.39
+ema89_semanal_estado: neutra
+ema89_semanal_direcao: nenhuma
+ema89_semanal_cruzou_em: --
+ema89_semanal_confirmada_em: --
+ema89_semanal_cancelada_em: --
+ema89_semanal_confirmacao: nenhum
+ema89_semanal_evento_id: --
+atr14: 0.0206
+atr14_pct: 0.37
+
+# PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
+# fechamento semanal. NAO sao a referencia principal.
+rsi_provisorio: 51.01
+di_plus_provisorio: 16.19
+di_minus_provisorio: 16.55
+adx_provisorio: 14.24
+
+candle_fechado_1: data=2026-08-31 open=5.5668 high=5.5698 low=5.5406 close=5.5501 direcao=baixa corpo=0.0167 sombra_sup=0.0030 sombra_inf=0.0095
+candle_fechado_2: data=2026-08-24 open=5.5628 high=5.5704 low=5.5562 close=5.5668 direcao=alta corpo=0.0040 sombra_sup=0.0035 sombra_inf=0.0066
+candle_fechado_3: data=2026-08-17 open=5.5467 high=5.5702 low=5.5426 close=5.5628 direcao=alta corpo=0.0161 sombra_sup=0.0074 sombra_inf=0.0042
+
+
+nivel_5_30_estado: rompido
+nivel_5_30_direcao: alta
+nivel_5_30_preco_rompimento: 5.5501
+nivel_5_30_rompeu_em: 2026-08-31
+nivel_5_30_ultimo_contato: 2026-08-31
+nivel_5_30_afastado: sim
+nivel_5_30_historico: nenhum
+nivel_5_13_estado: sem_registro
+nivel_5_13_historico: nenhum
+niveis_mudancas_nesta_vela: rompido_5_30
+niveis_manuais_situacao: obsoleto
+niveis_manuais_faixa_mais_proxima: faixa_5_25_5_36
+niveis_manuais_distancia_atr: 9.25
+niveis_manuais_alinhamento: desalinhado
+niveis_manuais_faixas_corroboradas: 0 de 4
+zonas_candidatas_a_faixa: nenhuma
+
+fracao_periodo_decorrida: 0.500
+vela_atual_em_formacao: sim
+volume_disponivel: nao
+
+estrutura_preco: LH_HL
+estrutura_tendencia: lateral_contracao
+estrutura_ultimo_topo: LH
+estrutura_ultimo_fundo: HL
+estrutura_eventos: topo_mais_baixo_apos_HH
+pivos_fractal: 2/2
+pivos_topos_recentes: 2026-04-20=5.5525 2026-06-01=5.5591 2026-07-06=5.5522
+pivos_fundos_recentes: 2026-03-30=5.5120 2026-04-27=5.5153 2026-07-20=5.5249
+
+divergencia_rsi: nenhuma
+divergencia_rsi_provisoria: nenhuma
+
+corpo_pct_range: 57.07
+sombra_sup_pct_range: 10.40
+sombra_inf_pct_range: 32.53
+sombra_sup_vs_corpo: 0.18
+sombra_inf_vs_corpo: 0.57
+candle_atual_corpo_pct_range: 49.71
+candle_atual_sombra_sup_pct_range: 42.45
+candle_atual_sombra_inf_pct_range: 7.84
+candle_atual_sombra_sup_vs_corpo: 0.85
+candle_atual_sombra_inf_vs_corpo: 0.16
+
+eventos_semanal: DI+ cruzou ABAIXO de DI- nesta vela
+mediana_corpo_20: 0.008933
+contexto_antes_do_trio: regiao_alta
+padrao_trio_contexto: nao_aplicavel
+padrao_trio_confirmacao_estrutural: neutro
+padrao_trio_evidencias_fraqueza: estrutura_topo_mais_baixo_apos_HH
+padroes_enfraquecimento: nenhum
+tres_soldados_diagnostico: nao_aplicavel
+padrao_candles: nenhum
+padrao_em_formacao: nenhum
+alertas_tecnicos: rompimento_confirmado_5_30, di_minus_cruzando_acima_di_plus, topo_mais_baixo_apos_HH, rompido_5_30
+
+zonas_automaticas_total: 4
+zona_auto_1: id=usd|semanal|z7 tipo=resistencia status=candidata estado=abaixo score=86 estrutural=5.549225-5.562576 operacional=5.548708-5.563094 centro=5.555901 toques=4 rejeicoes=3 role_reversal=nao dist_pct=-0.24 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_2: id=usd|semanal|z6 tipo=suporte status=candidata estado=acima score=61 estrutural=5.525840-5.543346 operacional=5.527400-5.541786 centro=5.534593 toques=3 rejeicoes=1 role_reversal=nao dist_pct=0.15 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_3: id=usd|semanal|z5 tipo=suporte status=enfraquecida estado=acima score=64 estrutural=5.504574-5.524948 operacional=5.507568-5.521954 centro=5.514761 toques=5 rejeicoes=2 role_reversal=sim dist_pct=0.51 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_4: id=usd|semanal|z4 tipo=suporte status=enfraquecida estado=acima score=62 estrutural=5.476203-5.488489 operacional=5.475153-5.489539 centro=5.482346 toques=8 rejeicoes=3 role_reversal=nao dist_pct=1.10 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+
+confluencia_entrada: rompimento_confirmado_por_fechamento
+confluencia_pullback: rsi_esfriando
+riscos_tecnicos: nenhum
+deterioracao_tendencia: di_minus_dominante_com_estrutura_nao_altista
+
+========== TRILHO DE EXECUCAO ==========
+
+# USDT/BRL. NAO entra em nenhum indicador: e' o custo de
+# atravessar, nao a leitura tecnica do dolar.
+# Premio ALTO encarece dolarizar (comprar USDT) e favorece
+# desdolarizar (vender USDT). Premio BAIXO, o contrario.
+trilho_disponivel: sim
+trilho_par: USDT/BRL
+trilho_fonte: binance
+trilho_preco: 5.5296
+trilho_dia: 2026-09-11
+trilho_premio_pct: -0.15
+trilho_usd_referencia: 5.5379
+trilho_usd_referencia_dia: 2026-09-10
+trilho_premio_defasagem_dias: 1
+trilho_premio_comparavel: nao
+trilho_premio_janela_dias: 180
+trilho_premio_dias_comparados: 180
+trilho_premio_percentil: 32
+trilho_premio_mediana: 0.36
+trilho_premio_p25: -0.32
+trilho_premio_p75: 1.03
+trilho_premio_classificacao: normal
+trilho_volume_usdt_ultimo_fechado: 34415
+trilho_volume_usdt_ultimo_fechado_dia: 2026-09-10
+trilho_volume_usdt_mediana_30d: 38428
+
+GATILHOS ATIVOS: usdt_rompe_5_31, usd_rompe_5_30
+
+fim do relatorio
