@@ -4459,7 +4459,18 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
   const faixas = (niveis && niveis.faixas) || [];
   const out = [];
   for (const z of zonas || []) {
-    const L = z.limites_operacionais;
+    // ESTRUTURAIS, nao operacionais. Este radar recomenda virar FAIXA
+    // MANUAL, e faixa manual nao expira nem se mexe com a volatilidade
+    // do dia. Os limites operacionais sao centro +- uma janela derivada
+    // do ATR, com piso e teto em percentual do centro -- publicar eles
+    // aqui fazia a recomendacao carregar a volatilidade de hoje para
+    // dentro de um nivel permanente. No caso que motivou a correcao a
+    // janela nem vinha do ATR: estava no teto de 1,5% do centro.
+    //
+    // Os limites estruturais sao a identidade da regiao, derivados dos
+    // pivos e da volatilidade DA EPOCA deles. E' isso que se quer
+    // preservar quando a zona automatica expirar.
+    const L = z.limites_estruturais || z.limites_operacionais;
     if (!L) continue;
     if ((z.score || 0) < CANDIDATA_SCORE_MIN) continue;
     if ((z.numero_toques || 0) < CANDIDATA_TOQUES_MIN) continue;
