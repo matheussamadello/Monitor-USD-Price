@@ -1085,7 +1085,9 @@ Dois campos diferentes medem coisas diferentes, e é fácil confundi-los:
 
 Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, mas deslocada da região que o mercado respeita. É justamente o caso que mais merece revisão, e o único dos dois campos que enxerga isso é o alinhamento.
 
-Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual cobre: zona com score 70 ou mais e pelo menos 5 toques, sem sobreposição com faixa nenhuma. No semanal ele não roda, porque a estrutura fica em outro patamar e um único conjunto de faixas serve aos dois timeframes.
+Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual cobre: zona com score 70 ou mais, pelo menos 5 toques e situação `ativa`, sem sobreposição com faixa nenhuma. No semanal ele não roda, porque a estrutura fica em outro patamar e um único conjunto de faixas serve aos dois timeframes.
+
+O radar examina o **conjunto inteiro de zonas vivas** do par, não apenas as que aparecem na lista publicada. A página mostra no máximo três de cada lado do preço, por legibilidade; esse corte é de exibição, não de análise, e escondia do radar regiões maduras que só não coubessem na lista. Em compensação, o radar exige situação `ativa`: região `enfraquecida` (que parou de receber toques) ou ainda `candidata` (que nunca se provou) não é candidata a faixa manual, porque faixa manual não expira e virar faixa é justamente o contrário de estar perdendo validade.
 
 Os números publicados são os limites **estruturais** da zona — a identidade da região, derivada dos pivôs e da volatilidade da época deles. Não são os operacionais, que são uma janela em torno do centro derivada do ATR corrente, com piso e teto em percentual, e que mudam quando o regime muda. Como faixa manual não expira nem se mexe com a volatilidade do dia, é o limite estrutural que deve virar faixa.
 

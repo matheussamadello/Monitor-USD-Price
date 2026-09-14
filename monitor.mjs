@@ -3066,6 +3066,16 @@ export function calcularZonas(cfg, tf, d, ctx) {
 
   return {
     zonas: [...acima, ...abaixo].map((z) => limparZona(z)),
+    // TODAS as vivas, sem o corte de exibicao. O relatorio mostra as tres
+    // mais proximas de cada lado, e o radar de promocao rodava sobre essa
+    // lista ja cortada: uma regiao forte podia ficar invisivel so por ter
+    // outra mais perto do preco na frente dela. No XMR eram duas -- uma
+    // com score 78 e 15 toques -- fora da janela de exibicao.
+    //
+    // Promocao a faixa manual nao tem nada a ver com proximidade: e' sobre
+    // a regiao ter historico que merece sobreviver ao vencimento da zona.
+    // Por isso o radar passa a olhar o conjunto inteiro.
+    zonasVivas: publicaveis.map((z) => limparZona(z)),
     zonasEstado: estado,
     proximoId,
   };
@@ -3547,7 +3557,11 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(
     `niveis_manuais_faixas_corroboradas: ${alinNiveis.corroboradas} de ${alinNiveis.total}`
   );
-  const candidatas = zonasCandidatas(zonasAutomaticas, cfg.niveis, closes[i], tf.key);
+  // Conjunto INTEIRO de zonas vivas, nao o recorte publicado: ver o
+  // comentario em calcularZonas.
+  const candidatas = zonasCandidatas(
+    zonasRes.zonasVivas || zonasAutomaticas, cfg.niveis, closes[i], tf.key
+  );
   L.push(
     `zonas_candidatas_a_faixa: ${
       candidatas.length
@@ -4474,6 +4488,21 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
     if (!L) continue;
     if ((z.score || 0) < CANDIDATA_SCORE_MIN) continue;
     if ((z.numero_toques || 0) < CANDIDATA_TOQUES_MIN) continue;
+    // SO zona ATIVA. Enquanto o radar rodava sobre a lista publicada,
+    // esse filtro vinha de graca: o corte de exibicao pega as mais
+    // proximas do preco, que sao as que o preco ainda visita. Olhando o
+    // conjunto inteiro ele precisa ser explicito.
+    //
+    // `enfraquecida` e' o ciclo de vida dizendo que o preco parou de
+    // visitar a regiao -- 30 velas sem toque, e mais 15 ate sumir. Uma
+    // delas tinha 147 velas sem toque. Promover isso a faixa manual,
+    // que NAO expira, seria contradizer o proprio ciclo de vida e
+    // encher a manutencao de regiao que o mercado ja abandonou.
+    //
+    // Medido no dia em que o radar passou a olhar tudo: 9 candidatas nos
+    // cinco pares, 7 delas enfraquecidas. Com este filtro, 2 -- as duas
+    // ativas, que eram exatamente as que o corte de exibicao escondia.
+    if (z.status && z.status !== "ativa") continue;
     const coberta = faixas.some(
       ([lo, hi]) =>
         sobreposicaoFrac({ inferior: lo, superior: hi }, L) >=

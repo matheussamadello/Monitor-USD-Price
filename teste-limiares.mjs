@@ -254,6 +254,28 @@ console.log("\n== radar: so regiao muito marcada e longe das faixas ==");
   ok(scoreBaixo.length === 0, `6 toques com score 60 (abaixo de 70) NAO entra (${scoreBaixo.length})`);
   ok(zonasCandidatas([z(90, 6)], niveis, 1000, "semanal").length === 0,
     "o radar e' so do diario");
+
+  // SO zona ativa. O radar recomenda virar faixa manual, e faixa manual
+  // nao expira: promover uma regiao que o proprio ciclo de vida ja
+  // classificou como em declinio -- ou que ainda nao se provou --
+  // contradiz o ciclo. Enquanto o radar rodava sobre a lista publicada
+  // isso vinha de graca, porque o corte de exibicao pega as mais
+  // proximas do preco; olhando o conjunto inteiro passou a ser explicito.
+  for (const status of ["enfraquecida", "candidata", "remover"]) {
+    const zs = zonasCandidatas([{ ...z(90, 6), status }], niveis, 1000, "diario");
+    ok(zs.length === 0, `zona ${status} com score 90 e 6 toques NAO entra no radar`);
+  }
+
+  // E o radar publica os limites ESTRUTURAIS, nao os operacionais: e'
+  // a identidade da regiao que vira faixa, nao a janela de volatilidade
+  // de hoje.
+  const comLimites = zonasCandidatas([{
+    ...z(90, 6),
+    limites_estruturais: { inferior: 900, superior: 1100 },
+    limites_operacionais: { inferior: 980, superior: 1020 },
+  }], niveis, 1000, "diario");
+  ok(comLimites.length === 1 && comLimites[0].inferior === 900 && comLimites[0].superior === 1100,
+    `o radar publica os limites estruturais (${JSON.stringify(comLimites[0] && [comLimites[0].inferior, comLimites[0].superior])})`);
 }
 
 // ------------------------------------------------------------

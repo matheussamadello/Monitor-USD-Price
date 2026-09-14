@@ -584,11 +584,15 @@ Nenhuma das duas muda o que o monitor considera suporte, resistência, rompiment
 
 As zonas automáticas são **contexto**. Elas não alimentam a máquina de rompimento e reteste, não entram na linha de gatilhos e não geram alerta de entrada em faixa: isso tudo roda só sobre os níveis manuais. Promover uma região a faixa manual acrescenta uma referência às regras de faixas, mas não cria uma máquina de rompimento/reteste para essa região: o ciclo persistente acompanha somente os preços pontuais de suporte e resistência. E zonas **expiram** depois de semanas sem toque, enquanto faixas manuais não — o ciclo inteiro está na seção acima.
 
-`zonas_candidatas_a_faixa` existe para essa promoção não depender de alguém reparar nela. Lista regiões com **score 70 ou mais e pelo menos 5 toques** que nenhuma faixa manual cobre, no máximo três, das de maior score para as menores, dizendo de que lado do preço cada uma está.
+`zonas_candidatas_a_faixa` existe para essa promoção não depender de alguém reparar nela. Lista regiões com **score 70 ou mais, pelo menos 5 toques e situação `ativa`** que nenhuma faixa manual cobre, no máximo três, das de maior score para as menores, dizendo de que lado do preço cada uma está.
+
+**O radar lê o conjunto inteiro de zonas vivas, não a lista publicada.** A página mostra no máximo três zonas de cada lado do preço, porque uma lista maior deixa de ser legível. Esse corte é de exibição, e durante um tempo o radar herdou ele: uma região madura e descoberta ficava invisível para a promoção só porque havia três outras mais perto do preço na frente dela. Agora o radar recebe todas as zonas vivas do par e o corte de três continua valendo só para a página.
+
+Abrir o conjunto inteiro sozinho traria lixo junto. Medido no dia da mudança, nos cinco pares dos três repositórios: 9 candidatas, 7 delas **enfraquecidas** — uma sem toque há 147 velas. Zona enfraquecida é uma região que está *perdendo* validade, e virar faixa manual é o oposto disso, porque faixa manual não expira. Por isso o radar exige situação `ativa`: nem `enfraquecida`, nem `candidata` (que nunca se provou), nem `remover`. Com o filtro, as 9 viraram 2 — as duas de fato escondidas pelo corte de exibição.
 
 **Só no bloco diário.** No semanal a estrutura fica num patamar diferente do diário, e um único conjunto de faixas serve aos dois timeframes: promover uma zona semanal quebraria o alinhamento diário, que é o operacional. Sinalizar lá seria uma lista enorme, permanente e sem ação possível, então o campo sai sempre como `nenhuma` no semanal.
 
-Os dois cortes filtram exatamente o que não serve. Zonas de 1 toque e score baixo aparecem acima do preço em quase todo par e não significam nada ainda; zona de score alto com 2 toques também não, porque o radar exige as duas coisas. Quando o campo trouxer algo, é manutenção de configuração, não alerta de mercado: a região merece virar faixa manual para ganhar máquina de estados.
+Os três cortes filtram exatamente o que não serve. Zonas de 1 toque e score baixo aparecem acima do preço em quase todo par e não significam nada ainda; zona de score alto com 2 toques também não, porque o radar exige as três coisas juntas — score, toques e situação `ativa`. Quando o campo trouxer algo, é manutenção de configuração, não alerta de mercado: a região merece virar faixa manual para ganhar máquina de estados.
 
 Na página, a linha só ocupa espaço quando há candidata.
 
@@ -888,7 +892,7 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que RSI, ADX e EMA89 usam o período de cada timeframe, e que o relatório declara qual usou;
 - que os **cinco** valores de estrutura têm nomes distintos, e que os eventos de pivô não prometem o que não aconteceu;
 - que `afastado` mede distância e não etapa do ciclo, e que um rompimento vira notícia **uma vez só**;
-- que o relatório avisa quando a faixa manual sai de onde o mercado reage, e que o radar só aponta região madura e descoberta;
+- que o relatório avisa quando a faixa manual sai de onde o mercado reage, e que o radar só aponta região madura, viva e descoberta;
 - que a ficha de uma zona coberta dorme em vez de ser rasgada, e que zona em observação envelhece;
 - que as leituras `longo` e `curto` saem sem jargão, e que todo rótulo tem explicação no `(?)`;
 - que o histórico grava uma linha por vela fechada e não repete na mesma vela.
