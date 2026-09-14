@@ -4564,7 +4564,9 @@ function pgValor(v, dec) {
 // algo sobre uma faixa sem dizer qual, e quem lia tinha de procurar o
 // rotulo no cartao -- e ainda lembrar que esta leitura sai do bloco
 // SEMANAL, nao do diario. Agora a linha se basta.
-export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
+export function ondeNosNiveis(
+  situacao, distAtr, faixa, alinhamento, dec = 2, tfAdjetivo = null
+) {
   if (!situacao || situacao === "indefinida") return null;
   const label = faixa && typeof faixa === "object" ? faixa.label : faixa;
   const ehSuporte = typeof label === "string" && /suporte/.test(label);
@@ -4586,11 +4588,27 @@ export function ondeNosNiveis(situacao, distAtr, faixa, alinhamento, dec = 2) {
   } else {
     texto = `perto da faixa manual${intervalo}`;
   }
-  // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
-  // Cita-la no lugar de destaque sem dizer isso seria dar peso a um
-  // nivel que o mercado nao vem respeitando.
+  // Uma faixa que as zonas observadas nao corroboram e' um numero velho,
+  // e cita-la no lugar de destaque sem dizer isso seria dar peso a ela
+  // sem ressalva.
+  //
+  // A ressalva dizia "(que o mercado nao vem respeitando)", e era forte
+  // demais para o que alinhamentoNiveis de fato mede. Ele so compara as
+  // faixas manuais com as zonas automaticas DAQUELE timeframe pelo corte
+  // de sobreposicao: "desalinhado" quer dizer que as zonas atuais nao
+  // corroboram as faixas, o que nao e' a mesma afirmacao que o mercado
+  // nao as respeita. Uma faixa pode ter sido muito respeitada e estar
+  // sem zona viva em cima dela agora.
+  //
+  // O adjetivo do timeframe entra por parametro em vez de cravado aqui:
+  // hoje a funcao so e' chamada de leituraLonga, que le o bloco semanal,
+  // mas ela propria nao sabe de que timeframe vieram os numeros. Se um
+  // dia a leitura curta usar a mesma frase, cravar "semanais" faria a
+  // frase mentir em silencio. Sem o adjetivo ela cai na forma neutra.
   if (alinhamento === "desalinhado" && situacao !== "obsoleto") {
-    texto += " (que o mercado não vem respeitando)";
+    texto += tfAdjetivo
+      ? ` (sem corroboração das zonas automáticas ${tfAdjetivo} atuais)`
+      : " (sem corroboração das zonas automáticas atuais neste timeframe)";
   }
   return texto;
 }
@@ -4623,7 +4641,10 @@ export function leituraLonga(sem, dec = 2) {
     sem.niveis_manuais_distancia_atr,
     faixaObj,
     sem.niveis_manuais_alinhamento,
-    dec
+    dec,
+    // Esta leitura sai do bloco SEMANAL, e o alinhamento que ela cita foi
+    // medido contra as zonas semanais.
+    "semanais"
   );
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 

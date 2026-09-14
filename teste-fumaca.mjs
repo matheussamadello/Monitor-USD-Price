@@ -1153,11 +1153,32 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
     "sem arrastar casas que a faixa nao usa");
 
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho.
-  const desalinhada = ondeNosNiveis("atual", 0, f78, "desalinhado", 2);
-  ok(/não vem respeitando/.test(desalinhada),
-    "faixa desalinhada e' citada COM a ressalva: o mercado nao a respeita");
-  ok(!/não vem respeitando/.test(ondeNosNiveis("obsoleto", 5, f78, "desalinhado", 2)),
+  // A ressalva diz exatamente isso, e nao mais que isso: alinhamentoNiveis
+  // so compara as faixas com as zonas automaticas daquele timeframe, entao
+  // "desalinhado" nao autoriza a afirmar que o mercado nao respeita a faixa.
+  const desalinhada = ondeNosNiveis("atual", 0, f78, "desalinhado", 2, "semanais");
+  ok(/\(sem corroboração das zonas automáticas semanais atuais\)$/.test(desalinhada),
+    "faixa desalinhada e' citada COM a ressalva, nomeando o timeframe medido");
+  ok(!/vem respeitando/.test(desalinhada),
+    "e a ressalva NAO afirma mais nada sobre o mercado respeitar a faixa");
+  ok(/^dentro da faixa manual de 78.000 a 80.000 /.test(desalinhada),
+    "a ressalva so acrescenta: o resto da frase fica igual ao caso alinhado");
+  // Sem o adjetivo do timeframe a frase nao pode cravar "semanais".
+  ok(/\(sem corroboração das zonas automáticas atuais neste timeframe\)$/.test(
+      ondeNosNiveis("atual", 0, f78, "desalinhado", 2)),
+    "sem saber o timeframe, a ressalva sai na forma neutra em vez de mentir");
+  ok(/\(sem corroboração das zonas automáticas diárias atuais\)$/.test(
+      ondeNosNiveis("atual", 0, f78, "desalinhado", 2, "diárias")),
+    "e o adjetivo passado e' o que aparece, para a frase servir a outro timeframe");
+  ok(!/sem corroboração|vem respeitando/.test(
+      ondeNosNiveis("obsoleto", 5, f78, "desalinhado", 2, "semanais")),
     "mas longe da faixa a ressalva nao faz sentido e nao aparece");
+  // As outras tres situacoes de alinhamento seguem sem ressalva nenhuma.
+  for (const alin of ["alinhado", "parcial", "indefinido"]) {
+    ok(!/sem corroboração|vem respeitando/.test(
+        ondeNosNiveis("atual", 0, f78, alin, 2, "semanais")),
+      `alinhamento ${alin} nao ganha ressalva`);
+  }
 
   // A razao segue a ordem de prioridade do prompt: niveis antes da media
   // longa, e os indicadores por ultimo.
