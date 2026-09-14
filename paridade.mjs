@@ -14,10 +14,20 @@
 // O QUE E' COMPARADO:
 //
 //   arquivos inteiros   os que devem ser identicos nos tres
-//   monitor.mjs         simbolo a simbolo, e SO os que existem nos
-//                       tres -- o que e' de um repositorio so (fontes
-//                       do cambio, trilho de execucao, titulo da
-//                       pagina) e' config, nao divergencia
+//   monitor.mjs         simbolo a simbolo, sobre a UNIAO dos simbolos
+//                       dos dois lados -- conteudo E presenca
+//
+// PRESENCA E CONTEUDO SAO CONFERIDOS SEPARADAMENTE. Ate hoje a
+// comparacao rodava so sobre a INTERSECAO: funcao que sumisse de um
+// repositorio saia da conta em silencio, e a paridade seguia
+// aprovando. Reproduzido apagando atualizarEstadoNivel de uma copia do
+// BTC -- 23 simbolos sumiram e o verificador terminou com codigo 0.
+//
+// Agora cada simbolo tem um lugar previsto (paridade-esperada.mjs):
+// por padrao os tres, e as excecoes estao nomeadas uma a uma. Faltar
+// onde e' previsto, ou existir onde nao e', reprova -- e' assim que
+// remocao, adicao e renomeacao param de passar. Liberar o CONTEUDO de
+// um simbolo nao libera a ausencia dele: sao duas permissoes.
 //
 // teste-fumaca.mjs e teste-regressoes.mjs ficam de fora: o harness do
 // USD e' proprio, porque as fontes dele sao outras.
@@ -31,9 +41,13 @@
 // ------------------------------------------------------------
 import { readFileSync, existsSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { aceitas } from "./paridade-esperada.mjs";
+import {
+  REPOS,
+  conteudoAceito,
+  deveExistirEm,
+  conferirRegistro,
+} from "./paridade-esperada.mjs";
 
-const REPOS = ["Monitor-BTC-Price", "Monitor-XMR-Price", "Monitor-USD-Price"];
 const IDENTICOS = [
   "ema89-semanal.mjs",
   "analisar-historico.mjs",
@@ -54,6 +68,10 @@ async function ler(eu, repo, arq) {
   if (repo === eu) return existsSync(arq) ? readFileSync(arq, "utf8") : null;
   for (const p of [`../${repo}/${arq}`, `../${repo.toLowerCase()}/${arq}`])
     if (existsSync(p)) return readFileSync(p, "utf8");
+  // PARIDADE_SEM_REDE existe para o teste: sem ele, um irmao faltando
+  // no disco seria buscado no GitHub, e o teste passaria a medir o
+  // repositorio publicado em vez da copia que ele montou.
+  if (process.env.PARIDADE_SEM_REDE) return null;
   try {
     const r = await fetch(BRUTO(repo, arq));
     return r.ok ? await r.text() : null;
@@ -96,6 +114,11 @@ export function semComentarios(fonte) {
 //           conteudo de aspas e de crase.
 const DECLARACAO = /^(?:export )?(?:async )?(?:function|const|class) ([A-Za-z_$][\w$]*)/;
 
+function podeIniciarRegex(anterior) {
+  if (anterior === "") return true;
+  return !/[A-Za-z0-9_$)\]]/.test(anterior);
+}
+
 export function simbolos(fonte) {
   const out = new Map();
   const topo = [];
@@ -111,6 +134,10 @@ export function simbolos(fonte) {
     }
     buf.push(l);
     let i = 0;
+    // Ultimo caractere significativo, para separar divisao de inicio de
+    // expressao regular: depois de nome, `)` ou `]` a barra divide;
+    // depois de `(`, `,`, `=` e afins, ela abre uma regex.
+    let anterior = "";
     while (i < l.length) {
       const c = l[i];
       if (emTemplate) {
@@ -127,8 +154,34 @@ export function simbolos(fonte) {
         i++;
         continue;
       }
+      // EXPRESSAO REGULAR. Terceiro furo do recorte, e o mais silencioso
+      // dos tres: `.replace(/'/g, "&#39;")` tem uma aspa DENTRO da
+      // expressao. Sem reconhecer a barra, o scanner lia essa aspa como
+      // inicio de string, engolia o resto da linha junto com o
+      // parentese de fechamento, e a profundidade nunca voltava a zero.
+      // Efeito medido: pgEsc ocupava 596 linhas e engolia 23 simbolos
+      // -- toHTML, leituraLonga, leituraCurta, EXPLICACOES e o bloco de
+      // execucao direta entre eles. Divergencia de conteudo ainda era
+      // pega (dentro de pgEsc), mas com o nome errado, e a conferencia
+      // de PRESENCA nao alcancava nenhum deles.
+      if (c === "/" && podeIniciarRegex(anterior)) {
+        i++;
+        let classe = false;
+        while (i < l.length) {
+          const d = l[i];
+          if (d === "\\") { i += 2; continue; }
+          if (d === "[") classe = true;
+          else if (d === "]") classe = false;
+          else if (d === "/" && !classe) { i++; break; }
+          i++;
+        }
+        while (i < l.length && /[a-z]/.test(l[i])) i++; // flags
+        anterior = "/";
+        continue;
+      }
       if (c === "{" || c === "[" || c === "(") prof++;
       else if (c === "}" || c === "]" || c === ")") prof--;
+      if (c.trim()) anterior = c;
       i++;
     }
     // Template aberto continua na linha seguinte: o simbolo so termina
@@ -166,6 +219,16 @@ if (executadoDireto) {
     process.exit(2);
   }
 
+  // Registro errado nao pode virar aprovacao: um nome de repositorio
+  // com erro de digitacao passaria a exigir o simbolo num lugar que nao
+  // existe, ou a liberar um que existe.
+  const problemas = conferirRegistro();
+  if (problemas.length) {
+    console.log("FALHA  paridade-esperada.mjs esta inconsistente:");
+    for (const p of problemas) console.log(`         ${p}`);
+    process.exit(2);
+  }
+
   let divergencias = 0, naoVerificados = 0;
   const outros = REPOS.filter((r) => r !== eu);
   console.log(`paridade de ${eu} contra ${outros.join(" e ")}\n`);
@@ -186,24 +249,78 @@ if (executadoDireto) {
     const fonte = await ler(eu, outro, "monitor.mjs");
     if (fonte === null) { console.log(`  ?      monitor.mjs vs ${outro}: nao deu para ler`); naoVerificados++; continue; }
     const deles = simbolos(fonte);
-    const comuns = [...meus.keys()].filter((k) => deles.has(k));
-    const ok = aceitas(eu, outro);
-    const todas = comuns.filter((k) => meus.get(k) !== deles.get(k));
-    const difs = todas.filter((k) => !ok.has(k));
-    const voltaram = [...ok].filter((k) => comuns.includes(k) && !todas.includes(k));
+    const ok = conteudoAceito(eu, outro);
+
+    // UNIAO, nao intersecao. O simbolo que existe so de um lado e'
+    // justamente o caso que precisa ser julgado.
+    const nomes = [...new Set([...meus.keys(), ...deles.keys()])].sort();
+
+    const faltando = [];   // previsto naquele repositorio e nao esta la
+    const naoPrevistos = []; // esta la sem estar previsto
+    const divergemTodas = [];
+    const divergemNaoPrevistas = [];
+    let comparados = 0;
+
+    for (const s of nomes) {
+      const onde = deveExistirEm(s);
+      const lados = [[eu, meus.has(s)], [outro, deles.has(s)]];
+      for (const [repo, tem] of lados) {
+        if (onde.has(repo) && !tem) faltando.push([s, repo]);
+        if (!onde.has(repo) && tem) naoPrevistos.push([s, repo]);
+      }
+      // Conteudo so se compara onde os dois lados devem ter o simbolo e
+      // de fato tem. Ausencia ja foi julgada acima, e julgar duas vezes
+      // so confundiria a mensagem.
+      if (onde.has(eu) && onde.has(outro) && meus.has(s) && deles.has(s)) {
+        comparados++;
+        if (meus.get(s) !== deles.get(s)) {
+          divergemTodas.push(s);
+          if (!ok.has(s)) divergemNaoPrevistas.push(s);
+        }
+      }
+    }
+
+    // Higiene do registro: entrada que ja nao serve para nada vira
+    // aviso, para a lista nao virar folclore.
+    const voltaram = [...ok].filter(
+      (k) => meus.has(k) && deles.has(k) && !divergemTodas.includes(k)
+    );
     if (voltaram.length)
-      console.log(`  aviso  ${voltaram.length} simbolo(s) na lista de aceitas ja nao divergem ` +
+      console.log(`  aviso  ${voltaram.length} simbolo(s) em CONTEUDO_ACEITO ja nao divergem ` +
         `de ${outro}: ${voltaram.join(", ")}. Podem sair de paridade-esperada.mjs.`);
-    const soMeus = [...meus.keys()].filter((k) => !deles.has(k));
-    const soDeles = [...deles.keys()].filter((k) => !meus.has(k));
-    if (difs.length === 0)
-      console.log(`  ok     monitor.mjs == ${outro} nos ${comuns.length} simbolos comuns ` +
-        `(${todas.length} divergem, todas previstas; ${soMeus.length} so aqui, ${soDeles.length} so la)`);
-    else {
-      console.log(`  DIFERE monitor.mjs != ${outro} em ${difs.length} de ${comuns.length} simbolos comuns:`);
-      for (const k of difs.slice(0, 15)) console.log(`           ${k}`);
-      if (difs.length > 15) console.log(`           ... e mais ${difs.length - 15}`);
-      divergencias += difs.length;
+
+    // A mensagem nao adivinha se foi remocao ou adicao -- as duas
+    // chegam aqui com a mesma cara. Ela diz o que se sabe: onde o
+    // simbolo devia estar, onde esta, e onde consertar.
+    const ondeEsta = (sim) =>
+      [[eu, meus.has(sim)], [outro, deles.has(sim)]]
+        .filter(([, tem]) => tem)
+        .map(([r]) => r)
+        .join(" e ") || "nenhum dos dois";
+    for (const [s, repo] of faltando) {
+      console.log(`  FALTA  ${s}: previsto em ${repo} e nao esta la; existe em ${ondeEsta(s)} ` +
+        `(comparando ${eu} com ${outro}). Se sumiu, reponha; se e' novo e so de alguns, ` +
+        `registre em PRESENCA_ESPERADA dizendo em quais monitores deve existir.`);
+      divergencias++;
+    }
+    for (const [s, repo] of naoPrevistos) {
+      console.log(`  SOBRA  ${s}: existe em ${repo}, que nao esta na lista de ` +
+        `PRESENCA_ESPERADA (prevista: ${[...deveExistirEm(s)].join(", ")}) ` +
+        `(comparando ${eu} com ${outro}).`);
+      divergencias++;
+    }
+    if (divergemNaoPrevistas.length) {
+      console.log(`  DIFERE monitor.mjs != ${outro} em ${divergemNaoPrevistas.length} de ${comparados} simbolos comparados:`);
+      for (const k of divergemNaoPrevistas.slice(0, 15)) console.log(`           ${k}`);
+      if (divergemNaoPrevistas.length > 15) console.log(`           ... e mais ${divergemNaoPrevistas.length - 15}`);
+      divergencias += divergemNaoPrevistas.length;
+    }
+    if (!faltando.length && !naoPrevistos.length && !divergemNaoPrevistas.length) {
+      const soLa = nomes.filter((s) => !meus.has(s)).length;
+      const soAqui = nomes.filter((s) => !deles.has(s)).length;
+      console.log(`  ok     monitor.mjs == ${outro}: ${nomes.length} simbolos no total, ` +
+        `${comparados} comparados no conteudo (${divergemTodas.length} divergem, todas previstas), ` +
+        `${soAqui} so aqui e ${soLa} so la, todos previstos`);
     }
   }
 
