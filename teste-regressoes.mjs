@@ -1,7 +1,7 @@
 // Reproducoes dos defeitos da auditoria. Sem rede; executavel sozinho
 // ou pelo teste-fumaca.mjs usado no workflow.
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -396,6 +396,100 @@ await teste("USD inclui o ultimo pregao encerrado sem duplicar a vela", async ()
     assert.equal(s.volume_semanas_anteriores_mesmos_dias_media, 7 * 1133.5);
     assert.equal(s.volume_semana_semanas_comparadas, 8);
   });
+});
+
+
+await teste("estado e historico persistidos excluem o pregao fantasma do cambio", () => {
+  const ler = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
+  const estado = JSON.parse(ler("./docs/estado.json"));
+  const ehFimDeSemana = (time) => Number.isFinite(time) &&
+    [0, 6].includes(new Date(time * 1000).getUTCDay());
+  for (const [chave, nivel] of Object.entries(estado.niveis || {})) {
+    if (!chave.startsWith("usd|diario|")) continue;
+    for (const campo of ["atualizado", "dataRompimento", "ultimoContato"])
+      assert.ok(!ehFimDeSemana(nivel[campo]), chave + " " + campo + " precisa ser pregao");
+    for (const transicao of nivel.historico || [])
+      assert.ok(!ehFimDeSemana(epoch(transicao.split("@")[1] + "T00:00:00Z")),
+        chave + " nao pode conservar transicao de fim de semana");
+  }
+  for (const z of estado.zonas?.["usd|diario"] || [])
+    assert.ok(!ehFimDeSemana(z.ultimaVelaAvaliada), "zona diaria precisa de avaliacao em pregao");
+  const linhas = (path) => ler(path).trim().split("\n").filter(Boolean).map(JSON.parse);
+  const historico = linhas("./docs/historico.jsonl");
+  const invalidados = linhas("./docs/historico-invalidado.jsonl");
+  const chave = (e) => JSON.stringify([e.em, e.par, e.tf]);
+  const idsInvalidos = new Set(invalidados.map(chave));
+  for (const e of historico) {
+    assert.ok(!idsInvalidos.has(chave(e)), "snapshot invalidado nao pode voltar para a medicao");
+    if (e.par === "USD/BRL" && e.tf === "diario")
+      assert.ok(!ehFimDeSemana(epoch(e.vela + "T00:00:00Z")),
+        "historico do cambio nao pode contar domingo como vela fechada");
+  }
+});
+
+await teste("USD restaurado nao cria reteste ao atravessar o fim de semana", async () => {
+  const cfg = m.PARES_TESTE.find((p) => p.key === "usd");
+  const nivel = cfg.niveis.suporte;
+  const rotulo = cfg.niveis.suporteLabel;
+  const chave = m.chaveNivel("usd", "diario", nivel);
+  const sexta = epoch("2026-09-11T00:00:00Z");
+  const rows = [];
+  for (let t = sexta; rows.length < 120; t -= DIA) {
+    if ([0, 6].includes(new Date(t * 1000).getUTCDay())) continue;
+    const close = nivel - .03 + .001 * Math.sin(rows.length);
+    rows.unshift({ time: t, open: close, high: close + .02, low: close - .02, close });
+  }
+  // Estado valido antes do incidente: o reteste ja tinha sido confirmado
+  // na quarta. Restaurar isso nao e' motivo para anunciar outra confirmacao.
+  let salvo = { niveis: { [chave]: {
+    estado: "reteste_confirmado", direcao: "baixa",
+    precoRompimento: nivel - .04, dataRompimento: epoch("2026-09-03T00:00:00Z"),
+    ultimoContato: epoch("2026-09-09T00:00:00Z"), atualizado: sexta,
+    historico: ["reteste_confirmado@2026-09-09"], afastado: false, mudancasNaVela: [],
+  } } };
+  const falsa = { time: sexta + 2 * DIA, open: nivel - .0038,
+    high: nivel - .003, low: nivel - .0038, close: nivel - .003 };
+  const fonte = () => {
+    const outras = mockFetch();
+    return async (url) => {
+      if (url.includes("yahoo") && url.includes("interval=1d"))
+        return { ok: true, text: async () => respostaYahoo([...rows, falsa]) };
+      return outras(url);
+    };
+  };
+  const rodar = async (instante) => noInstante(instante, async () => {
+    const entrada = clone(salvo);
+    const r = await m.build(fonte(), salvo);
+    assert.deepEqual(salvo, entrada, "build nao altera o estado recebido");
+    assert.doesNotMatch(r.texto, /FALHA:/);
+    salvo = estadoDe(r);
+    return jsonDe(r).diario["USD/BRL"];
+  });
+  for (let i = 0; i < 2; i++) {
+    const b = await rodar("2026-09-14T12:00:00Z");
+    assert.equal(b.ultimo_fechamento_data, "2026-09-11", "domingo continua fora das fechadas");
+    assert.equal(salvo.niveis[chave].estado, "reteste_confirmado");
+    assert.equal(salvo.niveis[chave].ultimoContato, epoch("2026-09-09T00:00:00Z"));
+    assert.deepEqual(b.niveis_mudancas_nesta_vela, [], "restauracao e retry nao criam evento");
+  }
+  const adicionar = (dia, close, high = nivel - .02) => rows.push({
+    time: epoch(dia + "T00:00:00Z"), open: nivel - .03,
+    high: Math.max(high, close), low: nivel - .05, close,
+  });
+  adicionar("2026-09-14", nivel - .03);
+  const segunda = await rodar("2026-09-15T12:00:00Z");
+  assert.equal(segunda.ultimo_fechamento_data, "2026-09-14");
+  assert.equal(salvo.niveis[chave].estado, "reteste_confirmado");
+  assert.deepEqual(segunda.niveis_mudancas_nesta_vela, [],
+    "fechamento novo sem contato nao confirma um reteste inexistente");
+  adicionar("2026-09-15", nivel);
+  const terca = await rodar("2026-09-16T12:00:00Z");
+  assert.ok(terca.niveis_mudancas_nesta_vela.includes("em_reteste_" + rotulo),
+    "um contato real posterior continua gerando evento");
+  adicionar("2026-09-16", nivel - .03);
+  const quarta = await rodar("2026-09-17T12:00:00Z");
+  assert.ok(quarta.niveis_mudancas_nesta_vela.includes("reteste_confirmado_" + rotulo),
+    "a confirmacao posterior do reteste real continua disponivel");
 });
 
 assert.equal(falhas, 0, `${falhas} de ${grupos} grupos de regressao falharam`);
