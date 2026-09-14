@@ -237,12 +237,28 @@ await teste("historico conta condicao e referencia uma vez por vela", () => {
 await teste("USD inclui o ultimo pregao encerrado sem duplicar a vela", async () => {
   const diario = m.TIMEFRAMES_TESTE.find((t) => t.key === "diario");
   const semanal = m.TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
-  const rows = (ultimo, passo = DIA) => Array.from({ length: 120 }, (_, i) => ({
-    time: epoch(ultimo) - (119 - i) * passo,
+  const vela = (time, i) => ({
+    time,
     open: 5 + i * .001, high: 5.03 + i * .001, low: 4.97 + i * .001,
     close: 5.01 + i * .001, volume: 1000 + i,
-  }));
-  const sexta = rows("2026-09-11T00:00:00Z");
+  });
+  const rows = (ultimo, passo = DIA) =>
+    Array.from({ length: 120 }, (_, i) => vela(epoch(ultimo) - (119 - i) * passo, i));
+  // O cambio a vista nao negocia sabado nem domingo, e a serie que o
+  // Yahoo devolve nao tem essas barras. A fixture tambem nao pode ter:
+  // com uma serie corrida de 120 dias o teste media o filtro de fim de
+  // semana em vez de medir a regra que ele existe para provar.
+  const diasUteis = (ultimo, n = 120) => {
+    const out = [];
+    let t = epoch(ultimo);
+    while (out.length < n) {
+      const dow = new Date(t * 1000).getUTCDay();
+      if (dow !== 0 && dow !== 6) out.unshift(t);
+      t -= DIA;
+    }
+    return out.map((time, i) => vela(time, i));
+  };
+  const sexta = diasUteis("2026-09-11T00:00:00Z");
   const semana = rows("2026-09-07T00:00:00Z", 7 * DIA);
   for (const instante of ["2026-09-12T12:00:00Z", "2026-09-13T12:00:00Z"]) {
     await noInstante(instante, () => {
@@ -255,6 +271,32 @@ await teste("USD inclui o ultimo pregao encerrado sem duplicar a vela", async ()
       // Uma repeticao plana de domingo nao inventa um pregao.
       const fantasma = { time: epoch(instante), open: 9, high: 9, low: 9, close: 9 };
       assert.equal(m.parseYahoo(respostaYahoo([...sexta, fantasma]), diario).times.at(-1), sexta.at(-1).time);
+      // E nem uma repeticao QUASE plana. Caso real de 2026-09-13, um
+      // domingo: o Yahoo mandou 5.1262/5.1270/5.1262/5.1270 -- amplitude
+      // de 0,0008 contra ~0,04 de um pregao, diferente de zero, entao o
+      // filtro de amplitude nao pegava. Quando o periodo dessa barra
+      // venceu, ela entrou na serie FECHADA: virou candle_fechado_1,
+      // empurrou a sexta para tras e levou um true range de 0,0008 para
+      // dentro do ATR.
+      // Mesma forma do caso real (amplitude de 0,0008), com precos fora
+      // da faixa da fixture para o teste nao colidir com um fechamento
+      // legitimo da serie.
+      const quaseplano = {
+        time: epoch(instante), open: 9.1262, high: 9.1270, low: 9.1262, close: 9.1270,
+      };
+      const comQuasePlano = m.parseYahoo(respostaYahoo([...sexta, quaseplano]), diario);
+      assert.equal(comQuasePlano.times.at(-1), sexta.at(-1).time,
+        "barra de fim de semana com amplitude minuscula nao vira a ultima vela");
+      assert.equal(comQuasePlano.closes.length, sexta.length,
+        "e nao entra na serie fechada");
+      assert.ok(!comQuasePlano.closes.includes(9.1270),
+        "a cotacao de domingo nao aparece entre os fechamentos");
+      // No semanal era pior: inicioSemana(domingo) cai na segunda da
+      // MESMA semana, entao a cotacao de domingo virava o fechamento da
+      // semana inteira.
+      const semComQuasePlano = m.parseYahoo(respostaYahoo([...semana, quaseplano]), semanal);
+      assert.equal(semComQuasePlano.closes.at(-1), semana.at(-1).close,
+        "a barra de fim de semana nao vira o fechamento da semana");
     });
   }
   const sessao = (dia) => ({ gmtoffset: -3 * 3600, currentTradingPeriod: { regular: {

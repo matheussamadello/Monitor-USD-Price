@@ -623,6 +623,7 @@ export function inicioSemana(epochSeconds) {
 
 function montarSerie(linhas, {
   temVolume = false, periodo = 86400, ignorarSemAmplitude = false,
+  ignorarFimDeSemana = false,
   fimPeriodo = (r) => r.time + periodo,
 } = {}) {
   // Uma entrada por instante, a ultima vence: o Yahoo repete a vela do
@@ -649,6 +650,27 @@ function montarSerie(linhas, {
     // heuristica e' exclusiva dele: uma kline cripto recem-aberta pode
     // legitimamente ter amplitude zero e continua em formacao.
     if (ignorarSemAmplitude && l.high === l.low) continue;
+    // FIM DE SEMANA NO CAMBIO. O comentario do parser dizia que sabado e
+    // domingo chegam com as quatro pontas em null e o filtro acima os
+    // descartava. Nao e' sempre verdade: em 2026-09-13, um domingo, o
+    // Yahoo mandou open=5.1262 high=5.1270 low=5.1262 close=5.1270 --
+    // amplitude de 0,0008 contra ~0,04 de um pregao de verdade, mas
+    // diferente de zero, entao a barra passou.
+    //
+    // Enquanto ela era a ultima linha, `rows.slice(0, -1)` a mantinha
+    // fora das fechadas. Quando o periodo dela venceu, o emFormacao
+    // passou a considera-la FECHADA e ela entrou na serie: virou
+    // candle_fechado_1, empurrou a sexta-feira para tras, e um
+    // true range de 0,0008 entrou no ATR. No semanal foi pior --
+    // inicioSemana(domingo) cai na segunda da mesma semana, entao a
+    // cotacao de domingo virou o fechamento da semana.
+    //
+    // Cambio a vista nao negocia sabado nem domingo. A barra carimbada
+    // nesses dias nao e' pregao, e' a ultima cotacao repetida.
+    if (ignorarFimDeSemana) {
+      const diaDaSemana = new Date(l.time * 1000).getUTCDay();
+      if (diaDaSemana === 0 || diaDaSemana === 6) continue;
+    }
     const k = chave(l.time);
     const ant = porTempo.get(k);
     if (!ant || ant.carimbo === l.time) {
@@ -717,8 +739,10 @@ export function parseYahoo(texto, tf) {
   const r = json && json.chart && json.chart.result && json.chart.result[0];
   if (!r || !Array.isArray(r.timestamp)) throw new Error("Yahoo: resposta sem series");
   const q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
-  // Feriado e fim de semana chegam como null nas quatro pontas; o filtro
-  // de montarSerie descarta essas linhas.
+  // Feriado costuma chegar como null nas quatro pontas, e o filtro de
+  // amplitude de montarSerie descarta essas linhas. Fim de semana NAO:
+  // ja veio com preco de verdade e amplitude minuscula, entao tem
+  // descarte proprio (ignorarFimDeSemana).
   const off = Number((r.meta && r.meta.gmtoffset) || 0);
   const linhas = [];
   for (let i = 0; i < r.timestamp.length; i++) {
@@ -735,6 +759,7 @@ export function parseYahoo(texto, tf) {
   return montarSerie(linhas, {
     periodo,
     ignorarSemAmplitude: true,
+    ignorarFimDeSemana: true,
     fimPeriodo: (row) => {
       // O fim publicado pela fonte vale apenas para a sessao desta
       // vela. No semanal, fechar a quinta nao fecha a semana inteira.

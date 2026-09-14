@@ -92,6 +92,10 @@ Isso apareceu na primeira execução real, num sábado. Se a vela entra na séri
 
 O parser do Yahoo mantém o filtro de **amplitude zero** (`high === low`) para essas repetições. É uma heurística da fonte, não uma prova de que houve ou não pregão. O filtro não se aplica à Binance ou ao Mercado Bitcoin: uma vela cripto recém-aberta pode legitimamente estar plana. O fim da vela é verificado separadamente, como descrito acima.
 
+**O filtro de amplitude não bastava.** Em 2026-09-13, um domingo, o Yahoo mandou `open=5.1262 high=5.1270 low=5.1262 close=5.1270` — amplitude de 0,0008 contra uns 0,04 de um pregão de verdade, mas diferente de zero, então a barra passou. Enquanto ela era a última linha da série, ficava de fora das fechadas de qualquer jeito. Quando o período dela venceu, passou a ser tratada como **fechada** e entrou na série: virou `candle_fechado_1`, empurrou a sexta-feira para trás e levou um true range de 0,0008 para dentro do ATR. Medido na série de teste: ATR14 caindo 6,8%, RSI21 de 100,00 para 90,91, e uma vela a mais na semana. No semanal foi pior — `inicioSemana(domingo)` cai na segunda da **mesma** semana, então a cotação de domingo virava o fechamento da semana inteira.
+
+Por isso o parser do câmbio descarta também, nominalmente, **qualquer barra carimbada em sábado ou domingo** (`ignorarFimDeSemana`). Câmbio à vista não negocia nesses dias: a barra não é pregão, é a última cotação repetida. Como o filtro de amplitude, ele vale só para a fonte de câmbio — Binance e Mercado Bitcoin negociam todo dia e não passam essa opção.
+
 O **diário** é o timeframe principal para timing de pullbacks, rompimentos, retestes, perda/recuperação de níveis, candles e mudanças de momentum.
 
 O **semanal** funciona principalmente como contexto e filtro estrutural: ajuda a identificar se um sinal diário está alinhado, neutro ou em conflito com a estrutura maior. O relatório também calcula os mesmos indicadores principais no semanal e distingue os valores da vela semanal fechada dos valores provisórios da semana em formação.
