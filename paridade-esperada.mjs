@@ -175,6 +175,25 @@ export function deveExistirEm(simbolo) {
   return new Set(previsto || REPOS);
 }
 
+// Todo simbolo que os dois registros MENCIONAM para este par.
+//
+// Sem isto a conferencia so enxergava o que existe em pelo menos um dos
+// dois arquivos -- e o simbolo previsto para UM repositorio so, apagado
+// justamente dele, sumia da uniao e nao faltava em lugar nenhum.
+// Apagando calcularTrilho do USD (registrada como so-USD), os tres
+// lados aprovavam com codigo 0. Eram 24 simbolos nessa situacao.
+//
+// Entrada morta em CONTEUDO_ACEITO cai aqui pelo mesmo caminho: se o
+// registro cita um nome que nao existe em lugar nenhum, isso e' um
+// registro errado, e registro errado nao pode virar aprovacao.
+export function simbolosRegistrados(a, b) {
+  const out = new Set();
+  for (const [simbolo, onde] of Object.entries(PRESENCA_ESPERADA))
+    if (onde.includes(a) || onde.includes(b)) out.add(simbolo);
+  for (const simbolo of CONTEUDO_ACEITO[[a, b].sort().join("|")] || []) out.add(simbolo);
+  return out;
+}
+
 // Confere o proprio registro. Uma entrada com nome de repositorio
 // errado nao reprovaria nada -- passaria a exigir o simbolo num lugar
 // que nao existe, ou a liberar um que existe. Erro de registro vira

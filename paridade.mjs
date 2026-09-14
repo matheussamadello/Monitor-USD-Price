@@ -45,6 +45,7 @@ import {
   REPOS,
   conteudoAceito,
   deveExistirEm,
+  simbolosRegistrados,
   conferirRegistro,
 } from "./paridade-esperada.mjs";
 
@@ -114,9 +115,28 @@ export function semComentarios(fonte) {
 //           conteudo de aspas e de crase.
 const DECLARACAO = /^(?:export )?(?:async )?(?:function|const|class) ([A-Za-z_$][\w$]*)/;
 
-function podeIniciarRegex(anterior) {
-  if (anterior === "") return true;
-  return !/[A-Za-z0-9_$)\]]/.test(anterior);
+// Depois destas palavras uma barra abre expressao regular, nao divide.
+// `return /^x$/.test(s)` nao existe no codigo de hoje, mas e' o mesmo
+// engano que ja custou dois furos: a barra nao reconhecida faz o que
+// vem depois dela ser lido como codigo, e uma aspa dentro da expressao
+// engole o resto da linha.
+const PALAVRAS_ANTES_DE_REGEX = new Set([
+  "return", "typeof", "instanceof", "in", "of", "new", "delete", "void",
+  "case", "do", "else", "yield", "await",
+]);
+
+function podeIniciarRegex(linha, i) {
+  let k = i - 1;
+  while (k >= 0 && /\s/.test(linha[k])) k--;
+  if (k < 0) return true; // barra no inicio da linha
+  const c = linha[k];
+  // Depois de `)` ou `]` a barra divide um resultado; depois de
+  // pontuacao (`(`, `,`, `=`, `:`, `&`...) ela abre uma expressao.
+  if (/[)\]]/.test(c)) return false;
+  if (!/[A-Za-z0-9_$]/.test(c)) return true;
+  const fim = k + 1;
+  while (k >= 0 && /[A-Za-z0-9_$]/.test(linha[k])) k--;
+  return PALAVRAS_ANTES_DE_REGEX.has(linha.slice(k + 1, fim));
 }
 
 export function simbolos(fonte) {
@@ -134,10 +154,6 @@ export function simbolos(fonte) {
     }
     buf.push(l);
     let i = 0;
-    // Ultimo caractere significativo, para separar divisao de inicio de
-    // expressao regular: depois de nome, `)` ou `]` a barra divide;
-    // depois de `(`, `,`, `=` e afins, ela abre uma regex.
-    let anterior = "";
     while (i < l.length) {
       const c = l[i];
       if (emTemplate) {
@@ -164,7 +180,7 @@ export function simbolos(fonte) {
       // execucao direta entre eles. Divergencia de conteudo ainda era
       // pega (dentro de pgEsc), mas com o nome errado, e a conferencia
       // de PRESENCA nao alcancava nenhum deles.
-      if (c === "/" && podeIniciarRegex(anterior)) {
+      if (c === "/" && podeIniciarRegex(l, i)) {
         i++;
         let classe = false;
         while (i < l.length) {
@@ -176,12 +192,10 @@ export function simbolos(fonte) {
           i++;
         }
         while (i < l.length && /[a-z]/.test(l[i])) i++; // flags
-        anterior = "/";
         continue;
       }
       if (c === "{" || c === "[" || c === "(") prof++;
       else if (c === "}" || c === "]" || c === ")") prof--;
-      if (c.trim()) anterior = c;
       i++;
     }
     // Template aberto continua na linha seguinte: o simbolo so termina
@@ -253,7 +267,15 @@ if (executadoDireto) {
 
     // UNIAO, nao intersecao. O simbolo que existe so de um lado e'
     // justamente o caso que precisa ser julgado.
-    const nomes = [...new Set([...meus.keys(), ...deles.keys()])].sort();
+    //
+    // E a uniao inclui o que o REGISTRO menciona, mesmo que nao exista
+    // em nenhum dos dois arquivos: sem isso, apagar um simbolo previsto
+    // para um repositorio so o tirava da uniao e ninguem sentia falta.
+    const nomes = [...new Set([
+      ...meus.keys(),
+      ...deles.keys(),
+      ...simbolosRegistrados(eu, outro),
+    ])].sort();
 
     const faltando = [];   // previsto naquele repositorio e nao esta la
     const naoPrevistos = []; // esta la sem estar previsto

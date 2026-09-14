@@ -127,6 +127,36 @@ ok(
     "simbolos do monitor.mjs desapareciam dentro do pgEsc"
 );
 
+// A barra tambem abre expressao regular depois de palavra-chave. Nao ha
+// nenhum caso assim no monitor.mjs de hoje, e e' justamente por isso que
+// o teste existe: quando aparecer, tem de continuar funcionando.
+{
+  const g = simbolos([
+    "function usa(s) {",
+    "  return /'/.test(s);",
+    "}",
+    "function apos(x) {",
+    "  return x;",
+    "}",
+  ].join("\n"));
+  ok((g.get("usa") || "").split("\n").length === 3,
+    `regex depois de 'return' nao vira string (${(g.get("usa") || "").split("\n").length} de 3 linhas)`);
+  ok(g.has("apos"), "e o simbolo seguinte continua visivel");
+
+  // E divisao continua sendo divisao: depois de nome, `)` ou `]` a barra
+  // divide. Confundir os dois quebraria o recorte do outro lado.
+  const h = simbolos([
+    "const conta = (a) => {",
+    "  const m = total / fatias;",
+    "  const n = arr[0] / 2;",
+    "  const o = f(a) / 3;",
+    "  return m + n + o;",
+    "};",
+  ].join("\n"));
+  ok((h.get("conta") || "").split("\n").length === 6,
+    `divisao apos nome, indice e chamada nao e' lida como regex (${(h.get("conta") || "").split("\n").length} de 6 linhas)`);
+}
+
 
 // ============================================================
 // O VERIFICADOR DE VERDADE, RODADO EM COPIAS TEMPORARIAS
@@ -213,6 +243,13 @@ function registroFixture({ presenca = null, conteudo = null } = {}) {
     "}",
     "export function deveExistirEm(simbolo) {",
     "  return new Set(PRESENCA_ESPERADA[simbolo] || REPOS);",
+    "}",
+    "export function simbolosRegistrados(a, b) {",
+    "  const out = new Set();",
+    "  for (const [s, onde] of Object.entries(PRESENCA_ESPERADA))",
+    "    if (onde.includes(a) || onde.includes(b)) out.add(s);",
+    '  for (const s of CONTEUDO_ACEITO[[a, b].sort().join("|")] || []) out.add(s);',
+    "  return out;",
     "}",
     "export function conferirRegistro() {",
     "  const problemas = [];",
@@ -385,6 +422,44 @@ console.log("\n== o verificador, em copias temporarias ==");
     ok(x.codigo === 1 && /FALTA\s+build/.test(x.saida),
       `apagar build (que vem depois de uma regex com aspas) reprova, visto de ${repo} (codigo ${x.codigo})`);
   }
+}
+
+// 5c. Apagar um simbolo previsto para UM repositorio so. Ele nao esta
+//     em nenhum dos dois arquivos comparados -- some da uniao --, e por
+//     isso passava sem ser notado: apagando calcularTrilho do USD, que
+//     e' registrada como so-USD, os tres lados aprovavam com codigo 0.
+//     A uniao passou a incluir o que o REGISTRO menciona.
+{
+  const r = cenario((a) => {
+    a["Monitor-USD-Price"]["monitor.mjs"] = a["Monitor-USD-Price"]["monitor.mjs"]
+      .replace(/function parseYahoo[\s\S]*?\n}\n/, "");
+  });
+  for (const repo of TRES) {
+    const x = r[repo];
+    ok(x.codigo === 1 && /FALTA\s+parseYahoo/.test(x.saida),
+      `apagar um simbolo previsto so para um repositorio reprova, visto de ${repo} (codigo ${x.codigo})`);
+  }
+  ok(/parseYahoo:[^\n]*previsto em Monitor-USD-Price/.test(r["Monitor-BTC-Price"].saida),
+    "e a mensagem diz de qual monitor ele sumiu, mesmo visto de fora");
+}
+
+// 5d. Entrada morta no registro de conteudo: cita um simbolo que nao
+//     existe em lugar nenhum. Era ignorada em silencio, e uma lista de
+//     excecoes que aceita nome inventado nao vale como registro.
+{
+  const r = cenario((a, { registroFixture }) => {
+    const reg = registroFixture({
+      conteudo: {
+        "Monitor-BTC-Price|Monitor-XMR-Price": ["TITULO_PAGINA", "PAIRS", "funcaoQueNaoExisteMais"],
+        "Monitor-BTC-Price|Monitor-USD-Price": ["TITULO_PAGINA", "PAIRS", "build", "escapar"],
+        "Monitor-USD-Price|Monitor-XMR-Price": ["TITULO_PAGINA", "PAIRS", "build", "escapar"],
+      },
+    });
+    for (const repo of TRES) a[repo]["paridade-esperada.mjs"] = reg;
+  }, ["Monitor-BTC-Price"]);
+  const x = r["Monitor-BTC-Price"];
+  ok(x.codigo === 1 && /funcaoQueNaoExisteMais/.test(x.saida),
+    `nome inventado em CONTEUDO_ACEITO reprova em vez de ser ignorado (codigo ${x.codigo})`);
 }
 
 // 6. Liberar o CONTEUDO nao libera a ausencia. PAIRS esta em

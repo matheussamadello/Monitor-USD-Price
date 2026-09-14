@@ -909,6 +909,8 @@ O recorte em símbolos já teve **três** furos:
 
 Os dois primeiros foram achados por mutação; o terceiro apareceu quando um cenário de teste desta mesma conferência acusou uma divergência em `pgEsc` que não fazia sentido. Hoje **todas** as linhas do `monitor.mjs` entram, e cada declaração de topo vira o seu próprio símbolo: 155 contra os 132 de antes. Os imports e o bloco de execução direta vão para um pseudo-símbolo `<topo>`.
 
+O reconhecimento da barra distingue divisão de expressão regular pelo que vem **antes** dela: depois de nome, `)` ou `]` ela divide; depois de pontuação ou de palavra-chave (`return`, `typeof`, `case`…) ela abre uma expressão. Não há nenhum `return /…/` no código de hoje — o caso está coberto por teste justamente porque, quando aparecer, tem de continuar funcionando.
+
 ### Presença e conteúdo são duas perguntas diferentes
 
 Os três furos acima eram do recorte. Havia um quarto, na comparação em si, e pior que todos: ela rodava sobre a **interseção** dos símbolos dos dois arquivos. Uma função que sumisse de um repositório simplesmente saía da conta, e a paridade continuava aprovando. Apagando `atualizarEstadoNivel` de uma cópia do BTC, o verificador terminava com código `0`.
@@ -918,7 +920,11 @@ A conferência agora roda sobre a **união** e faz duas perguntas separadas para
 - **Onde ele deve existir?** O padrão é **nos três**. As exceções estão nomeadas uma a uma em `PRESENCA_ESPERADA`, com a lista de monitores onde cada uma deve existir — `urlKraken` e `parseKraken` em BTC e XMR, `NIVEIS_BTC` só no XMR, as fontes do câmbio e o trilho de execução só no USD. Não existe regra automática do tipo "função exclusiva deve ser configuração": era exatamente essa suposição que deixava uma remoção passar por configuração nova.
 - **O corpo pode diferir?** Isso é `CONTEUDO_ACEITO`, com a chave sendo o par de repositórios. Estar nessa lista **não** autoriza a função a faltar: `PAIRS` tem conteúdo diferente nos três e continua obrigatório nos três. `build` pode divergir contra o USD, que lê de outras fontes, e tem de ser idêntica entre BTC e XMR.
 
-Falta onde é previsto, ou existe onde não é: reprova, com mensagem dizendo o símbolo, onde ele está e onde deveria estar. Remoção, adição e renomeação de função compartilhada caem todas aí. O próprio registro é conferido antes da comparação — nome de monitor com erro de digitação vira código `2`, nunca aprovação.
+Falta onde é previsto, ou existe onde não é: reprova, com mensagem dizendo o símbolo, onde ele está e onde deveria estar. Remoção, adição e renomeação de função compartilhada caem todas aí.
+
+A união inclui **o que o registro menciona**, mesmo que o símbolo não exista em nenhum dos dois arquivos. Sem isso sobrava um buraco da mesma família: a função prevista para **um** repositório só, apagada justamente dele, sumia da união e não faltava em lugar nenhum — apagando `calcularTrilho` do USD, registrada como só-USD, os três lados aprovavam com código `0`. Eram 24 símbolos nessa situação. Pelo mesmo caminho, um nome inventado em qualquer das duas listas passa a reprovar em vez de ser ignorado: lista de exceções que aceita nome que não existe não vale como registro.
+
+O próprio registro também é conferido antes da comparação — nome de monitor com erro de digitação vira código `2`, nunca aprovação.
 
 `teste-paridade.mjs` prende as duas metades. A primeira confere o recorte; a segunda **monta três repositórios num diretório temporário e executa o `paridade.mjs` de verdade** como processo separado, estragando um de cada vez: apagar uma função de um projeto, acrescentar uma não prevista, renomear uma compartilhada, apagar uma de conteúdo liberado, mexer dentro de `build`, deixar a comparação incompleta. Cada cenário roda a partir de mais de um repositório, porque uma remoção tem de reprovar tanto de quem perdeu a função quanto de quem ainda a tem. Quando os três estão clonados lado a lado, os projetos reais entram como mais um cenário; quando não estão, o teste diz em voz alta que pulou — pular não é passar.
 
