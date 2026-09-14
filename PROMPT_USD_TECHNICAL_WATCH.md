@@ -1081,7 +1081,7 @@ Use o JSON como fonte de verdade da configuração atual.
 Dois campos diferentes medem coisas diferentes, e é fácil confundi-los:
 
 - `niveis_manuais_situacao` mede a distância do **preço** até a faixa mais próxima, em ATR. Diz se os níveis ainda cercam o preço;
-- `niveis_manuais_alinhamento` mede se as faixas ainda caem **onde o mercado de fato reage**, comparando cada uma com as zonas automáticas observadas. Sai como `alinhado`, `parcial`, `desalinhado` ou `indefinido`, com a contagem em `niveis_manuais_faixas_corroboradas`.
+- `niveis_manuais_alinhamento` mede se as faixas ainda caem **onde o mercado de fato reage**, comparando cada uma com **todas** as zonas automáticas vivas do par — inclusive as que não cabem na lista publicada, que mostra no máximo três de cada lado. Sai como `alinhado`, `parcial`, `desalinhado` ou `indefinido`, com a contagem em `niveis_manuais_faixas_corroboradas`. Uma faixa de suporte profundo, longe do preço, só pode ser corroborada por zona longe do preço: se a contagem fosse feita sobre a lista publicada, essa faixa sairia como não corroborada para sempre.
 
 Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, mas deslocada da região que o mercado respeita. É justamente o caso que mais merece revisão, e o único dos dois campos que enxerga isso é o alinhamento.
 

@@ -3552,7 +3552,15 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(`niveis_manuais_situacao: ${sitNiveis.situacao}`);
   L.push(`niveis_manuais_faixa_mais_proxima: ${sitNiveis.faixa || "--"}`);
   L.push(`niveis_manuais_distancia_atr: ${num(sitNiveis.distanciaAtr, 2)}`);
-  const alinNiveis = alinhamentoNiveis(cfg.niveis, zonasAutomaticas);
+  // Conjunto INTEIRO de zonas vivas, pelo mesmo motivo do radar logo
+  // abaixo. "As faixas manuais ainda caem onde o mercado reage?" nao
+  // pode depender do corte de exibicao: a faixa de suporte profundo do
+  // BTC (64-67k) cobre uma zona de 10 toques que nao cabe na lista
+  // publicada, e comparando so com a lista o relatorio diria "parcial",
+  // acusando de desalinhada justamente a faixa mais bem apoiada.
+  const alinNiveis = alinhamentoNiveis(
+    cfg.niveis, zonasRes.zonasVivas || zonasAutomaticas
+  );
   L.push(`niveis_manuais_alinhamento: ${alinNiveis.situacao}`);
   L.push(
     `niveis_manuais_faixas_corroboradas: ${alinNiveis.corroboradas} de ${alinNiveis.total}`
