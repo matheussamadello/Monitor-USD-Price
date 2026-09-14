@@ -1,5 +1,5 @@
-timestamp: 2026-09-14 00:15 UTC
-fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
+timestamp: 2026-09-14 00:23 UTC
+fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query2
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
 volume: USD/BRL nao_aplicavel (cambio a vista e' balcao, sem tape publico) | USDT/BRL real (negocia em corretora)
@@ -14,7 +14,7 @@ preco_atual: 5.1453
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-14
 candle_atual_open: 5.1453
-candle_atual_high: 5.1454
+candle_atual_high: 5.1457
 candle_atual_low: 5.1453
 candle_atual_close_provisorio: 5.1453
 candle_atual_var_pct_desde_abertura: 0.00
@@ -42,8 +42,8 @@ atr14_pct: 0.78
 # PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
 # fechamento diario. NAO sao a referencia principal.
 rsi_provisorio: 48.11
-di_plus_provisorio: 18.16
-di_minus_provisorio: 24.48
+di_plus_provisorio: 18.15
+di_minus_provisorio: 24.47
 adx_provisorio: 10.95
 
 candle_fechado_1: data=2026-09-13 open=5.1438 high=5.1507 low=5.1416 close=5.1453 direcao=alta corpo=0.0015 sombra_sup=0.0054 sombra_inf=0.0022 volume=19585347.8000
@@ -68,16 +68,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.011
+fracao_periodo_decorrida: 0.016
 volume_parcial: sim
-volume_atual: 60224.7000
+volume_atual: 278350.0000
 volume_ultima_fechada: 19585347.8000
 volume_media20: 54612295.3700
 volume_vs_media_pct: -64.14
 volume_referencia: ultima_vela_fechada
 volume_classificacao: contracao_forte
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 378
+trades_vela_atual: 594
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -246,7 +246,7 @@ preco_atual: 5.1453
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-14
 candle_atual_open: 5.1453
-candle_atual_high: 5.1454
+candle_atual_high: 5.1457
 candle_atual_low: 5.1453
 candle_atual_close_provisorio: 5.1453
 candle_atual_var_pct_desde_abertura: 0.00
@@ -282,7 +282,7 @@ atr14_pct: 2.46
 # fechamento semanal. NAO sao a referencia principal.
 rsi_provisorio: 48.12
 di_plus_provisorio: 17.17
-di_minus_provisorio: 15.74
+di_minus_provisorio: 15.73
 adx_provisorio: 13.22
 
 candle_fechado_1: data=2026-09-07 open=5.1713 high=5.1948 low=5.0852 close=5.1453 direcao=baixa corpo=0.0260 sombra_sup=0.0235 sombra_inf=0.0601 volume=385296743.5000
@@ -304,14 +304,14 @@ zonas_candidatas_a_faixa: nenhuma
 
 fracao_periodo_decorrida: 0.002
 volume_parcial: sim
-volume_atual: 60224.7000
+volume_atual: 278350.0000
 volume_ultima_fechada: 385296743.5000
 volume_media20: 412529448.2450
 volume_vs_media_pct: -6.60
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 378
+trades_vela_atual: 594
 
 estrutura_preco: LH_HL
 estrutura_tendencia: lateral_contracao
