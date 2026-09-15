@@ -727,7 +727,7 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   }
   ok(!/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>[^<]*<small>[^<]*ATR</.test(html),
     "cartao nao mostra mais a distancia da EMA89 em ATR");
-  ok(/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>(acima|abaixo)<small>[\d.,]+%<\/small>/.test(html),
+  ok(/<dt>EMA89 \(fechado\)<\/dt><dd[^>]*>(?:cruzou )?(acima|abaixo)<small>[\d.,]+%<\/small>/.test(html),
     "cartao mostra o lado da EMA89 e a distancia em %");
   ok(/<svg class="lua"/.test(html) && /<svg class="sol"/.test(html), "os dois icones do botao estao no HTML");
   ok(/aria-label="Alternar night mode"/.test(html), "o botao sem texto mantem nome acessivel");

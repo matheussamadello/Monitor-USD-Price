@@ -4500,10 +4500,11 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
   // relance.
   const distPct =
     acima === null || !ema ? null : ((fech - ema) / ema) * 100;
+  const cruzou = acima !== null && cruz === (acima ? "acima" : "abaixo");
   const emaTxt =
     acima === null
       ? "--"
-      : `${acima ? "acima" : "abaixo"}<small>${pgNum(Math.abs(distPct), 2)}%</small>`;
+      : `${cruzou ? "cruzou " : ""}${acima ? "acima" : "abaixo"}<small>${pgNum(Math.abs(distPct), 2)}%</small>`;
 
   const tend = b.estrutura_tendencia || "--";
   const sit = b.niveis_manuais_situacao || "--";
@@ -4515,8 +4516,6 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
   L.push(pgLinha("Último fechamento",
     `${pgNum(fech, dec)}<small>${pgEsc(b.ultimo_fechamento_data || "")}</small>`));
   L.push(pgLinha("EMA89 (fechado)", emaTxt, acima === null ? "" : acima ? "alta" : "baixa"));
-  if (cruz && cruz !== "nenhum")
-    L.push(pgLinha("Cruzou a EMA89", `${pgEsc(cruz)} no fechamento`, "evento"));
   L.push(pgLinha(`RSI(${b.rsi_length || 14})`, pgNum(rsi, 1),
     typeof rsi === "number" && (rsi >= 70 || rsi <= 30) ? "atencao" : ""));
   // Rotulo com os periodos DAQUELE bloco: diario e semanal usam
