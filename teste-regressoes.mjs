@@ -615,5 +615,38 @@ if (typeof m.parseYahoo === "function") await teste("Yahoo rejeita OHLC parcial/
   assert.equal(falha.ok, false); assert.match(falha.erro, /primaria:.*OHLC.*reserva:.*OHLC/);
 });
 
+if (typeof m.parseYahoo === "function") await teste("barra de fim de semana nao derruba a resposta do cambio", () => {
+  const diario = m.TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+  // Serie de pregoes validos + UMA barra de sabado inconsistente no fim.
+  // O sabado e' a ultima linha da resposta, entao so o filtro de calendario
+  // DENTRO do parser impede que ele seja tratado como "a cotacao mais
+  // recente" -- e a regra do candle recente inconsistente derrubaria a
+  // fonte inteira. O descarte de jusante (ignorarFimDeSemana em
+  // montarSerie) nao alcanca essa decisao: quando ele roda, a excecao ja
+  // teria sido lancada. E' a mesma familia do incidente da vela falsa de
+  // domingo, do outro lado do parser.
+  const uteis = [];
+  let t = epoch("2026-09-11T00:00:00Z");
+  while (uteis.length < 120) {
+    const dow = new Date(t * 1000).getUTCDay();
+    if (dow !== 0 && dow !== 6) uteis.unshift(t);
+    t -= DIA;
+  }
+  const rows = uteis.map((time, i) => ({ time,
+    open: 5 + i * .001, high: 5.03 + i * .001, low: 4.97 + i * .001, close: 5.01 + i * .001 }));
+  const sabado = epoch("2026-09-12T00:00:00Z");
+  assert.equal(new Date(sabado * 1000).getUTCDay(), 6, "a fixture precisa mesmo cair num sabado");
+  const comSabado = [...rows, { time: sabado, open: 9.9, high: 9.0, low: 9.8, close: 9.5 }];
+  const d = m.parseYahoo(respostaYahoo(comSabado), diario);
+  assert.equal(d.closes.length, rows.length, "o sabado nao entra na serie");
+  assert.equal(d.times.at(-1), rows.at(-1).time, "a ultima vela continua sendo a sexta");
+  assert.equal(d.avisosDados.length, 0,
+    "barra de fim de semana e' calendario, nao outlier historico: nao vira aviso");
+  // E um sabado BEM formado tambem nao entra, nem vira a cotacao mais recente.
+  const sabadoBom = [...rows, { time: sabado, open: 9.0, high: 9.2, low: 8.9, close: 9.1 }];
+  const e = m.parseYahoo(respostaYahoo(sabadoBom), diario);
+  assert.equal(e.times.at(-1), rows.at(-1).time, "sabado valido tambem fica de fora");
+});
+
 assert.equal(falhas, 0, `${falhas} de ${grupos} grupos de regressao falharam`);
 console.log(`${grupos} grupos de regressao passaram.`);

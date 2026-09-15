@@ -38,6 +38,20 @@ assert.equal(sequencia([], []).consistencia, "insuficiente");
 assert.equal(sequencia([999, 10, 11, 12, 13], [99, 5, 6, 7, 8]).consistencia,
   "consistente", "somente os quatro ultimos de cada tipo compoem a janela");
 assert.equal(sequencia([10, 11, NaN, 13], [5, 6, 7, 8]).consistencia, "insuficiente");
+// "Consistente" exige 3 de 3 nos DOIS grupos. Um grupo uniforme com o
+// outro em 2 de 3 e' PREDOMINIO -- e' o caso que aparece ao vivo, e o
+// rotulo importa porque a ajuda do painel promete, em "consistente",
+// que "as 3 comparacoes dos topos E as 3 dos fundos seguem esse padrao".
+// Trocar o E por OU aqui passava por todos os testes anteriores.
+const soToposUniformes = sequencia([10, 11, 12, 13], [5, 7, 8, 6]);
+assert.equal(soToposUniformes.tendencia, "alta");
+assert.equal(soToposUniformes.consistencia, "predominante",
+  "topos 3 de 3 com fundos 2 de 3 e' predominio, nunca consistente");
+assert.deepEqual(soToposUniformes.comparacoes.topos, { subindo: 3, caindo: 0, iguais: 0 });
+assert.deepEqual(soToposUniformes.comparacoes.fundos, { subindo: 2, caindo: 1, iguais: 0 });
+const soFundosUniformes = sequencia([10, 12, 13, 11], [5, 6, 7, 8]);
+assert.equal(soFundosUniformes.consistencia, "predominante",
+  "e o espelho: fundos 3 de 3 com topos 2 de 3 tambem e' predominio");
 // Um extremo na ponta ainda nao e' pivo confirmado: nao adianta ser a
 // maior maxima da serie enquanto faltam as velas de confirmacao a direita.
 const hs = [1, 2, 4, 2, 1, 2, 5, 2, 1, 2, 6, 2, 1, 2, 7, 2, 1, 99];
