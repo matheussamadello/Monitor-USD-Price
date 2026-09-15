@@ -4283,24 +4283,28 @@ dl{margin:0;display:grid;gap:8px}
    ser lida de relance, e um circulo forte ao lado de cada rotulo
    competiria com o proprio rotulo. Abre no hover E no foco -- o
    foco e' o que faz funcionar no toque e no teclado. */
-.lh .aj{display:inline-flex;align-items:center;justify-content:center;
+:is(.lh,.estrutura-ajuda) .aj{display:inline-flex;align-items:center;justify-content:center;
   align-self:center;width:15px;height:15px;padding:0;border-radius:50%;
   cursor:help;font:700 10px/1 var(--mono);background:none;
   border:1px solid var(--linha);color:var(--fraco);position:relative}
 /* Alvo de toque de 26px sem engordar o circulo: 15px e' confortavel
    no mouse e apertado no dedo. O quadrado invisivel so amplia a area
    clicavel, e nao muda o desenho nem o espaco ocupado na linha. */
-.lh .aj::after{content:"";position:absolute;left:50%;top:50%;
+:is(.lh,.estrutura-ajuda) .aj::after{content:"";position:absolute;left:50%;top:50%;
   width:26px;height:26px;transform:translate(-50%,-50%)}
-.lh .aj:hover{color:var(--acento);border-color:var(--acento)}
-.lh .aj:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+:is(.lh,.estrutura-ajuda) .aj:hover{color:var(--acento);border-color:var(--acento)}
+:is(.lh,.estrutura-ajuda) .aj:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 /* Ancorado na LINHA e nao no botao: assim a caixa ocupa a largura
    toda e o texto nunca vaza para fora da tela no celular. */
-.lh .ajt{display:none;position:absolute;left:0;right:0;top:100%;z-index:5;
+:is(.lh,.estrutura-ajuda) .ajt{display:none;position:absolute;left:0;right:0;top:100%;z-index:5;
   margin-top:6px;padding:10px 12px;border-radius:8px;background:var(--painel2);
   border:1px solid var(--linha);box-shadow:var(--sombra);
   font:11px/1.6 var(--mono);color:var(--txt);text-align:left}
-.lh .aj:hover + .ajt,.lh .aj:focus + .ajt{display:block}
+:is(.lh,.estrutura-ajuda) .aj:hover + .ajt,:is(.lh,.estrutura-ajuda) .aj:focus + .ajt{display:block}
+.estrutura-ajuda{position:relative}
+.estrutura-ajuda .aj{margin-left:7px;vertical-align:middle}
+.estrutura-ajuda .ajt{top:auto;bottom:100%;margin-top:0;margin-bottom:6px;
+  white-space:normal;overflow-wrap:anywhere}
 .lh.acumular .lr{color:var(--alta)}
 .lh.esticado .lr{color:var(--baixa)}
 .lh.atencao .lr{color:var(--atencao)}
@@ -4385,8 +4389,8 @@ function pgNum(v, dec) {
   return frac ? `${mil},${frac}` : mil;
 }
 
-function pgLinha(rotulo, valor, classe) {
-  return `<div class="m"><dt>${pgEsc(rotulo)}</dt><dd class="${classe || ""}">${valor}</dd></div>`;
+function pgLinha(rotulo, valor, classe, ajuda = "") {
+  return `<div class="m${ajuda ? " estrutura-ajuda" : ""}"><dt>${pgEsc(rotulo)}</dt><dd class="${classe || ""}">${valor}${ajuda}</dd></div>`;
 }
 
 // Um item aparece UMA vez. alertas_tecnicos e deterioracao_tendencia se
@@ -4412,8 +4416,35 @@ function pgChips(alertas, deterioracao) {
 }
 
 // Detalhe visual separado dos campos canonicos usados pelos alertas.
-function pgEstruturaVisual(v, recente, dec) {
-  if (!v) return `<div class="estrutura-ampliada"><span>Sequência ampliada indisponível</span></div>`;
+const EXPLICACOES_ESTRUTURA_RECENTE = {
+  alta: "O último topo confirmado ficou acima do anterior, e o último fundo também. A comparação usa os 2 últimos pivôs de cada tipo.",
+  baixa: "O último topo e o último fundo confirmados ficaram abaixo ou no mesmo preço dos anteriores. A comparação usa os 2 últimos pivôs de cada tipo; nesta leitura recente, empates entram no grupo de baixa.",
+  lateral_contracao: "O último topo confirmado ficou mais baixo ou igual ao anterior, enquanto o fundo ficou mais alto. A faixa entre os extremos está se estreitando na comparação dos 2 últimos pivôs de cada tipo.",
+  lateral_expansao: "O último topo confirmado ficou mais alto, enquanto o fundo ficou mais baixo ou igual ao anterior. Os extremos indicam abertura da faixa na comparação dos 2 últimos pivôs de cada tipo; um fundo igual também entra nesta classificação recente.",
+  indefinida: "Ainda não há pelo menos 2 topos e 2 fundos confirmados para classificar a estrutura recente. Isso não significa que o mercado esteja lateral.",
+  "--": "A estrutura recente não está disponível nesta leitura.",
+};
+
+function pgExplicacaoEstruturaVisual(v) {
+  if (!v) return "A sequência ampliada não está disponível nesta leitura.";
+  if (!v.completa) return "Ainda faltam pivôs para completar os 4 topos e 4 fundos confirmados. Confira as quantidades disponíveis abaixo; a falta de histórico não indica lateralidade.";
+  if (v.consistencia === "mista") return "Há 4 topos e 4 fundos confirmados, mas pelo menos um dos grupos não tem 2 das 3 comparações na mesma direção. Por isso, a sequência não recebe uma direção predominante. Preços iguais contam como neutros.";
+  const direcoes = {
+    alta: "topos subindo e fundos subindo",
+    baixa: "topos caindo e fundos caindo",
+    lateral_contracao: "topos caindo e fundos subindo, estreitando a faixa entre os extremos",
+    lateral_expansao: "topos subindo e fundos caindo, ampliando a faixa entre os extremos",
+  };
+  const regra = v.consistencia === "consistente"
+    ? "As 3 comparações dos topos e as 3 dos fundos seguem esse padrão."
+    : "Pelo menos 2 das 3 comparações em cada grupo seguem esse padrão, mas há uma exceção ou empate na sequência.";
+  return `Nos últimos 4 topos e 4 fundos confirmados, há ${direcoes[v.tendencia]}. ${regra} Preços iguais são neutros. Isso descreve a sequência observada; não é uma probabilidade de acerto nem confirma um rompimento.`;
+}
+
+function pgEstruturaVisual(v, recente, dec, id) {
+  const ajuda = pgAjuda({ rotulo: v ? v.rotulo : "Sequência ampliada indisponível" },
+    `aj-sequencia-${id}`, pgExplicacaoEstruturaVisual(v));
+  if (!v) return `<div class="estrutura-ampliada estrutura-ajuda"><span>Sequência ampliada indisponível</span>${ajuda}</div>`;
   const classe = v.tendencia === "alta" ? "alta" : v.tendencia === "baixa" ? "baixa" : "fraco";
   const diverge = v.completa && v.tendencia !== "indefinida" &&
     recente !== "indefinida" && recente !== "--" && v.tendencia !== recente;
@@ -4427,8 +4458,8 @@ function pgEstruturaVisual(v, recente, dec) {
     ? pontos.map((p) => `${pgEsc(fmtDia(p.time))}: ${pgNum(p.preco, dec)}`).join("<br>")
     : "Nenhum confirmado";
   return `<div class="estrutura-ampliada">` +
-    `<div class="estrutura-resumo"><span>Sequência ampliada</span>` +
-    `<strong class="${classe}">${pgEsc(v.rotulo)}</strong></div>` +
+    `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada</span>` +
+    `<strong class="${classe}">${pgEsc(v.rotulo)}${ajuda}</strong></div>` +
     `<p>${pgEsc(resumo)}</p>` +
     `<details><summary>Ver pivôs e comparações</summary>` +
     `<p>Topos: ${pgEsc(contagem(v.comparacoes.topos))}<br>` +
@@ -4441,7 +4472,7 @@ function pgEstruturaVisual(v, recente, dec) {
     `</details></div>`;
 }
 
-function pgTimeframe(titulo, b, dec, estruturaVisual) {
+function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
   if (!b) return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">sem bloco</p></div>`;
   if (b.falha)
     return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">FALHA: ${pgEsc(b.falha)}</p></div>`;
@@ -4498,7 +4529,9 @@ function pgTimeframe(titulo, b, dec, estruturaVisual) {
       ? (diPlus > diMinus ? "alta" : "baixa")
       : ""));
   L.push(pgLinha("Estrutura recente", pgEsc(tend),
-    tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco"));
+    tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco",
+    pgAjuda({ rotulo: `Estrutura recente: ${tend}` }, `aj-estrutura-${id}`,
+      EXPLICACOES_ESTRUTURA_RECENTE[tend] || EXPLICACOES_ESTRUTURA_RECENTE["--"])));
   L.push(pgLinha("Níveis manuais",
     `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
     sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
@@ -4511,7 +4544,7 @@ function pgTimeframe(titulo, b, dec, estruturaVisual) {
 
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
-    pgEstruturaVisual(estruturaVisual, tend, dec) +
+    pgEstruturaVisual(estruturaVisual, tend, dec, id) +
     `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia)}</div>` +
     `</div>`
   );
@@ -4995,8 +5028,7 @@ export const EXPLICACOES = {
 // que botao nenhum. aria-describedby com um <span role="tooltip"> e nao
 // o title nativo, porque title nao abre no toque, nao segue o tema da
 // pagina e demora um segundo para aparecer.
-function pgAjuda(L, id) {
-  const texto = EXPLICACOES[L.chave];
+function pgAjuda(L, id, texto = EXPLICACOES[L.chave]) {
   if (!texto) return "";
   return (
     `<button type="button" class="aj" aria-describedby="${pgEsc(id)}" ` +
@@ -5067,7 +5099,7 @@ function pgCartao(cfg, dados, estruturaVisual) {
     `<article class="par" data-par="${pgEsc(cfg.label)}">` +
     `<header><h2>${pgEsc(cfg.label)}</h2>` +
     `<div class="preco">${preco}</div></header>` +
-    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`])}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`])}</div>` +
+    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`], `${cfg.key}-diario`)}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`], `${cfg.key}-semanal`)}</div>` +
     grafico +
     `</article>`
   );

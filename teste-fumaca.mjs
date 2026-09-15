@@ -1352,14 +1352,16 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
 
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
   const comCartao = PARES_TESTE.filter((c) => !c.semCartao);
-  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 2,
-    "um (?) por linha de leitura: longo e curto de cada par com cartao");
+  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 6,
+    "um (?) por contexto e por estrutura recente/ampliada de cada timeframe");
+  ok((pag.match(/aria-describedby="aj-[^"]+-(?:longo|curto)"/g) || []).length === comCartao.length * 2,
+    "as ajudas dos contextos longo e curto continuam presentes");
 
   // O id liga o botao ao texto para leitor de tela. Repetido, o leitor
   // leria a explicacao errada -- e o CSS ainda funcionaria, entao so um
   // teste pega isso.
   const ids = pag.match(/id="aj-[^"]+"/g) || [];
-  ok(ids.length === comCartao.length * 2 && new Set(ids).size === ids.length,
+  ok(ids.length === comCartao.length * 6 && new Set(ids).size === ids.length,
     "cada (?) aponta para um id unico");
   for (const id of ids) {
     const alvo = id.slice(4, -1);
