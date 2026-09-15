@@ -1,4 +1,4 @@
-timestamp: 2026-09-15 04:00 UTC
+timestamp: 2026-09-15 05:17 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -10,13 +10,13 @@ nota: a linha "eventos:" existe so no bloco diario; no semanal ela se chama "eve
 
 USDT/BRL
 timeframe: diario
-preco_atual: 5.1679
+preco_atual: 5.1680
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-15
 candle_atual_open: 5.1603
-candle_atual_high: 5.1679
+candle_atual_high: 5.1680
 candle_atual_low: 5.1591
-candle_atual_close_provisorio: 5.1679
+candle_atual_close_provisorio: 5.1680
 candle_atual_var_pct_desde_abertura: 0.15
 ema89: 5.1541
 posicao_vs_ema89: acima
@@ -41,7 +41,7 @@ atr14_pct: 0.80
 
 # PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
 # fechamento diario. NAO sao a referencia principal.
-rsi_provisorio: 51.08
+rsi_provisorio: 51.09
 di_plus_provisorio: 20.89
 di_minus_provisorio: 23.14
 adx_provisorio: 10.59
@@ -68,16 +68,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.167
+fracao_periodo_decorrida: 0.220
 volume_parcial: sim
-volume_atual: 1595161.4000
+volume_atual: 1702213.6000
 volume_ultima_fechada: 72777875.0000
 volume_media20: 55265440.0350
 volume_vs_media_pct: 31.69
 volume_referencia: ultima_vela_fechada
 volume_classificacao: acima_da_media
 volume_tendencia_3_fechadas: crescente
-trades_vela_atual: 4927
+trades_vela_atual: 5555
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -96,9 +96,9 @@ sombra_sup_pct_range: 61.76
 sombra_inf_pct_range: 9.56
 sombra_sup_vs_corpo: 2.15
 sombra_inf_vs_corpo: 0.33
-candle_atual_corpo_pct_range: 86.36
+candle_atual_corpo_pct_range: 86.52
 candle_atual_sombra_sup_pct_range: 0.00
-candle_atual_sombra_inf_pct_range: 13.64
+candle_atual_sombra_inf_pct_range: 13.48
 candle_atual_sombra_sup_vs_corpo: 0.00
 candle_atual_sombra_inf_vs_corpo: 0.16
 
@@ -118,9 +118,9 @@ zonas_automaticas_total: 6
 zona_auto_1: id=usdt|diario|z21 tipo=suporte status=ativa estado=abaixo score=83 estrutural=5.194800-5.220000 operacional=5.193003-5.221791 centro=5.207397 toques=6 rejeicoes=3 role_reversal=sim dist_pct=-0.76 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_2: id=usdt|diario|z5 tipo=resistencia status=ativa estado=abaixo score=59 estrutural=5.237379-5.265921 operacional=5.237217-5.266005 centro=5.251611 toques=7 rejeicoes=5 role_reversal=nao dist_pct=-1.59 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 zona_auto_3: id=usdt|diario|z6 tipo=resistencia status=enfraquecida estado=abaixo score=62 estrutural=5.275500-5.344800 operacional=5.295756-5.324544 centro=5.310150 toques=13 rejeicoes=11 role_reversal=sim dist_pct=-2.68 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
-zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=acima score=85 estrutural=5.122000-5.161000 operacional=5.127106-5.155894 centro=5.141500 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.51 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
+zona_auto_4: id=usdt|diario|z4 tipo=suporte status=ativa estado=acima score=85 estrutural=5.122000-5.161000 operacional=5.127106-5.155894 centro=5.141500 toques=12 rejeicoes=7 role_reversal=sim dist_pct=0.52 confluencia_manual=sim confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim
 zona_auto_5: id=usdt|diario|z3 tipo=suporte status=enfraquecida estado=acima score=74 estrutural=5.039600-5.087600 operacional=5.049206-5.077994 centro=5.063600 toques=3 rejeicoes=2 role_reversal=sim dist_pct=2.06 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
-zona_auto_6: id=usdt|diario|z2 tipo=suporte status=enfraquecida estado=acima score=52 estrutural=4.996490-5.037810 operacional=5.002756-5.031544 centro=5.017150 toques=2 rejeicoes=1 role_reversal=nao dist_pct=3.00 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
+zona_auto_6: id=usdt|diario|z2 tipo=suporte status=enfraquecida estado=acima score=52 estrutural=4.996490-5.037810 operacional=5.002756-5.031544 centro=5.017150 toques=2 rejeicoes=1 role_reversal=nao dist_pct=3.01 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao
 
 confluencia_entrada: nenhuma
 confluencia_pullback: nenhuma
@@ -188,7 +188,7 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 4 de 4
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.167
+fracao_periodo_decorrida: 0.220
 volume_disponivel: nao
 
 estrutura_preco: LH_HL
@@ -243,13 +243,13 @@ deterioracao_tendencia: perda_de_suporte_confirmada
 
 USDT/BRL
 timeframe: semanal
-preco_atual: 5.1679
+preco_atual: 5.1680
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-14
 candle_atual_open: 5.1453
 candle_atual_high: 5.1926
 candle_atual_low: 5.1403
-candle_atual_close_provisorio: 5.1679
+candle_atual_close_provisorio: 5.1680
 candle_atual_var_pct_desde_abertura: 0.44
 ema89: 5.3196
 posicao_vs_ema89: abaixo
@@ -303,16 +303,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.167
+fracao_periodo_decorrida: 0.174
 volume_parcial: sim
-volume_atual: 74373036.4000
+volume_atual: 74480190.8000
 volume_ultima_fechada: 385296743.5000
 volume_media20: 412529448.2450
 volume_vs_media_pct: -6.60
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 45030
+trades_vela_atual: 45659
 volume_semana_dias_fechados: 1
 volume_semana_soma_dias_fechados: 72777875.0000
 volume_semanas_anteriores_mesmos_dias_media: 65590073.9250
@@ -336,10 +336,10 @@ sombra_sup_pct_range: 21.44
 sombra_inf_pct_range: 54.84
 sombra_sup_vs_corpo: 0.90
 sombra_inf_vs_corpo: 2.31
-candle_atual_corpo_pct_range: 43.21
-candle_atual_sombra_sup_pct_range: 47.23
+candle_atual_corpo_pct_range: 43.40
+candle_atual_sombra_sup_pct_range: 47.04
 candle_atual_sombra_inf_pct_range: 9.56
-candle_atual_sombra_sup_vs_corpo: 1.09
+candle_atual_sombra_sup_vs_corpo: 1.08
 candle_atual_sombra_inf_vs_corpo: 0.22
 
 eventos_semanal: nenhum cruzamento nesta vela
@@ -435,7 +435,7 @@ niveis_manuais_alinhamento: parcial
 niveis_manuais_faixas_corroboradas: 2 de 4
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.167
+fracao_periodo_decorrida: 0.174
 volume_disponivel: nao
 
 estrutura_preco: LH_HL
@@ -495,9 +495,9 @@ deterioracao_tendencia: perda_de_suporte_confirmada
 trilho_disponivel: sim
 trilho_par: USDT/BRL
 trilho_fonte: binance
-trilho_preco: 5.1679
+trilho_preco: 5.1680
 trilho_dia: 2026-09-15
-trilho_premio_pct: 0.47
+trilho_premio_pct: 0.48
 trilho_usd_referencia: 5.1435
 trilho_usd_referencia_dia: 2026-09-15
 trilho_premio_defasagem_dias: 0
