@@ -343,7 +343,18 @@ O painel mantém a **estrutura recente**, calculada pelos dois últimos topos e 
 
 Topos e fundos subindo indicam alta; ambos caindo, baixa; topos caindo com fundos subindo, contração; o inverso, expansão. Se a estrutura recente divergir do padrão ampliado, o painel mostra essa divergência. A contagem descreve a sequência observada e não mede a probabilidade de sucesso de uma operação.
 
-Essa informação é **exclusivamente visual**. Os campos existentes de estrutura, o relatório JSON/texto, o histórico, os gatilhos e os prompts dos alertas mantêm seu comportamento. Os dados visuais são calculados por par e timeframe na mesma execução que gera o HTML.
+Essa informação é **exclusivamente visual**. Os campos existentes de estrutura, o relatório JSON/texto, o histórico, os gatilhos e os prompts dos alertas mantêm seu comportamento. Os dados visuais são calculados por par e timeframe na mesma execução que gera o HTML. As explicações básicas, divergências e quantidades insuficientes ficam no “?” ao lado de “Sequência ampliada”; cada classificação tem sua própria ajuda. O campo “EMA89 (fechado)” acrescenta “cruzou” somente quando houve mudança de lado no último fechamento, mantendo a distância em porcentagem.
+
+### Validação dos candles do Yahoo
+
+Uma barra com os quatro preços ausentes é ignorada como sessão sem dados. Ausência parcial, preço não positivo/não finito ou OHLC inconsistente rejeita a resposta e aciona a próxima fonte; se todas falharem, o bloco publica falha. Um `null` nunca é convertido em mínima zero. A validação aceita números do JSON, sem converter texto ou valores booleanos em preços.
+
+### Correções de lógica e continuidade
+
+- Eventos de estrutura são publicados somente no fechamento que confirma o novo pivô; o padrão antigo não reaparece como evento nos candles seguintes.
+- Topos ou fundos iguais recebem `lateral_empate`, sem produzir `estrutura_de_baixa`. No painel, a classificação aparece como “estrutura com empate”.
+- A retomada dos níveis processa os candles disponíveis em ordem. Um contato na vela atual impede arquivamento por inatividade; o estado dormente também registra a última vela avaliada.
+- Os READMEs, prompts e ajudas distinguem faixas manuais de níveis pontuais. A ausência de novidade em níveis/estrutura não exclui eventos próprios da EMA89 ou dos indicadores.
 
 ### Pivôs e estrutura de mercado
 
@@ -373,15 +384,16 @@ Internamente aparecem classificações como HH, HL, LH e LL, que correspondem a:
 
 Até 2026-09-11 os dois usavam 2/2, que era o único parâmetro de análise nunca desacelerado quando o monitor assumiu horizonte de swing e position. Na série sintética de 720 velas **sem tendência nenhuma** usada na auditoria, a `estrutura_tendencia` publicada mudou de direção 98 vezes com 2/2 e 43 vezes com 5/5. O ganho do 5/5 diário vem da janela local mais larga e do maior atraso de confirmação, que filtram extremos curtos e reduzem ruído. Isso **não** significa que exista uma distância mínima fixa de 10, 7 ou qualquer outro número de velas entre pivôs consecutivos. O detector de divergências continua exigindo cinco velas entre os pivôs; o 5/5 diário também reduziu leituras recusadas por pivôs próximos. O semanal fica em 2/2 porque cada vela já cobre uma semana: levá-lo a 5/5 faria um pivô candidato esperar cinco velas semanais à direita para ser confirmado, atraso excessivo para a janela útil deste monitor.
 
-`estrutura_tendencia` tem **cinco** valores, não três:
+`estrutura_tendencia` tem **seis** valores:
 
 - `alta` — HH + HL;
 - `baixa` — LH + LL;
 - `lateral_contracao` — LH + HL, o range aperta com o fundo subindo;
 - `lateral_expansao` — HH + LL, o range abre pelas duas pontas;
+- `lateral_empate` — pelo menos um extremo repetiu o preço anterior (EH = topo igual; EL = fundo igual). Empate não confirma alta nem baixa;
 - `indefinida` — não há pivôs suficientes para declarar estrutura.
 
-Antes, os três últimos saíam todos como `lateral_indefinida`. Isso juntava duas situações opostas, contração e expansão, e chamava de lateral um mercado cujo range está **abrindo**. Pior, afirmava um estado de mercado quando o que havia era ausência de dado. A distinção não é acadêmica: o prompt usa a estrutura semanal como uma das condições que promovem um alerta tático a estratégico, e um semanal fazendo fundo mais alto contava como deterioração da tese de prazo longo.
+Antes, contração, expansão e ausência de dados saíam todas como `lateral_indefinida`. Isso juntava duas situações opostas, contração e expansão, e chamava de lateral um mercado cujo range está **abrindo**. Pior, afirmava um estado de mercado quando o que havia era ausência de dado. A distinção não é acadêmica: o prompt usa a estrutura semanal como uma das condições que promovem um alerta tático a estratégico, e um semanal fazendo fundo mais alto contava como deterioração da tese de prazo longo.
 
 ### Divergências
 
@@ -504,7 +516,7 @@ Agora o suporte espelha a resistência: `perda_suporte_confirmada_X` exige o cor
 
 ## Máquina de estados de rompimento e reteste
 
-Os níveis pontuais possuem estado persistente, avaliado sobre a **última vela fechada**, para evitar oscilações intradiárias da máquina de estados.
+Os níveis pontuais possuem estado persistente, avaliado apenas sobre **velas fechadas**. Após uma interrupção, o monitor percorre em ordem os candles disponíveis posteriores ao estado salvo, usando o ATR de cada um. Só as mudanças pertencentes ao último fechamento são publicadas como eventos atuais. Sem estado anterior, a referência inicial é o último fechamento; não são reconstruídos alertas antigos.
 
 Os principais estados implementados são:
 
@@ -609,7 +621,7 @@ Abrir o conjunto inteiro sozinho traria lixo junto. Medido no dia da mudança, n
 
 **Só no bloco diário.** No semanal a estrutura fica num patamar diferente do diário, e um único conjunto de faixas serve aos dois timeframes: promover uma zona semanal quebraria o alinhamento diário, que é o operacional. Sinalizar lá seria uma lista enorme, permanente e sem ação possível, então o campo sai sempre como `nenhuma` no semanal.
 
-Os três cortes filtram exatamente o que não serve. Zonas de 1 toque e score baixo aparecem acima do preço em quase todo par e não significam nada ainda; zona de score alto com 2 toques também não, porque o radar exige as três coisas juntas — score, toques e situação `ativa`. Quando o campo trouxer algo, é manutenção de configuração, não alerta de mercado: a região merece virar faixa manual para ganhar máquina de estados.
+Os três cortes filtram exatamente o que não serve. Zonas de 1 toque e score baixo aparecem acima do preço em quase todo par e não significam nada ainda; zona de score alto com 2 toques também não, porque o radar exige as três coisas juntas — score, toques e situação `ativa`. Quando o campo trouxer algo, é manutenção de configuração, não alerta de mercado: a região merece virar faixa manual para permanecer como referência até revisão explícita. Essa promoção não cria uma máquina de rompimento/reteste: o ciclo persistente acompanha apenas os preços pontuais configurados como suporte e resistência.
 
 Na página, a linha só ocupa espaço quando há candidata.
 
@@ -907,7 +919,7 @@ Ele serve séries sintéticas de USD/BRL nos **dois** formatos de fonte, sem toc
 - que a vela-fantasma de fim de semana não vira a vela em formação;
 - que a ancoragem de fuso não joga uma vela para o dia seguinte;
 - que RSI, ADX e EMA89 usam o período de cada timeframe, e que o relatório declara qual usou;
-- que os **cinco** valores de estrutura têm nomes distintos, e que os eventos de pivô não prometem o que não aconteceu;
+- que os **seis** valores de estrutura têm nomes distintos, e que os eventos de pivô não prometem o que não aconteceu;
 - que `afastado` mede distância e não etapa do ciclo, e que um rompimento vira notícia **uma vez só**;
 - que o relatório avisa quando a faixa manual sai de onde o mercado reage, e que o radar só aponta região madura, viva e descoberta;
 - que a ficha de uma zona coberta dorme em vez de ser rasgada, e que zona em observação envelhece;

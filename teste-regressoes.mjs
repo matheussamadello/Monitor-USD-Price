@@ -492,5 +492,114 @@ await teste("USD restaurado nao cria reteste ao atravessar o fim de semana", asy
     "a confirmacao posterior do reteste real continua disponivel");
 });
 
+
+await teste("estrutura: novidade pertence a confirmacao do pivo, nao aos fechamentos seguintes", () => {
+  for (const tf of m.TIMEFRAMES_TESTE) for (const lado of ["topo", "fundo"]) {
+    const n = 155, times = Array.from({ length: n }, (_, i) => 1704067200 + i * tf.segundos);
+    const highs = Array(n).fill(110), lows = Array(n).fill(100);
+    const valores = lado === "topo" ? [120, 115, 125] : [90, 95, 85];
+    [110, 125, 140].forEach((idx, j) => (lado === "topo" ? highs : lows)[idx] = valores[j]);
+    const dados = (fim) => ({ times: times.slice(0, fim), highs: highs.slice(0, fim), lows: lows.slice(0, fim),
+      opens: Array(fim).fill(105), closes: Array(fim).fill(105), volumes: Array(fim).fill(100),
+      live: { time: times[fim], open: 105, high: 110, low: 100, close: 105, volume: 10 } });
+    const cfg = { ...m.PARES_TESTE[0], niveis: { faixas: [], resistencia: null, suporte: null } };
+    const fim = 141 + tf.pivos.dir;
+    const evento = lado === "topo" ? "novo_HH_apos_topo_mais_baixo" : "perda_estrutura_alta_novo_LL";
+    const campo = (r) => r.texto.match(/^estrutura_eventos: (.*)$/m)[1];
+    const atual = m.readPair(cfg, dados(fim), tf);
+    assert.ok(campo(atual).includes(evento), `${tf.key}: confirma nesta vela`);
+    assert.equal(campo(m.readPair(cfg, dados(fim), tf)), campo(atual), "retry mantem o evento da mesma vela");
+    assert.equal(campo(m.readPair(cfg, dados(fim + 1), tf)), "nenhum", "sem pivo novo, sem repetir evento antigo");
+  }
+});
+
+await teste("empates de estrutura nao produzem baixa nem deterioracao por baixa", () => {
+  for (const [highs, lows, rotulo] of [
+    [[110, 110], [90, 90], "EH_EL"], [[110, 110], [90, 95], "EH_HL"],
+    [[110, 110], [95, 90], "EH_LL"], [[110, 120], [90, 90], "HH_EL"],
+    [[120, 110], [90, 90], "LH_EL"],
+  ]) {
+    const e = m.classificarEstrutura(highs, lows, { altos: [0, 1], baixos: [0, 1] });
+    assert.equal(e.tendencia, "lateral_empate"); assert.equal(e.rotulo, rotulo);
+    const s = m.sinteses({ alertas: [], estrutura: e, estruturaEventos: [], divergencias: [],
+      enfraquecimento: [], fraqueza: [], rsiFech: null, rsiAnt: null, diPlus: null, diMinus: null });
+    assert.doesNotMatch(s.deterioracao, /estrutura_de_baixa/);
+  }
+  assert.equal(m.classificarEstrutura([110, null], [90, 90], { altos: [0, 1], baixos: [0, 1] }).tendencia, "indefinida");
+});
+
+await teste("retomada dos niveis equivale ao processamento vela a vela", () => {
+  for (const tf of m.TIMEFRAMES_TESTE) {
+    const cfg = { ...m.PARES_TESTE[0], niveis: { resistencia: 100, resistenciaLabel: "100", suporte: null, faixas: [] } };
+    const chave = `${cfg.key}|${tf.key}|100`;
+    const closes = [...Array(150).fill(106), 90, 106, 106];
+    const dados = (n) => ({ times: Array.from({ length: n }, (_, i) => 1704067200 + i * tf.segundos),
+      opens: closes.slice(0, n), closes: closes.slice(0, n), highs: closes.slice(0, n).map(x => x + 5),
+      lows: closes.slice(0, n).map(x => x - 5), volumes: Array(n).fill(100),
+      live: { time: 1704067200 + n * tf.segundos, open: 106, high: 111, low: 101, close: 106, volume: 10 } });
+    const inicial = m.readPair(cfg, dados(150), tf).estadoNiveis;
+    const falhou = m.readPair(cfg, dados(151), tf, { estadoNiveis: inicial });
+    assert.equal(falhou.estadoNiveis[chave].estado, "rompimento_falhou");
+    const recuperou = m.readPair(cfg, dados(152), tf, { estadoNiveis: falhou.estadoNiveis });
+    const retomou = m.readPair(cfg, dados(152), tf, { estadoNiveis: inicial });
+    assert.equal(retomou.estadoNiveis[chave].estado, "recuperado");
+    assert.deepEqual(retomou.estadoNiveis, recuperou.estadoNiveis, "mesmo ATR historico e mesmas transicoes");
+    assert.deepEqual(m.readPair(cfg, dados(152), tf, { estadoNiveis: retomou.estadoNiveis }).estadoNiveis,
+      retomou.estadoNiveis, "retry nao reaplica transicoes");
+    const tarde = m.readPair(cfg, dados(153), tf, { estadoNiveis: inicial });
+    assert.equal(tarde.estadoNiveis[chave].estado, "recuperado");
+    assert.match(tarde.texto, /^niveis_mudancas_nesta_vela: nenhuma$/m, "recuperacao anterior nao vira evento atual");
+    assert.ok(tarde.estadoNiveis[chave].historico.some(x => x.startsWith("recuperado@")), "historico reconstruido");
+  }
+});
+
+await teste("contato atual impede arquivamento mesmo no vencimento do prazo", () => {
+  for (const direcao of ["alta", "baixa"]) {
+    const sinal = direcao === "alta" ? 1 : -1;
+    const ctx = { nivel: 100, direcao, atr: 10, tolAtr: .25, resetAtr: 1.5, maxCandles: 30, segundos: DIA };
+    const vela = (dia, close, low = close - 1, high = close + 1) => ({
+      time: 1704067200 + dia * DIA, open: close, close, low, high });
+    let e = m.atualizarEstadoNivel(null, { ...ctx, vela: vela(0, 100 + sinal * 6) });
+    for (let dia = 1; dia <= 30; dia++) e = m.atualizarEstadoNivel(e, { ...ctx, vela: vela(dia, 100 + sinal * 6) });
+    const contato = m.atualizarEstadoNivel(e, { ...ctx, vela: vela(31, 100 + sinal, 99, 101) });
+    assert.equal(contato.estado, "em_reteste");
+    assert.equal(contato.ultimoContato, 1704067200 + 31 * DIA);
+    const arquivado = m.atualizarEstadoNivel(e, { ...ctx, vela: vela(31, 100 + sinal * 6) });
+    assert.equal(arquivado.estado, "arquivado", "sem contato, prazo continua valendo");
+    const dormente = m.atualizarEstadoNivel(arquivado, { ...ctx, vela: vela(32, 100 + sinal * 6) });
+    assert.equal(dormente.atualizado, 1704067200 + 32 * DIA, "vela dormente tambem foi avaliada");
+  }
+});
+
+if (typeof m.parseYahoo === "function") await teste("Yahoo rejeita OHLC parcial/inconsistente e permite fallback", async () => {
+  const times = [];
+  for (let i = 0; i < 70; i++) {
+    const time = 1704067200 + i * DIA;
+    if (![0, 6].includes(new Date(time * 1000).getUTCDay())) times.push(time);
+  }
+  const q = { open: times.map(() => 5), high: times.map(() => 5.1), low: times.map(() => 4.9), close: times.map(() => 5.05) };
+  const resposta = (quote) => JSON.stringify({ chart: { result: [{ timestamp: times,
+    meta: { gmtoffset: 0 }, indicators: { quote: [quote] } }] } });
+  const tf = m.TIMEFRAMES_TESTE[0];
+  for (const campo of ["open", "high", "low", "close"]) for (const valor of [null, 0, "", false, "5.0"]) {
+    const ruim = clone(q); ruim[campo][10] = valor;
+    assert.throws(() => m.parseYahoo(resposta(ruim), tf), /OHLC/);
+  }
+  const invertido = clone(q); invertido.low[10] = 6;
+  assert.throws(() => m.parseYahoo(resposta(invertido), tf), /inconsistente/);
+  const ausente = clone(q); Object.values(ausente).forEach(xs => xs[10] = null);
+  assert.equal(m.parseYahoo(resposta(ausente), tf).closes.length, times.length - 1, "sessao toda ausente e' ignorada");
+  const ruim = clone(q); ruim.low[10] = null;
+  const cfg = { fontes: [
+    { nome: "primaria", url: () => "primeira", parse: m.parseYahoo },
+    { nome: "reserva", url: () => "segunda", parse: m.parseYahoo },
+  ] };
+  const r = await m.buscarSerie(async url => ({ ok: true, text: async () => resposta(url === "primeira" ? ruim : q) }), cfg, tf);
+  assert.equal(r.ok, true); assert.equal(r.fonte, "reserva");
+  assert.ok(r.parsed.lows.every(x => x === 4.9));
+  const falha = await m.buscarSerie(async () => ({ ok: true, text: async () => resposta(ruim) }), cfg, tf);
+  assert.equal(falha.ok, false); assert.match(falha.erro, /primaria:.*OHLC.*reserva:.*OHLC/);
+});
+
 assert.equal(falhas, 0, `${falhas} de ${grupos} grupos de regressao falharam`);
 console.log(`${grupos} grupos de regressao passaram.`);

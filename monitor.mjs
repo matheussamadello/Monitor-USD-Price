@@ -746,13 +746,16 @@ export function parseYahoo(texto, tf) {
   const off = Number((r.meta && r.meta.gmtoffset) || 0);
   const linhas = [];
   for (let i = 0; i < r.timestamp.length; i++) {
-    linhas.push({
-      time: ancorarDia(Number(r.timestamp[i]), off),
-      open: Number(q.open && q.open[i]),
-      high: Number(q.high && q.high[i]),
-      low: Number(q.low && q.low[i]),
-      close: Number(q.close && q.close[i]),
-    });
+    const precos = [q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]];
+    // Sessao ausente pode vir toda nula; candle parcialmente ausente
+    // e' resposta incompleta, nunca preco zero. Rejeita para acionar fallback.
+    if (precos.every((v) => v === null || v === undefined)) continue;
+    if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0))
+      throw new Error("Yahoo: candle com OHLC incompleto ou inválido");
+    const [open, high, low, close] = precos;
+    if (low > high || open < low || open > high || close < low || close > high)
+      throw new Error("Yahoo: candle com OHLC inconsistente");
+    linhas.push({ time: ancorarDia(Number(r.timestamp[i]), off), open, high, low, close });
   }
   const periodo = tf?.segundos || 86400;
   const sessao = r.meta?.currentTradingPeriod?.regular;
@@ -1222,35 +1225,24 @@ export function acharPivos(highs, lows, esq = PIVO_ESQ, dir = PIVO_DIR) {
 // HH/HL/LH/LL a partir dos dois ultimos pivos de cada tipo.
 export function classificarEstrutura(highs, lows, pivos) {
   const { altos, baixos } = pivos;
-  const topo =
-    altos.length >= 2
-      ? highs[altos[altos.length - 1]] > highs[altos[altos.length - 2]]
-        ? "HH"
-        : "LH"
-      : null;
-  const fundo =
-    baixos.length >= 2
-      ? lows[baixos[baixos.length - 1]] > lows[baixos[baixos.length - 2]]
-        ? "HL"
-        : "LL"
-      : null;
-
-  // Quatro configuracoes reais, nao tres. Antes, contracao, expansao e
-  // FALTA DE DADOS saiam todas como "lateral_indefinida":
-  //   - LH_HL e' contracao: o range aperta, fundo mais alto. Nao e'
-  //     deterioracao, e costuma preceder movimento.
-  //   - HH_LL e' expansao: topo mais alto E fundo mais baixo ao mesmo
-  //     tempo. O range ABRE -- o oposto de lateral.
-  //   - sem dois pivos de cada tipo nao ha estrutura nenhuma a declarar,
-  //     e afirmar "lateral" ali era publicar ausencia de dado como
-  //     estado de mercado.
-  let tendencia;
-  if (topo === "HH" && fundo === "HL") tendencia = "alta";
-  else if (topo === "LH" && fundo === "LL") tendencia = "baixa";
-  else if (topo === "LH" && fundo === "HL") tendencia = "lateral_contracao";
-  else if (topo === "HH" && fundo === "LL") tendencia = "lateral_expansao";
-  else tendencia = "indefinida";
-
+  const compara = (indices, valores, sobe, desce, igual) => {
+    if (indices.length < 2) return null;
+    const atual = valores[indices.at(-1)], anterior = valores[indices.at(-2)];
+    if (!Number.isFinite(atual) || !Number.isFinite(anterior)) return null;
+    return atual > anterior ? sobe : atual < anterior ? desce : igual;
+  };
+  const topo = compara(altos, highs, "HH", "LH", "EH");
+  const fundo = compara(baixos, lows, "HL", "LL", "EL");
+  // Igualdade e' informacao presente, mas nao e' movimento de baixa.
+  // Indefinida continua reservada a dados insuficientes/invalidos.
+  let tendencia = "indefinida";
+  if (topo && fundo) {
+    if (topo === "EH" || fundo === "EL") tendencia = "lateral_empate";
+    else if (topo === "HH" && fundo === "HL") tendencia = "alta";
+    else if (topo === "LH" && fundo === "LL") tendencia = "baixa";
+    else if (topo === "LH" && fundo === "HL") tendencia = "lateral_contracao";
+    else if (topo === "HH" && fundo === "LL") tendencia = "lateral_expansao";
+  }
   const rotulo = topo && fundo ? `${topo}_${fundo}` : "indefinida";
   return { topo, fundo, rotulo, tendencia };
 }
@@ -1300,10 +1292,12 @@ export function analisarEstruturaVisual(highs, lows, times, pivos) {
 
 // Quebra de estrutura: LL logo depois de uma sequencia de HL, ou
 // HH logo depois de uma sequencia de LH.
-export function mudancaEstrutura(highs, lows, pivos) {
+// idxConfirmado identifica o pivo cuja confirmacao chegou nesta vela.
+// Sem esse argumento a funcao apenas descreve o padrao dos tres pivos.
+export function mudancaEstrutura(highs, lows, pivos, idxConfirmado = null) {
   const { altos, baixos } = pivos;
   const eventos = [];
-  if (baixos.length >= 3) {
+  if (baixos.length >= 3 && (idxConfirmado === null || baixos.at(-1) === idxConfirmado)) {
     const [a, b, c] = baixos.slice(-3).map((p) => lows[p]);
     // O nome promete um fundo mais baixo, entao a condicao compara com
     // o PRIMEIRO fundo, nao so com o do meio: 100 -> 110 -> 105 tem
@@ -1311,7 +1305,7 @@ export function mudancaEstrutura(highs, lows, pivos) {
     if (b > a && c < a) eventos.push("perda_estrutura_alta_novo_LL");
     if (b < a && c > b) eventos.push("novo_HL_apos_fundo_mais_baixo");
   }
-  if (altos.length >= 3) {
+  if (altos.length >= 3 && (idxConfirmado === null || altos.at(-1) === idxConfirmado)) {
     const [a, b, c] = altos.slice(-3).map((p) => highs[p]);
     // Mesma correcao, espelhada: 110 -> 100 -> 105 tem c > b, mas 105
     // esta abaixo de 110 e nao e' topo novo.
@@ -1656,7 +1650,7 @@ export function alertasTecnicos(cfg, d, ind) {
 // Maquina de estados de rompimento / reteste (persistida)
 //
 // Um registro por par + timeframe + nivel. Avaliada sempre sobre a
-// ULTIMA VELA FECHADA, nunca sobre a vela em formacao — o estado nao
+// serie de VELAS FECHADAS ainda nao processadas, nunca sobre a vela em formacao — o estado nao
 // pode oscilar dentro do dia.
 //
 // Estados: rompimento_candidato -> rompido -> em_reteste
@@ -1758,7 +1752,7 @@ export function atualizarEstadoNivel(anterior, ctx) {
   // vela -- um nivel rompido ha meses que e' reencostado esta sendo
   // retestado, e e' isso que o relatorio deve dizer.
   if (e.estado === "arquivado") {
-    if (!(naZona || penetrou)) return e;
+    if (!(naZona || penetrou)) return { ...e, atualizado: vela.time };
     e.estado = "rompido";
     e.ultimoContato = vela.time;
     if (!e.dataRompimento) e.dataRompimento = vela.time;
@@ -1772,7 +1766,7 @@ export function atualizarEstadoNivel(anterior, ctx) {
   // parado longe, 7 anuncios em 200 dias. O prompt promete o contrario,
   // que um rompimento vira noticia uma vez so.
   const velasSemContato = (vela.time - (e.ultimoContato || e.dataRompimento)) / segundos;
-  if (velasSemContato > maxCandles) {
+  if (velasSemContato > maxCandles && !(naZona || penetrou)) {
     return {
       estado: "arquivado",
       direcao: e.direcao,
@@ -3281,7 +3275,7 @@ export function readPair(cfg, d, tf, opts = {}) {
   // --- pivos, estrutura, divergencias e volume (SO velas fechadas) ---
   const pivos = acharPivos(highs, lows, tf.pivos.esq, tf.pivos.dir);
   const estrutura = classificarEstrutura(highs, lows, pivos);
-  const estruturaEventos = mudancaEstrutura(highs, lows, pivos);
+  const estruturaEventos = mudancaEstrutura(highs, lows, pivos, i - tf.pivos.dir);
   const divergencias = detectarDivergencias(highs, lows, rsi, pivos);
   const divProvisorias = d.emFormacao === false ? [] : divergenciaProvisoria(
     highs,
@@ -3322,7 +3316,7 @@ export function readPair(cfg, d, tf, opts = {}) {
   }
   const confEstrutural = confirmacaoEstrutural(ctxUsado, estrutura.tendencia);
 
-  // ---- maquina de estados dos niveis (sobre a ULTIMA VELA FECHADA) ----
+  // ---- maquina de niveis: retoma fechamentos; publica eventos da ultima vela ----
   const velaFechada = {
     open: opens[i],
     high: highs[i],
@@ -3335,26 +3329,35 @@ export function readPair(cfg, d, tf, opts = {}) {
   for (const nv of niveisDoPar(cfg)) {
     const chave = chaveNivel(cfg.key, tf.key, nv.nivel);
     const antes = estadoAnt[chave] || null;
-    const depois = atualizarEstadoNivel(antes, {
-      nivel: nv.nivel,
-      direcao: nv.direcao,
-      vela: velaFechada,
-      tolAtr: RETEST_TOLERANCIA_ATR,
-      resetAtr: RETEST_RESET_ATR,
-      atr: atr[i],
-      maxCandles: tf.retestMaxCandles,
-      segundos: tf.segundos,
-    });
-    if (depois) {
-      const velaNova = !antes || !Number.isFinite(antes.atualizado) ||
-        velaFechada.time > antes.atualizado;
-      if (velaNova) {
+    let depois = antes;
+    // Retoma TODAS as velas disponiveis posteriores ao estado salvo.
+    // Sem registro anterior, estabelece baseline apenas na ultima vela.
+    const primeiro = antes && Number.isFinite(antes.atualizado)
+      ? times.findIndex((time) => time > antes.atualizado) : i;
+    for (let idx = primeiro < 0 ? i : primeiro; idx <= i; idx++) {
+      const anteriorVela = depois;
+      depois = atualizarEstadoNivel(anteriorVela, {
+        nivel: nv.nivel,
+        direcao: nv.direcao,
+        vela: { open: opens[idx], high: highs[idx], low: lows[idx],
+          close: closes[idx], time: times[idx] },
+        tolAtr: RETEST_TOLERANCIA_ATR,
+        resetAtr: RETEST_RESET_ATR,
+        atr: atr[idx],
+        maxCandles: tf.retestMaxCandles,
+        segundos: tf.segundos,
+      });
+      const velaNova = !anteriorVela || !Number.isFinite(anteriorVela.atualizado) ||
+        times[idx] > anteriorVela.atualizado;
+      if (depois && velaNova) {
         depois.mudancasNaVela = [];
-        if (antes && depois.estado !== antes.estado)
+        if (anteriorVela && depois.estado !== anteriorVela.estado)
           depois.mudancasNaVela.push(`${depois.estado}_${nv.label}`);
-        if (!antes && depois.estado === "rompido")
+        if (!anteriorVela && depois.estado === "rompido")
           depois.mudancasNaVela.push(`rompido_${nv.label}`);
       }
+    }
+    if (depois) {
       estadoNovo[chave] = depois;
       // O evento pertence a esta VELA, nao apenas a primeira execucao.
       // O consumidor deduplica por par/timeframe/vela/nivel/tipo.
@@ -4418,10 +4421,11 @@ function pgChips(alertas, deterioracao) {
 // Detalhe visual separado dos campos canonicos usados pelos alertas.
 const EXPLICACOES_ESTRUTURA_RECENTE = {
   alta: "O último topo confirmado ficou acima do anterior, e o último fundo também. A comparação usa os 2 últimos pivôs de cada tipo.",
-  baixa: "O último topo e o último fundo confirmados ficaram abaixo ou no mesmo preço dos anteriores. A comparação usa os 2 últimos pivôs de cada tipo; nesta leitura recente, empates entram no grupo de baixa.",
-  lateral_contracao: "O último topo confirmado ficou mais baixo ou igual ao anterior, enquanto o fundo ficou mais alto. A faixa entre os extremos está se estreitando na comparação dos 2 últimos pivôs de cada tipo.",
-  lateral_expansao: "O último topo confirmado ficou mais alto, enquanto o fundo ficou mais baixo ou igual ao anterior. Os extremos indicam abertura da faixa na comparação dos 2 últimos pivôs de cada tipo; um fundo igual também entra nesta classificação recente.",
-  indefinida: "Ainda não há pelo menos 2 topos e 2 fundos confirmados para classificar a estrutura recente. Isso não significa que o mercado esteja lateral.",
+  baixa: "O último topo e o último fundo confirmados ficaram abaixo dos anteriores. A comparação usa os 2 últimos pivôs de cada tipo.",
+  lateral_contracao: "O último topo confirmado ficou mais baixo, enquanto o fundo ficou mais alto. A faixa entre os extremos está se estreitando na comparação dos 2 últimos pivôs de cada tipo.",
+  lateral_expansao: "O último topo confirmado ficou mais alto, enquanto o fundo ficou mais baixo. A faixa entre os extremos está se ampliando na comparação dos 2 últimos pivôs de cada tipo.",
+  lateral_empate: "O último topo ou o último fundo confirmado repetiu o preço do anterior. Empate não é queda: a estrutura recente não confirma um padrão direcional completo, mesmo que o outro extremo tenha se movido.",
+  indefinida: "Ainda não há pelo menos 2 topos e 2 fundos confirmados com preços válidos para classificar a estrutura recente. Isso não significa que o mercado esteja lateral.",
   "--": "A estrutura recente não está disponível nesta leitura.",
 };
 
@@ -4530,7 +4534,7 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
     typeof diPlus === "number" && typeof diMinus === "number"
       ? (diPlus > diMinus ? "alta" : "baixa")
       : ""));
-  L.push(pgLinha("Estrutura recente", pgEsc(tend),
+  L.push(pgLinha("Estrutura recente", pgEsc(tend === "lateral_empate" ? "estrutura com empate" : tend),
     tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco",
     pgAjuda({ rotulo: `Estrutura recente: ${tend}` }, `aj-estrutura-${id}`,
       EXPLICACOES_ESTRUTURA_RECENTE[tend] || EXPLICACOES_ESTRUTURA_RECENTE["--"])));
@@ -4998,20 +5002,20 @@ export const EXPLICACOES = {
     "Subiu bem mais que a média das últimas 89 semanas e o movimento está " +
     "perdendo força: quem empurrava a alta está saindo.",
   reteste_confirmado:
-    "O preço passou de uma faixa manual, voltou para testá-la e ela segurou. " +
+    "O preço atravessou um nível pontual manual, voltou para testá-lo e o fechamento sustentou o lado do rompimento. " +
     "É a sequência mais completa que o monitor acompanha.",
   em_reteste:
-    "O preço passou de uma faixa manual e voltou para testá-la. Ainda não dá " +
-    "para dizer se ela segura.",
+    "O preço atravessou um nível pontual manual e voltou para testá-lo. Ainda não dá " +
+    "para dizer se ele segura.",
   rompimento_falhou:
-    "O preço passou de uma faixa manual e voltou para dentro dela: o " +
+    "O preço atravessou um nível pontual manual e fechou de volta no lado anterior: o " +
     "rompimento não se sustentou.",
   recuperado:
-    "Uma faixa manual que tinha sido perdida foi retomada no fechamento.",
+    "O fechamento voltou ao lado do rompimento de um nível pontual manual após uma falha. A direção depende do nível indicado.",
   rompido:
-    "O preço passou de uma faixa manual e ainda não voltou para testá-la.",
+    "O preço atravessou um nível pontual manual e ainda não voltou para testá-lo neste ciclo.",
   rompimento_candidato:
-    "O preço acabou de passar de uma faixa manual, e o rompimento ainda não " +
+    "O preço começou a atravessar um nível pontual manual, e o rompimento ainda não " +
     "foi confirmado.",
   cruzou_acima:
     "O fechamento diário passou para cima da média das últimas 89 velas do " +
@@ -5021,7 +5025,7 @@ export const EXPLICACOES = {
     "diário.",
   enfraquecimento:
     "O fechamento diário trouxe sinais de perda de força, sem nenhum evento " +
-    "nas faixas manuais.",
+    "nos níveis pontuais manuais.",
   sem_evento:
     "Nada aconteceu no fechamento diário que mereça destaque.",
 };

@@ -289,12 +289,12 @@ Esta é a distinção que mais evita ruído, e ela não é óbvia lendo o relat�
 
 **Mas a lista mistura os dois tipos.** Dentro dela também entram itens que são genuinamente eventos daquela vela: mudanças de estrutura (`novo_HH_apos_topo_mais_baixo`, `perda_estrutura_alta_novo_LL` e afins) e mudanças de estado de nível (`rompido_X`, `reteste_confirmado_X`). Não descarte a lista inteira como se fosse só estado.
 
-**Os campos canônicos de novidade são dois**, e é neles que você deve olhar para saber o que mudou:
+**Para níveis e estrutura, os campos canônicos de novidade são dois**, e é neles que você deve olhar para saber o que mudou:
 
 - `niveis_mudancas_nesta_vela` — mudanças na máquina de rompimento/reteste;
 - `estrutura_eventos` — mudanças de estrutura de preço.
 
-Quando os dois dizem `nenhuma` e `nenhum`, nada mudou nesta vela, por mais longa que esteja a lista de `alertas_tecnicos`.
+Quando os dois estão vazios no JSON (`[]`) ou dizem `nenhuma`/`nenhum` no texto, não há evento novo **nessas duas categorias: níveis e estrutura**. Isso não exclui cruzamento da EMA89, confirmação semanal pendente que amadureceu, cruzamentos de DI, RSI ou ADX, nem outros eventos com regras próprias neste prompt. Avalie cada categoria pelos seus campos e critérios, mantendo os filtros de relevância e deduplicação.
 
 `alertas_tecnicos` responde **o que é verdade agora**. Esses dois respondem **o que passou a ser verdade nesta vela**.
 
@@ -901,15 +901,16 @@ Não trate ADX como sinal de compra/venda independente.
 
 ## Estrutura de mercado
 
-`estrutura_tendencia` tem **cinco** valores, e três deles já saíram todos como `lateral_indefinida`. Não trate os dois laterais como a mesma coisa:
+`estrutura_tendencia` tem **seis** valores. Não confunda contração, expansão, empate e ausência de dados:
 
 - `alta` — topo mais alto e fundo mais alto;
 - `baixa` — topo mais baixo e fundo mais baixo;
 - `lateral_contracao` — topo mais baixo com fundo **mais alto**. O range aperta. Não é deterioração: o fundo está subindo. Costuma preceder movimento, e é contexto para esperar rompimento, não para reduzir posição;
 - `lateral_expansao` — topo mais alto **e** fundo mais baixo. O range abre. É o oposto de lateral: volatilidade crescente, com as duas pontas se afastando. Exige margem maior, não menor;
-- `indefinida` — não há pivôs suficientes para declarar estrutura. É **ausência de dado**, não um estado de mercado. Nunca a converta em veredito nem a descreva como lateralização.
+- `lateral_empate` — o último topo ou fundo repetiu o preço do anterior. Não interprete empate como topo/fundo mais baixo, deterioração ou confirmação de tendência. Descreva como “estrutura com empate”; o outro extremo ainda pode ter subido ou caído;
+- `indefinida` — não há pivôs suficientes com preços válidos para declarar estrutura. É **ausência de dado**, não um estado de mercado. Nunca a converta em veredito nem a descreva como lateralização.
 
-`estrutura_preco` traz o rótulo cru (`HH_HL`, `LH_LL`, `LH_HL`, `HH_LL`, `indefinida`) e sempre concorda com o campo acima.
+`estrutura_preco` traz o rótulo dos extremos (`HH_HL`, `LH_LL`, `LH_HL`, `HH_LL`, combinações com `EH`/`EL`, ou `indefinida`). `EH` significa topo igual e `EL` fundo igual. Combinações com empate correspondem a `lateral_empate`, nunca automaticamente a baixa.
 
 `pivos_fractal` diz em que escala a estrutura foi medida, e **difere por timeframe**. Um pivô só existe depois que as velas de confirmação à direita fecharam, então a estrutura nunca usa a vela em formação.
 
@@ -1153,14 +1154,16 @@ Diferencie claramente:
 - `PROVISÓRIO`;
 - `CONFIRMADO NO FECHAMENTO`.
 
-Nunca exiba `HH`, `HL`, `LH` ou `LL` isoladamente para o usuário.
+Nunca exiba `HH`, `HL`, `LH`, `LL`, `EH` ou `EL` isoladamente para o usuário.
 
 Traduza sempre:
 
 - HH = `topo mais alto`;
 - HL = `fundo mais alto`;
 - LH = `topo mais baixo`;
-- LL = `fundo mais baixo`.
+- LL = `fundo mais baixo`;
+- EH = `topo igual`;
+- EL = `fundo igual`.
 
 Quando a estrutura for HH+HL, escreva:
 

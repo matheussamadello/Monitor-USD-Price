@@ -889,7 +889,7 @@ console.log("\n== RSI: o relatorio declara o periodo usado ==");
 // ------------------------------------------------------------
 // Estrutura de mercado: rotulos e eventos
 // ------------------------------------------------------------
-console.log("\n== estrutura: os cinco valores tem nomes distintos ==");
+console.log("\n== estrutura: os seis valores tem nomes distintos ==");
 {
   // Zigue-zague com pernas longas o bastante para cada virada ser um
   // extremo local estrito, e pivos 2/2 para o teste nao depender do
@@ -921,8 +921,10 @@ console.log("\n== estrutura: os cinco valores tem nomes distintos ==");
   const semDados = classificarEstrutura(curta.highs, curta.lows, acharPivos(curta.highs, curta.lows, 2, 2));
   ok(semDados.tendencia === "indefinida",
     "sem pivos suficientes o rotulo e' 'indefinida': ausencia de dado nao vira estado de mercado");
-  ok(new Set([alta, baixa, contr, expan, semDados].map((x) => x.tendencia)).size === 5,
-    "os cinco casos produzem cinco rotulos diferentes");
+  const empate = classificarEstrutura([110, 110], [90, 90], { altos: [0, 1], baixos: [0, 1] });
+  ok(empate.tendencia === "lateral_empate" && empate.rotulo === "EH_EL", "extremos iguais nao sao baixa");
+  ok(new Set([alta, baixa, contr, expan, empate, semDados].map((x) => x.tendencia)).size === 6,
+    "os seis casos produzem seis rotulos diferentes");
 }
 
 console.log("\n== estrutura: os eventos nao prometem o que nao aconteceu ==");
