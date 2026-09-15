@@ -4442,25 +4442,27 @@ function pgExplicacaoEstruturaVisual(v) {
 }
 
 function pgEstruturaVisual(v, recente, dec, id) {
+  const ajudaJanela = pgAjuda({ rotulo: "Sequência ampliada" },
+    `aj-janela-${id}`, "Comparação dos últimos 4 topos e 4 fundos confirmados.");
   const ajuda = pgAjuda({ rotulo: v ? v.rotulo : "Sequência ampliada indisponível" },
     `aj-sequencia-${id}`, pgExplicacaoEstruturaVisual(v));
-  if (!v) return `<div class="estrutura-ampliada estrutura-ajuda"><span>Sequência ampliada indisponível</span>${ajuda}</div>`;
+  if (!v) return `<div class="estrutura-ampliada"><div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span><strong class="fraco">Indisponível${ajuda}</strong></div></div>`;
   const classe = v.tendencia === "alta" ? "alta" : v.tendencia === "baixa" ? "baixa" : "fraco";
   const diverge = v.completa && v.tendencia !== "indefinida" &&
     recente !== "indefinida" && recente !== "--" && v.tendencia !== recente;
   const resumo = v.completa
     ? (diverge ? "A estrutura recente diverge da sequência ampliada."
       : v.consistencia === "mista" ? "Os movimentos ainda não sustentam uma direção predominante."
-      : "Comparação dos últimos 4 topos e 4 fundos confirmados.")
+      : "")
     : `${v.topos.length} de 4 topos e ${v.fundos.length} de 4 fundos disponíveis.`;
   const contagem = (c) => `${c.subindo} subindo · ${c.caindo} caindo · ${c.iguais} iguais`;
   const lista = (pontos) => pontos.length
     ? pontos.map((p) => `${pgEsc(fmtDia(p.time))}: ${pgNum(p.preco, dec)}`).join("<br>")
     : "Nenhum confirmado";
   return `<div class="estrutura-ampliada">` +
-    `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada</span>` +
+    `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span>` +
     `<strong class="${classe}">${pgEsc(v.rotulo)}${ajuda}</strong></div>` +
-    `<p>${pgEsc(resumo)}</p>` +
+    (resumo ? `<p>${pgEsc(resumo)}</p>` : "") +
     `<details><summary>Ver pivôs e comparações</summary>` +
     `<p>Topos: ${pgEsc(contagem(v.comparacoes.topos))}<br>` +
     `Fundos: ${pgEsc(contagem(v.comparacoes.fundos))}</p>` +

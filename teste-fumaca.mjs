@@ -1352,8 +1352,8 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
 
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
   const comCartao = PARES_TESTE.filter((c) => !c.semCartao);
-  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 6,
-    "um (?) por contexto e por estrutura recente/ampliada de cada timeframe");
+  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 8,
+    "um (?) por contexto, estrutura recente, sequência ampliada e sua classificação");
   ok((pag.match(/aria-describedby="aj-[^"]+-(?:longo|curto)"/g) || []).length === comCartao.length * 2,
     "as ajudas dos contextos longo e curto continuam presentes");
 
@@ -1361,7 +1361,7 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
   // leria a explicacao errada -- e o CSS ainda funcionaria, entao so um
   // teste pega isso.
   const ids = pag.match(/id="aj-[^"]+"/g) || [];
-  ok(ids.length === comCartao.length * 6 && new Set(ids).size === ids.length,
+  ok(ids.length === comCartao.length * 8 && new Set(ids).size === ids.length,
     "cada (?) aponta para um id unico");
   for (const id of ids) {
     const alvo = id.slice(4, -1);
