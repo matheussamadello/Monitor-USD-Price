@@ -179,7 +179,7 @@ const TRES = ["Monitor-BTC-Price", "Monitor-XMR-Price", "Monitor-USD-Price"];
 const IDENTICOS_FIXTURE = [
   "ema89-semanal.mjs", "analisar-historico.mjs", "teste-ema89-semanal.mjs",
   "teste-retrato.mjs", "teste-paridade.mjs", "teste-niveis.mjs",
-  "teste-limiares.mjs", "paridade.mjs", "paridade-esperada.mjs",
+  "teste-limiares.mjs", "teste-estrutura-visual.mjs", "paridade.mjs", "paridade-esperada.mjs",
 ];
 
 // monitor.mjs de mentira, pequeno o bastante para o cenario caber na

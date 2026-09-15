@@ -57,6 +57,7 @@ const IDENTICOS = [
   "teste-paridade.mjs",
   "teste-niveis.mjs",
   "teste-limiares.mjs",
+  "teste-estrutura-visual.mjs",
   // A propria conferencia: um scanner corrigido num repositorio so
   // deixaria os outros dois verificando menos do que pensam.
   "paridade.mjs",

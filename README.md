@@ -332,6 +332,19 @@ O volume da vela em formação continua publicado, cru, em `volume_atual`, com `
 
 Isso também resolveu uma incoerência anterior: `rompimento_confirmado` é avaliado sobre a vela **fechada**, mas buscava a confirmação de volume na vela **viva** — duas velas diferentes na mesma frase. Como efeito colateral, o estado `inconclusivo_periodo_inicial` deixou de existir: não há mais período inicial a desconfiar.
 
+### Estrutura recente e sequência ampliada no painel
+
+O painel mantém a **estrutura recente**, calculada pelos dois últimos topos e dois últimos fundos confirmados, e acrescenta a **sequência ampliada**: os quatro últimos pivôs de cada tipo, com três comparações por grupo. O diário continua confirmando pivôs com cinco velas posteriores fechadas; o semanal, com duas. A vela em formação não participa. Os pivôs podem abranger períodos diferentes, e suas datas e preços ficam acessíveis em “Ver pivôs e comparações”.
+
+- **Consistente:** as três comparações de topos e as três de fundos concordam com o padrão mostrado.
+- **Predomínio:** pelo menos duas das três comparações de cada grupo concordam com ele.
+- **Sequência mista:** pelo menos um dos grupos não tem direção predominante. Preços iguais são neutros.
+- **Histórico insuficiente:** faltam quatro topos ou quatro fundos confirmados; o painel informa quantos existem.
+
+Topos e fundos subindo indicam alta; ambos caindo, baixa; topos caindo com fundos subindo, contração; o inverso, expansão. Se a estrutura recente divergir do padrão ampliado, o painel mostra essa divergência. A contagem descreve a sequência observada e não mede a probabilidade de sucesso de uma operação.
+
+Essa informação é **exclusivamente visual**. Os campos existentes de estrutura, o relatório JSON/texto, o histórico, os gatilhos e os prompts dos alertas mantêm seu comportamento. Os dados visuais são calculados por par e timeframe na mesma execução que gera o HTML.
+
 ### Pivôs e estrutura de mercado
 
 O monitor usa pivôs fractais confirmados para classificar estrutura de preço e publica campos como:
@@ -907,7 +920,7 @@ Rode com:
 node teste-fumaca.mjs
 ```
 
-Ele encadeia mais **seis** arquivos no final: `teste-regressoes.mjs`, `teste-ema89-semanal.mjs`, `teste-paridade.mjs`, `teste-niveis.mjs`, `teste-limiares.mjs` e `teste-retrato.mjs`. Rodar o de fumaça roda os sete.
+Ele encadeia mais **sete** arquivos no final: `teste-regressoes.mjs`, `teste-ema89-semanal.mjs`, `teste-paridade.mjs`, `teste-niveis.mjs`, `teste-limiares.mjs`, `teste-estrutura-visual.mjs` e `teste-retrato.mjs`. Rodar o de fumaça roda os oito.
 
 ### Paridade entre os três monitores
 

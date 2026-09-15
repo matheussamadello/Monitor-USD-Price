@@ -1770,6 +1770,8 @@ console.log("\n== calibragem deste par ==");
 // O retrato vai por ULTIMO e mexe no relogio global, entao nada roda
 // depois dele. Ele sai do processo com codigo 1 por conta propria se o
 // relatorio tiver mudado, e ai a contagem abaixo nem chega a imprimir.
+await import("./teste-estrutura-visual.mjs");
+
 console.log("\n== retrato do relatorio ==");
 await import("./teste-retrato.mjs");
 

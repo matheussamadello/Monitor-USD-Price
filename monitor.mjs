@@ -1255,6 +1255,49 @@ export function classificarEstrutura(highs, lows, pivos) {
   return { topo, fundo, rotulo, tendencia };
 }
 
+// Contexto exclusivamente visual: quatro pivos confirmados de cada tipo.
+// Nao substitui classificarEstrutura, nao entra no texto/JSON dos alertas
+// e nao usa a vela em formacao. Contagens descrevem movimentos, nao
+// probabilidades de acerto. Igualdade nao conta como alta nem como baixa.
+const ESTRUTURA_VISUAL_PIVOS = 4;
+export function analisarEstruturaVisual(highs, lows, times, pivos) {
+  const selecionar = (indices, valores) => indices.slice(-ESTRUTURA_VISUAL_PIVOS)
+    .filter((i) => Number.isInteger(i) && Number.isFinite(valores[i]))
+    .map((i) => ({ preco: valores[i], time: times[i] }));
+  const topos = selecionar(pivos.altos, highs);
+  const fundos = selecionar(pivos.baixos, lows);
+  const contar = (pontos) => {
+    const c = { subindo: 0, caindo: 0, iguais: 0 };
+    for (let i = 1; i < pontos.length; i++) {
+      const delta = pontos[i].preco - pontos[i - 1].preco;
+      c[delta > 0 ? "subindo" : delta < 0 ? "caindo" : "iguais"]++;
+    }
+    return c;
+  };
+  const comparacoes = { topos: contar(topos), fundos: contar(fundos) };
+  const completa = topos.length === ESTRUTURA_VISUAL_PIVOS &&
+    fundos.length === ESTRUTURA_VISUAL_PIVOS;
+  const direcao = (c) => c.subindo >= 2 ? "subindo" : c.caindo >= 2 ? "caindo" : null;
+  const t = direcao(comparacoes.topos), f = direcao(comparacoes.fundos);
+  let tendencia = "indefinida", rotulo = "Histórico insuficiente";
+  let consistencia = "insuficiente";
+  if (completa) {
+    consistencia = "mista";
+    rotulo = "Sequência mista";
+    if (t && f) {
+      tendencia = t === f ? (t === "subindo" ? "alta" : "baixa")
+        : t === "caindo" ? "lateral_contracao" : "lateral_expansao";
+      const uniforme = comparacoes.topos[t] === 3 && comparacoes.fundos[f] === 3;
+      consistencia = uniforme ? "consistente" : "predominante";
+      const nome = { alta: "alta", baixa: "baixa", lateral_contracao: "contração",
+        lateral_expansao: "expansão" }[tendencia];
+      rotulo = uniforme ? nome[0].toUpperCase() + nome.slice(1) + " consistente"
+        : "Predomínio de " + nome;
+    }
+  }
+  return { topos, fundos, comparacoes, completa, tendencia, consistencia, rotulo };
+}
+
 // Quebra de estrutura: LL logo depois de uma sequencia de HL, ou
 // HH logo depois de uma sequencia de LH.
 export function mudancaEstrutura(highs, lows, pivos) {
@@ -3706,6 +3749,7 @@ export function readPair(cfg, d, tf, opts = {}) {
 
   return {
     texto: L.join("\n"),
+    estruturaVisual: analisarEstruturaVisual(highs, lows, times, pivos),
     estadoNiveis: estadoNovo,
     estadoEma89,
     zonasAutomaticas,
@@ -3890,6 +3934,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   const contadoresZona = { ...((estadoAnterior && estadoAnterior.contadoresZona) || {}) };
   const zonasNovas = {};
   const zonasPublicadas = {};
+  const estruturaVisual = {};
 
   blocks.push(`timestamp: ${fmtUTC(Math.floor(Date.now() / 1000))}`);
 
@@ -3988,6 +4033,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       Object.assign(estadoNiveis, r.estadoNiveis || {});
       if (tf.key === "semanal" && r.estadoEma89) estadoEma89Semanal[cfg.key] = r.estadoEma89;
       zonasPublicadas[chaveZ] = r.zonasAutomaticas || [];
+      estruturaVisual[chaveZ] = r.estruturaVisual;
       zonasNovas[chaveZ] = (r.zonasEstadoPar || []).map(zonaParaEstado);
       contadoresZona[chaveZ] = Math.max(
         (contadoresZona[chaveZ] || 0),
@@ -4046,6 +4092,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
     estadoNiveis,
     estadoEma89Semanal,
     zonas: zonasPublicadas,
+    estruturaVisual,
     zonasEstado: zonasNovas,
     contadoresZona,
   };
@@ -4195,6 +4242,14 @@ dl{margin:0;display:grid;gap:8px}
 .m dd.atencao{color:var(--atencao)}
 .m dd.evento{color:var(--acento);font-weight:600}
 .m dd.fraco{color:var(--fraco)}
+.estrutura-ampliada{margin-top:14px;padding-top:12px;border-top:1px solid var(--linha);font-size:12px}
+.estrutura-resumo{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px}
+.estrutura-resumo>span{color:var(--fraco)}
+.estrutura-resumo .alta{color:var(--alta)}
+.estrutura-resumo .baixa{color:var(--baixa)}
+.estrutura-ampliada p{margin:8px 0;color:var(--fraco);line-height:1.6}
+.estrutura-ampliada details{overflow-wrap:anywhere}
+.estrutura-ampliada summary{cursor:pointer;color:var(--acento)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;
   padding-top:13px;border-top:1px dashed var(--linha)}
 .chip{font:11px/1 var(--mono);padding:5px 9px;border-radius:6px;
@@ -4356,7 +4411,37 @@ function pgChips(alertas, deterioracao) {
   return out.join("");
 }
 
-function pgTimeframe(titulo, b, dec) {
+// Detalhe visual separado dos campos canonicos usados pelos alertas.
+function pgEstruturaVisual(v, recente, dec) {
+  if (!v) return `<div class="estrutura-ampliada"><span>Sequência ampliada indisponível</span></div>`;
+  const classe = v.tendencia === "alta" ? "alta" : v.tendencia === "baixa" ? "baixa" : "fraco";
+  const diverge = v.completa && v.tendencia !== "indefinida" &&
+    recente !== "indefinida" && recente !== "--" && v.tendencia !== recente;
+  const resumo = v.completa
+    ? (diverge ? "A estrutura recente diverge da sequência ampliada."
+      : v.consistencia === "mista" ? "Os movimentos ainda não sustentam uma direção predominante."
+      : "Comparação dos últimos 4 topos e 4 fundos confirmados.")
+    : `${v.topos.length} de 4 topos e ${v.fundos.length} de 4 fundos disponíveis.`;
+  const contagem = (c) => `${c.subindo} subindo · ${c.caindo} caindo · ${c.iguais} iguais`;
+  const lista = (pontos) => pontos.length
+    ? pontos.map((p) => `${pgEsc(fmtDia(p.time))}: ${pgNum(p.preco, dec)}`).join("<br>")
+    : "Nenhum confirmado";
+  return `<div class="estrutura-ampliada">` +
+    `<div class="estrutura-resumo"><span>Sequência ampliada</span>` +
+    `<strong class="${classe}">${pgEsc(v.rotulo)}</strong></div>` +
+    `<p>${pgEsc(resumo)}</p>` +
+    `<details><summary>Ver pivôs e comparações</summary>` +
+    `<p>Topos: ${pgEsc(contagem(v.comparacoes.topos))}<br>` +
+    `Fundos: ${pgEsc(contagem(v.comparacoes.fundos))}</p>` +
+    `<p><b>Topos, do mais antigo ao mais recente</b><br>${lista(v.topos)}</p>` +
+    `<p><b>Fundos, do mais antigo ao mais recente</b><br>${lista(v.fundos)}</p>` +
+    `<p>Cada grupo de 4 pivôs gera 3 comparações. “Consistente” exige 3 de 3 ` +
+    `em ambos os grupos; “predomínio” exige pelo menos 2 de 3 em cada grupo. ` +
+    `Empates são neutros. Essa contagem não é uma probabilidade de acerto.</p>` +
+    `</details></div>`;
+}
+
+function pgTimeframe(titulo, b, dec, estruturaVisual) {
   if (!b) return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">sem bloco</p></div>`;
   if (b.falha)
     return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">FALHA: ${pgEsc(b.falha)}</p></div>`;
@@ -4412,7 +4497,7 @@ function pgTimeframe(titulo, b, dec) {
     typeof diPlus === "number" && typeof diMinus === "number"
       ? (diPlus > diMinus ? "alta" : "baixa")
       : ""));
-  L.push(pgLinha("Estrutura", pgEsc(tend),
+  L.push(pgLinha("Estrutura recente", pgEsc(tend),
     tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco"));
   L.push(pgLinha("Níveis manuais",
     `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
@@ -4426,6 +4511,7 @@ function pgTimeframe(titulo, b, dec) {
 
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
+    pgEstruturaVisual(estruturaVisual, tend, dec) +
     `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia)}</div>` +
     `</div>`
   );
@@ -4957,7 +5043,7 @@ function pgLeitura(cfg, dados) {
   );
 }
 
-function pgCartao(cfg, dados) {
+function pgCartao(cfg, dados, estruturaVisual) {
   const dia = (dados.diario || {})[cfg.label];
   const sem = (dados.semanal || {})[cfg.label];
   const preco = dia && typeof dia.preco_atual === "number" ? pgNum(dia.preco_atual, cfg.dec) : "--";
@@ -4981,7 +5067,7 @@ function pgCartao(cfg, dados) {
     `<article class="par" data-par="${pgEsc(cfg.label)}">` +
     `<header><h2>${pgEsc(cfg.label)}</h2>` +
     `<div class="preco">${preco}</div></header>` +
-    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec)}${pgTimeframe("Semanal", sem, cfg.dec)}</div>` +
+    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`])}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`])}</div>` +
     grafico +
     `</article>`
   );
@@ -4994,7 +5080,7 @@ function pgMarca() {
   return p ? `${pgEsc(p[1])} <b>${pgEsc(p[2])}</b>` : pgEsc(TITULO_PAGINA);
 }
 
-export function toHTML(text, dados) {
+export function toHTML(text, dados, estruturaVisual = {}) {
   const d = dados || { cabecalho: {}, diario: {}, semanal: {} };
   const ts = String((d.cabecalho && d.cabecalho.timestamp) || "");
   const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}) UTC$/.exec(ts);
@@ -5080,7 +5166,7 @@ export function toHTML(text, dados) {
     `o dia. Perto e longe levam em conta o quanto cada par oscila; amarelo ` +
     `quer dizer <b>vale olhar</b>, não bom nem ruim. Não é recomendação.` +
     `</p></section>\n` +
-    `<section class="pares">${comCartao.map((c) => pgCartao(c, d)).join("")}</section>\n` +
+    `<section class="pares">${comCartao.map((c) => pgCartao(c, d, estruturaVisual)).join("")}</section>\n` +
     '<section class="relatorio"><h2>Relatório completo</h2>\n' +
     // ---- daqui ate o </pre> e' o bloco que o fallback do prompt le ----
     "<pre>" +
@@ -5238,7 +5324,7 @@ if (executadoDireto) {
   }
   const anteriores = estadoPrev.ativos || [];
 
-  const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona } =
+  const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona, estruturaVisual } =
     await build(fetch, estadoPrev);
   mkdirSync("docs", { recursive: true });
   const ativos = gatilhos.map((g) => g.id);
@@ -5248,7 +5334,7 @@ if (executadoDireto) {
   // nada e o JSON parseava por conta; agora os dois saem do mesmo
   // objeto, e nao ha como o resumo da pagina discordar do relatorio.
   const dadosJSON = relatorioParaJSON(texto, zonas);
-  writeFileSync("docs/index.html", toHTML(texto, dadosJSON));
+  writeFileSync("docs/index.html", toHTML(texto, dadosJSON, estruturaVisual));
   writeFileSync("docs/index.txt", texto + "\n");
   writeFileSync("docs/relatorio.json", JSON.stringify(dadosJSON, null, 2) + "\n");
   writeFileSync("docs/.nojekyll", "");
