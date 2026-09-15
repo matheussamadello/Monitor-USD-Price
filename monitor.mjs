@@ -1623,8 +1623,23 @@ export function alertasTecnicos(cfg, d, ind) {
   // --- volume como CONFIRMACAO, nunca sozinho ---
   const vol = ind.volume;
   const houveRompimento = a.some((x) => x.startsWith("rompimento_"));
-  const rompimentoFechado = a.some((x) => x.startsWith("rompimento_confirmado_"));
-  const perdaFechada = a.some((x) => x.startsWith("perda_suporte_confirmada_"));
+  // SO a versao forte. O prefixo "rompimento_confirmado_" tambem casa com
+  // "rompimento_confirmado_fraco_", e o mesmo vale para a perda de suporte
+  // -- a exclusao aqui e' a mesma que confluencia_entrada e
+  // deterioracao_tendencia ja faziam com tem()/!tem().
+  //
+  // O prompt manda ler a versao fraca como um toque intradiario que por
+  // acaso caiu no fechamento: encostada, nao travessia. Toque intradiario
+  // nao ganha confirmacao de volume, entao a fraca tambem nao pode ganhar.
+  // Sem isso o relatorio publicava "rompimento_com_volume_acima_da_media"
+  // ao lado de "rompimento_confirmado_fraco_X", empurrando para o lado
+  // oposto da regra que o proprio prompt enuncia.
+  const forte = (x, prefixo, fraco) =>
+    x.startsWith(prefixo) && !x.startsWith(fraco);
+  const rompimentoFechado = a.some((x) =>
+    forte(x, "rompimento_confirmado_", "rompimento_confirmado_fraco_"));
+  const perdaFechada = a.some((x) =>
+    forte(x, "perda_suporte_confirmada_", "perda_suporte_confirmada_fraca_"));
   // Este volume pertence a ultima FECHADA: confirma apenas um evento
   // daquela mesma vela, nunca a maxima/minima da barra em formacao.
   if (vol && vol.vsMediaPct !== null) {

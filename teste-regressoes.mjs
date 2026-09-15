@@ -119,9 +119,24 @@ await teste("volume confirma apenas o rompimento/perda da mesma vela fechada", (
       live: { open: 101, high: 102, low: 98, close: 99 } }, vol, true);
     assert.ok(!b.some((x) => /volume/.test(x)), b.join(","));
   }
+  // Corpo inteiro alem do nivel: rompimento FORTE, e o volume confirma.
   assert.ok(alertas({ ...viva, opens: [101], closes: [103] }, 60).includes("rompimento_com_volume_acima_da_media"));
-  assert.ok(alertas({ ...viva, opens: [99], closes: [103] }, 60).includes("rompimento_com_volume_acima_da_media"));
   assert.ok(alertas({ ...viva, opens: [99], closes: [97] }, 60, true).includes("queda_com_expansao_de_volume"));
+
+  // Versao FRACA -- so o fechamento passou, o corpo ficou em cima do
+  // nivel -- nao ganha confirmacao de volume. O prompt manda le-la como
+  // um toque intradiario que por acaso caiu no fechamento, e toque
+  // intradiario nao ganha volume (o laco acima prova isso). O prefixo
+  // "rompimento_confirmado_" casa com "rompimento_confirmado_fraco_",
+  // entao a exclusao precisa ser explicita.
+  const fraco = alertas({ ...viva, opens: [99], closes: [103] }, 60);
+  assert.ok(fraco.includes("rompimento_confirmado_fraco_100"), fraco.join(","));
+  assert.ok(!fraco.some((x) => /volume/.test(x)),
+    "rompimento fraco nao recebe confirmacao de volume: " + fraco.join(","));
+  const fraca = alertas({ ...viva, opens: [101], closes: [99] }, 60, true);
+  assert.ok(fraca.includes("perda_suporte_confirmada_fraca_100"), fraca.join(","));
+  assert.ok(!fraca.some((x) => /volume/.test(x)),
+    "perda fraca nao recebe expansao de volume: " + fraca.join(","));
 });
 
 function respostaYahoo(rows, meta = {}) {
