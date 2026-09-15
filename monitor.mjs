@@ -3239,6 +3239,17 @@ function detalheDiv(x, times, dec, timeViva) {
 // quebrava nenhum teste.
 export function readPair(cfg, d, tf, opts = {}) {
   const estadoAnt = opts.estadoNiveis || {};
+  // Carimbo da ultima vela fechada JA processada para este par+timeframe,
+  // gravado pelo build. Existe para separar dois casos que, sem ele, sao
+  // indistinguiveis quando um nivel nao tem registro proprio:
+  //   - primeira execucao do monitor (ou par/tf novo): nao ha o que
+  //     retomar, e reconstruir a janela inteira anunciaria rompimentos
+  //     de meses atras como se fossem de hoje;
+  //   - nivel que simplesmente NUNCA rompeu: a maquina dele nunca abriu
+  //     registro, mas o monitor ja processou as velas. Aqui ha o que
+  //     retomar, e ignorar isso era o que fazia um rompimento ocorrido
+  //     durante uma interrupcao ser tratado como novo na volta.
+  const carimboAnt = opts.ultimaVelaProcessada;
   const estadoNovo = {};
   const { highs, lows, closes, opens, times, live } = d;
   const D = cfg.dec;
@@ -3353,9 +3364,18 @@ export function readPair(cfg, d, tf, opts = {}) {
     const antes = estadoAnt[chave] || null;
     let depois = antes;
     // Retoma TODAS as velas disponiveis posteriores ao estado salvo.
-    // Sem registro anterior, estabelece baseline apenas na ultima vela.
+    //
+    // Sem registro do nivel, cai no carimbo do par+timeframe -- e SO
+    // quando a vela carimbada ainda esta na janela desta serie. Esse
+    // "ainda esta na janela" e' o limite do replay: um carimbo antigo
+    // demais, ou de uma serie reancorada, nao casa e o comportamento
+    // volta a ser o de estabelecer baseline na ultima vela. Sem carimbo
+    // nenhum -- primeira execucao, ou estado gravado antes deste campo
+    // existir -- tambem. Nunca ha reconstrucao da janela inteira.
+    const idxCarimbo = Number.isFinite(carimboAnt) ? times.indexOf(carimboAnt) : -1;
     const primeiro = antes && Number.isFinite(antes.atualizado)
-      ? times.findIndex((time) => time > antes.atualizado) : i;
+      ? times.findIndex((time) => time > antes.atualizado)
+      : antes ? i : idxCarimbo >= 0 ? idxCarimbo + 1 : i;
     for (let idx = primeiro < 0 ? i : primeiro; idx <= i; idx++) {
       const anteriorVela = depois;
       depois = atualizarEstadoNivel(anteriorVela, {
@@ -3775,6 +3795,9 @@ export function readPair(cfg, d, tf, opts = {}) {
 
   return {
     texto: L.join("\n"),
+    // So o build grava, e so depois de o bloco ter sido lido com sucesso:
+    // um par que falhou nao pode avancar o carimbo e pular velas.
+    ultimaVelaFechada: times[i],
     estruturaVisual: analisarEstruturaVisual(highs, lows, times, pivos),
     estadoNiveis: estadoNovo,
     estadoEma89,
@@ -3958,6 +3981,12 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   const estadoAnt = (estadoAnterior && estadoAnterior.niveis) || {};
   const zonasAnt = (estadoAnterior && estadoAnterior.zonas) || {};
   const contadoresZona = { ...((estadoAnterior && estadoAnterior.contadoresZona) || {}) };
+  // Carimbo por par+timeframe da ultima vela fechada processada. Parte do
+  // que ja estava salvo: par que falhar nesta execucao mantem o anterior,
+  // em vez de pular as velas que nao chegou a ler.
+  const ultimaVelaProcessada = {
+    ...((estadoAnterior && estadoAnterior.ultimaVelaProcessada) || {}),
+  };
   const zonasNovas = {};
   const zonasPublicadas = {};
   const estruturaVisual = {};
@@ -4048,6 +4077,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       const chaveZ = `${cfg.key}|${tf.key}`;
       const r = readPair(cfg, bruto.parsed, tf, {
         estadoNiveis: estadoAnt,
+        ultimaVelaProcessada: ultimaVelaProcessada[chaveZ],
         estadoEma89: ema89SemanalAnt[cfg.key],
         dadosDiario: (dados.diario || {})[cfg.key],
         zonasAnteriores: zonasAnt[chaveZ] || [],
@@ -4059,6 +4089,12 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
       Object.assign(estadoNiveis, r.estadoNiveis || {});
       if (tf.key === "semanal" && r.estadoEma89) estadoEma89Semanal[cfg.key] = r.estadoEma89;
       zonasPublicadas[chaveZ] = r.zonasAutomaticas || [];
+      // Depois do sucesso, e nunca para tras: uma resposta antiga da fonte
+      // nao pode recuar o carimbo e fazer o proximo retry reprocessar.
+      if (Number.isFinite(r.ultimaVelaFechada))
+        ultimaVelaProcessada[chaveZ] = Math.max(
+          ultimaVelaProcessada[chaveZ] || 0, r.ultimaVelaFechada
+        );
       estruturaVisual[chaveZ] = r.estruturaVisual;
       zonasNovas[chaveZ] = (r.zonasEstadoPar || []).map(zonaParaEstado);
       contadoresZona[chaveZ] = Math.max(
@@ -4121,6 +4157,7 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
     estruturaVisual,
     zonasEstado: zonasNovas,
     contadoresZona,
+    ultimaVelaProcessada,
   };
 }
 
@@ -5385,8 +5422,8 @@ if (executadoDireto) {
   }
   const anteriores = estadoPrev.ativos || [];
 
-  const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona, estruturaVisual } =
-    await build(fetch, estadoPrev);
+  const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona,
+    estruturaVisual, ultimaVelaProcessada } = await build(fetch, estadoPrev);
   mkdirSync("docs", { recursive: true });
   const ativos = gatilhos.map((g) => g.id);
   const novos = gatilhos.filter((g) => !anteriores.includes(g.id));
@@ -5419,6 +5456,7 @@ if (executadoDireto) {
         ema89Semanal: estadoEma89Semanal,
         zonas: zonasEstado,
         contadoresZona,
+        ultimaVelaProcessada,
         historicoAssinaturas: hist.assinaturas,
       },
       null,

@@ -163,7 +163,10 @@ function mockFetch() {
     return { ok: true, text: async () => text, json: async () => JSON.parse(text) };
   };
 }
-const estadoDe = (r) => clone({ ema89Semanal: r.estadoEma89Semanal, niveis: r.estadoNiveis, zonas: r.zonasEstado, contadoresZona: r.contadoresZona });
+// Espelha o que o bloco de execucao grava em docs/estado.json. Se um
+// campo persistido faltar aqui, os testes de build passam a simular um
+// monitor que o perde a cada execucao -- e o defeito fica invisivel.
+const estadoDe = (r) => clone({ ema89Semanal: r.estadoEma89Semanal, niveis: r.estadoNiveis, zonas: r.zonasEstado, contadoresZona: r.contadoresZona, ultimaVelaProcessada: r.ultimaVelaProcessada });
 const jsonDe = (r) => m.relatorioParaJSON(r.texto, r.zonas);
 
 await teste("eventos persistem entre execucoes e expiram na vela seguinte", async () => {
@@ -550,6 +553,152 @@ await teste("retomada dos niveis equivale ao processamento vela a vela", () => {
     assert.equal(tarde.estadoNiveis[chave].estado, "recuperado");
     assert.match(tarde.texto, /^niveis_mudancas_nesta_vela: nenhuma$/m, "recuperacao anterior nao vira evento atual");
     assert.ok(tarde.estadoNiveis[chave].historico.some(x => x.startsWith("recuperado@")), "historico reconstruido");
+  }
+});
+
+await teste("falha de fonte nao avanca o carimbo de vela processada", async () => {
+  await noInstante("2026-09-10T12:00:00Z", async () => {
+    const bom = await m.build(mockFetch(), {});
+    assert.doesNotMatch(bom.texto, /FALHA:/);
+    const salvo = estadoDe(bom);
+    const carimbos = salvo.ultimaVelaProcessada;
+    assert.ok(Object.keys(carimbos).length > 0, "o carimbo e' gravado por par e timeframe");
+    for (const [chave, valor] of Object.entries(carimbos))
+      assert.ok(Number.isFinite(valor) && valor > 0, `${chave} carimbado com vela valida`);
+
+    // Fonte fora do ar: o carimbo anterior tem de sobreviver intacto. Se
+    // avancasse, a proxima execucao bem-sucedida pularia as velas que
+    // esta aqui nao chegou a ler -- exatamente o buraco que o campo
+    // existe para fechar.
+    const caiu = await m.build(async () => ({ ok: false, status: 503 }), clone(salvo));
+    assert.match(caiu.texto, /FALHA:/, "a fixture precisa mesmo falhar");
+    assert.deepEqual(caiu.ultimaVelaProcessada, carimbos,
+      "par que falhou mantem o carimbo anterior");
+
+    // Reexecucao com a fonte de volta nao pode recuar o carimbo.
+    const voltou = await m.build(mockFetch(), clone(estadoDe(caiu)));
+    for (const [chave, valor] of Object.entries(voltou.ultimaVelaProcessada))
+      assert.ok(valor >= carimbos[chave], `${chave} nunca anda para tras`);
+  });
+
+  // Resposta ATRASADA da fonte: o mock e' preso ao relogio, entao voltar
+  // o relogio devolve velas mais antigas -- o equivalente a um cache
+  // velho respondendo. O carimbo nao pode recuar por isso: se recuasse,
+  // a execucao seguinte reprocessaria velas ja aplicadas.
+  const adiantado = estadoDe(await noInstante("2026-09-20T12:00:00Z",
+    () => m.build(mockFetch(), {})));
+  const atrasado = await noInstante("2026-09-13T12:00:00Z",
+    () => m.build(mockFetch(), clone(adiantado)));
+  for (const [chave, valor] of Object.entries(adiantado.ultimaVelaProcessada))
+    assert.equal(atrasado.ultimaVelaProcessada[chave], valor,
+      `${chave}: resposta atrasada nao recua o carimbo`);
+
+  // E o carimbo precisa CHEGAR ao readPair, nao so ser gravado. Aqui o
+  // estado guarda o carimbo mas nenhum registro de nivel -- o caso do
+  // nivel que nunca rompeu enquanto o monitor rodava. Com tres dias de
+  // interrupcao, a retomada tem de reconstruir o ciclo desde a vela em
+  // que ele comecou; sem o carimbo, o registro nasce na ultima vela.
+  //
+  // A comparacao e' por DATA, nao pelo estado inteiro: o mock deriva o
+  // preco do indice dentro da janela, entao a mesma data muda de preco
+  // conforme a janela desliza. A equivalencia exata do replay esta
+  // provada no teste de readPair, com serie estavel.
+  const semRegistros = clone(estadoDe(await noInstante("2026-09-10T12:00:00Z",
+    () => m.build(mockFetch(), {}))));
+  semRegistros.niveis = {};
+  assert.ok(Object.keys(semRegistros.ultimaVelaProcessada).length > 0);
+  await noInstante("2026-09-13T12:00:00Z", async () => {
+    const com = await m.build(mockFetch(), clone(semRegistros));
+    const semCarimbo = clone(semRegistros);
+    delete semCarimbo.ultimaVelaProcessada;
+    const sem = await m.build(mockFetch(), semCarimbo);
+    const chaves = Object.keys(com.estadoNiveis);
+    assert.ok(chaves.length > 0, "a fixture precisa mesmo abrir registro");
+    let reconstruiu = 0;
+    for (const chave of chaves) {
+      const c = com.estadoNiveis[chave];
+      assert.ok(c.dataRompimento <= c.atualizado);
+      if (c.dataRompimento < c.atualizado) reconstruiu++;
+      const s = sem.estadoNiveis[chave];
+      if (s) assert.equal(s.dataRompimento, s.atualizado,
+        "sem carimbo o registro nasce na ultima vela, sem historia");
+    }
+    assert.ok(reconstruiu > 0,
+      "com carimbo, ao menos um nivel volta com o rompimento na vela original");
+  });
+});
+
+await teste("carimbo de vela processada retoma nivel que nunca abriu registro", () => {
+  for (const tf of m.TIMEFRAMES_TESTE) {
+    const cfg = { ...m.PARES_TESTE[0],
+      niveis: { resistencia: 100, resistenciaLabel: "100", suporte: null, faixas: [] } };
+    const chave = `${cfg.key}|${tf.key}|100`;
+    // 150 velas longe do nivel, depois rompe, retesta e confirma. Nada
+    // disso abre registro antes do rompimento: e' o caso em que o nivel
+    // NAO tem estado proprio e, sem o carimbo, o replay nao tinha de onde
+    // partir -- a interrupcao engolia o ciclo inteiro.
+    const closes = [...Array(150).fill(90), 106, 106, 101, 106];
+    const times = (n) => Array.from({ length: n }, (_, i) => 1704067200 + i * tf.segundos);
+    const dados = (n) => ({ times: times(n), opens: closes.slice(0, n), closes: closes.slice(0, n),
+      highs: closes.slice(0, n).map((x) => x + 5), lows: closes.slice(0, n).map((x) => x - 5),
+      volumes: Array(n).fill(100),
+      live: { time: 1704067200 + n * tf.segundos, open: 106, high: 111, low: 101, close: 106, volume: 10 } });
+    const base = m.readPair(cfg, dados(150), tf);
+    assert.equal(Object.keys(base.estadoNiveis).length, 0, "o nivel ainda nao abriu registro");
+    assert.equal(base.ultimaVelaFechada, times(150).at(-1), "o carimbo e' a ultima vela FECHADA");
+
+    // Verdade: vela a vela.
+    let verdade = {};
+    for (let n = 151; n <= 154; n++)
+      verdade = m.readPair(cfg, dados(n), tf, { estadoNiveis: verdade }).estadoNiveis;
+
+    // Buraco de 4 velas, retomado pelo carimbo.
+    const comCarimbo = m.readPair(cfg, dados(154), tf,
+      { estadoNiveis: {}, ultimaVelaProcessada: base.ultimaVelaFechada });
+    assert.deepEqual(comCarimbo.estadoNiveis, verdade, "o carimbo reconstroi o ciclo inteiro");
+    assert.equal(comCarimbo.estadoNiveis[chave].estado, "reteste_confirmado");
+    // A retomada anuncia EXATAMENTE o que a rota vela a vela anunciaria
+    // nesta vela: nem a mais, nem a menos.
+    const linha = (t) => (t.match(/^niveis_mudancas_nesta_vela: .*$/m) || [])[0];
+    let ate153 = {};
+    for (let n = 151; n <= 153; n++)
+      ate153 = m.readPair(cfg, dados(n), tf, { estadoNiveis: ate153 }).estadoNiveis;
+    assert.equal(linha(comCarimbo.texto),
+      linha(m.readPair(cfg, dados(154), tf, { estadoNiveis: ate153 }).texto),
+      "a transicao que cai NA ultima vela continua sendo noticia");
+
+    // E quando o ciclo se fecha ANTES da ultima vela, nada e' anunciado:
+    // e' o ponto todo do carimbo -- recuperar o estado sem ressuscitar a
+    // noticia. Uma vela parada a mais depois da confirmacao.
+    const paradas = [...closes, 106];
+    const dadosP = (n) => ({ ...dados(n), opens: paradas.slice(0, n), closes: paradas.slice(0, n),
+      highs: paradas.slice(0, n).map((x) => x + 5), lows: paradas.slice(0, n).map((x) => x - 5) });
+    const tarde = m.readPair(cfg, dadosP(155), tf,
+      { estadoNiveis: {}, ultimaVelaProcessada: base.ultimaVelaFechada });
+    assert.equal(tarde.estadoNiveis[chave].estado, "reteste_confirmado", "o estado foi recuperado");
+    assert.match(tarde.texto, /^niveis_mudancas_nesta_vela: nenhuma$/m,
+      "ciclo fechado durante a interrupcao nao e' anunciado como novo");
+
+    // SEM carimbo -- primeira execucao, ou estado gravado antes do campo
+    // existir -- continua estabelecendo baseline so na ultima vela.
+    const semCarimbo = m.readPair(cfg, dados(154), tf, { estadoNiveis: {} });
+    assert.deepEqual(semCarimbo.estadoNiveis[chave].historico, [],
+      "sem carimbo nao reconstroi historia: migracao nao inventa ciclo");
+    assert.equal(semCarimbo.estadoNiveis[chave].dataRompimento, times(154).at(-1),
+      "sem carimbo o baseline nasce na ultima vela, como antes deste campo existir");
+    assert.notDeepEqual(semCarimbo.estadoNiveis, comCarimbo.estadoNiveis,
+      "e o carimbo precisa mesmo fazer diferenca neste cenario");
+    // Carimbo velho demais para esta janela tambem volta ao baseline.
+    for (const fora of [1, times(154).at(-1) + tf.segundos, times(154)[0] - tf.segundos, NaN, null])
+      assert.deepEqual(m.readPair(cfg, dados(154), tf,
+        { estadoNiveis: {}, ultimaVelaProcessada: fora }).estadoNiveis, semCarimbo.estadoNiveis,
+        `carimbo fora da janela (${fora}) volta ao comportamento de baseline`);
+
+    // Com registro proprio, quem manda continua sendo o estado do nivel:
+    // um carimbo atrasado nao pode reprocessar velas ja aplicadas.
+    const comRegistro = m.readPair(cfg, dados(154), tf,
+      { estadoNiveis: verdade, ultimaVelaProcessada: times(154)[100] });
+    assert.deepEqual(comRegistro.estadoNiveis, verdade, "retry nao reaplica transicoes");
   }
 });
 
