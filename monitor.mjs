@@ -1622,7 +1622,17 @@ export function alertasTecnicos(cfg, d, ind) {
 
   // --- volume como CONFIRMACAO, nunca sozinho ---
   const vol = ind.volume;
-  const houveRompimento = a.some((x) => x.startsWith("rompimento_"));
+  // "rompimento_" casa tambem com "rompimento_falhou_", que e' o OPOSTO
+  // de um rompimento: o preco atravessou e VOLTOU para o lado de origem.
+  // Suprimir a leitura de pullback justamente ai escondia a descricao
+  // mais adequada aquela vela -- estrutura de alta, volume caindo,
+  // tentativa rejeitada e' exatamente um pullback.
+  //
+  // "rompimento_candidato_" e "rompimento_intradiario_" continuam
+  // suprimindo, e devem: la o rompimento esta acontecendo, e chamar a
+  // mesma vela de pullback tranquilo seria contradicao.
+  const houveRompimento = a.some((x) =>
+    x.startsWith("rompimento_") && !x.startsWith("rompimento_falhou_"));
   // SO a versao forte. O prefixo "rompimento_confirmado_" tambem casa com
   // "rompimento_confirmado_fraco_", e o mesmo vale para a perda de suporte
   // -- a exclusao aqui e' a mesma que confluencia_entrada e

@@ -511,6 +511,46 @@ await teste("USD restaurado nao cria reteste ao atravessar o fim de semana", asy
 });
 
 
+await teste("rompimento falhado nao suprime a leitura de pullback", () => {
+  const cfg = { ...m.PARES_TESTE[0],
+    niveis: { resistencia: 200, resistenciaLabel: "200", suporte: 50, suporteLabel: "50", faixas: [] } };
+  // Preco parado longe dos dois niveis: nada aqui gera rompimento por si.
+  const d = { live: { close: 100 }, closes: [100, 100], opens: [100, 100],
+    highs: [101, 101], lows: [99, 99], times: [1, 2] };
+  const ind = { volume: { vsMediaPct: 0, tendencia: "decrescente" }, divergencias: [],
+    estruturaEventos: [], enfraquecimento: [], padroes: [], estruturaTendencia: "alta" };
+  const pullback = (mudancasNivel) =>
+    m.alertasTecnicos(cfg, d, { ...ind, mudancasNivel }).includes("pullback_com_volume_decrescente");
+
+  // "rompimento_" casa por prefixo com "rompimento_falhou_", que e' o
+  // OPOSTO de um rompimento: o preco voltou para o lado de origem. Nessa
+  // vela -- estrutura de alta, volume caindo, tentativa rejeitada --
+  // pullback e' justamente a descricao correta.
+  assert.equal(pullback(["rompimento_falhou_200"]), true,
+    "rompimento falhado descreve um pullback, nao um rompimento");
+  assert.equal(pullback([]), true, "sem evento nenhum a leitura sai normalmente");
+  // Candidato e' rompimento acontecendo: continua suprimindo.
+  assert.equal(pullback(["rompimento_candidato_200"]), false,
+    "rompimento em curso nao e' pullback tranquilo");
+  // Os demais rotulos da maquina nunca comecaram com "rompimento_".
+  for (const rotulo of ["rompido", "em_reteste", "reteste_confirmado", "recuperado", "arquivado"])
+    assert.equal(pullback([`${rotulo}_200`]), true, `${rotulo} nao suprime`);
+
+  // E o rompimento de verdade, vindo do proprio nivel, continua suprimindo
+  // nas tres formas: forte, fraca e intradiaria.
+  const alerta = (dd) => m.alertasTecnicos({ ...m.PARES_TESTE[0],
+    niveis: { resistencia: 100, resistenciaLabel: "100", suporte: null, faixas: [] } }, dd, ind);
+  for (const [nome, dd] of [
+    ["forte", { live: { close: 103 }, closes: [95, 103], opens: [95, 101], highs: [96, 104], lows: [94, 100], times: [1, 2] }],
+    ["fraco", { live: { close: 101 }, closes: [95, 101], opens: [95, 99], highs: [96, 102], lows: [94, 98], times: [1, 2] }],
+    ["intradiario", { live: { close: 101 }, closes: [95, 95], opens: [95, 95], highs: [96, 96], lows: [94, 94], times: [1, 2] }],
+  ]) {
+    const a = alerta(dd);
+    assert.ok(a.some((x) => x.startsWith("rompimento_")), `${nome}: a fixture precisa mesmo romper`);
+    assert.ok(!a.includes("pullback_com_volume_decrescente"), `${nome} continua suprimindo o pullback`);
+  }
+});
+
 await teste("estrutura: novidade pertence a confirmacao do pivo, nao aos fechamentos seguintes", () => {
   for (const tf of m.TIMEFRAMES_TESTE) for (const lado of ["topo", "fundo"]) {
     const n = 155, times = Array.from({ length: n }, (_, i) => 1704067200 + i * tf.segundos);
