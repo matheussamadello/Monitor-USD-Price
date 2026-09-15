@@ -347,7 +347,7 @@ Essa informação é **exclusivamente visual**. Os campos existentes de estrutur
 
 ### Validação dos candles do Yahoo
 
-Uma barra com os quatro preços ausentes é ignorada como sessão sem dados. Ausência parcial, preço não positivo/não finito ou OHLC inconsistente rejeita a resposta e aciona a próxima fonte; se todas falharem, o bloco publica falha. Um `null` nunca é convertido em mínima zero. A validação aceita números do JSON, sem converter texto ou valores booleanos em preços.
+Uma barra com os quatro preços ausentes é ignorada como sessão sem dados. Cotações repetidas do mesmo dia são deduplicadas antes da validação: vale a última não vazia, para uma versão parcial anterior não invalidar a atualização completa. Ausência parcial ou preço não positivo/não finito rejeita a resposta e aciona a próxima fonte; se todas falharem, o bloco publica falha. Candles históricos completos com OHLC inconsistente são descartados, sem inventar preços; as datas ficam em `dados_avisos` no relatório. Se o candle mais recente for inconsistente, a resposta é rejeitada, para não apresentar uma cotação anterior como atual. Os filtros de calendário continuam valendo. Um `null` nunca é convertido em mínima zero. A validação aceita números do JSON, sem converter texto ou valores booleanos em preços.
 
 ### Correções de lógica e continuidade
 

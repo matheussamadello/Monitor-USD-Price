@@ -1057,6 +1057,8 @@ O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 
 ### USD/BRL
 
+`dados_avisos`, quando presente, informa datas de candles históricos inválidos que foram descartados. É contexto de qualidade da fonte, não evento de mercado nem motivo de alerta isolado. O monitor não inventa os preços ausentes; dados incompletos ou candle mais recente inconsistente fazem a fonte falhar.
+
 - Fora do pregão não há vela em formação. Leia `vela_atual_em_formacao` antes de descrever qualquer coisa como "atual".
 - `vela_atual_em_formacao: nao` significa que não há vela em formação; não significa dia estável. Com `nao`, o bloco `candle_atual_*` vem em branco (`--`) de propósito — a barra está em `ultimo_fechamento_*`, e só lá.
 - O `preco_atual` pode repetir o último fechamento real. Não descreva isso como "dia sem variação".

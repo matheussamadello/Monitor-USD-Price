@@ -745,7 +745,20 @@ export function parseYahoo(texto, tf) {
   // descarte proprio (ignorarFimDeSemana).
   const off = Number((r.meta && r.meta.gmtoffset) || 0);
   const linhas = [];
+  const descartadas = [];
+  const dias = r.timestamp.map((t) => ancorarDia(Number(t), off));
+  // O Yahoo pode trazer uma versao parcial e uma atualizada do mesmo
+  // dia. Valida a ultima cotacao nao vazia, como a deduplicacao da serie.
+  const ultimoPorDia = new Map();
+  dias.forEach((time, i) => {
+    if ([q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]].some((v) => v !== null && v !== undefined))
+      ultimoPorDia.set(time, i);
+  });
+  const negociavel = (time) => ![0, 6].includes(new Date(time * 1000).getUTCDay());
+  const ultimoIndice = dias.findLastIndex((time, i) => negociavel(time) &&
+    [q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]].some((v) => v !== null && v !== undefined));
   for (let i = 0; i < r.timestamp.length; i++) {
+    if (!negociavel(dias[i]) || ultimoPorDia.get(dias[i]) !== i) continue;
     const precos = [q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]];
     // Sessao ausente pode vir toda nula; candle parcialmente ausente
     // e' resposta incompleta, nunca preco zero. Rejeita para acionar fallback.
@@ -753,13 +766,19 @@ export function parseYahoo(texto, tf) {
     if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0))
       throw new Error("Yahoo: candle com OHLC incompleto ou inválido");
     const [open, high, low, close] = precos;
-    if (low > high || open < low || open > high || close < low || close > high)
-      throw new Error("Yahoo: candle com OHLC inconsistente");
-    linhas.push({ time: ancorarDia(Number(r.timestamp[i]), off), open, high, low, close });
+    if (low > high || open < low || open > high || close < low || close > high) {
+      // A fonte tem outliers historicos isolados. Nao inventa extremos
+      // para encaixar o corpo nem derruba anos validos por uma barra antiga.
+      // A cotacao mais recente, por outro lado, nunca pode ser escondida.
+      if (i === ultimoIndice) throw new Error("Yahoo: candle mais recente com OHLC inconsistente");
+      descartadas.push(fmtDia(dias[i]));
+      continue;
+    }
+    linhas.push({ time: dias[i], open, high, low, close });
   }
   const periodo = tf?.segundos || 86400;
   const sessao = r.meta?.currentTradingPeriod?.regular;
-  return montarSerie(linhas, {
+  const serie = montarSerie(linhas, {
     periodo,
     ignorarSemAmplitude: true,
     ignorarFimDeSemana: true,
@@ -779,6 +798,9 @@ export function parseYahoo(texto, tf) {
       return row.time + (periodo === SEMANA ? 5 * 86400 : periodo) - off;
     },
   });
+  return { ...serie, avisosDados: descartadas.length
+    ? [`Yahoo: candles historicos com OHLC inconsistente descartados (${descartadas.length}): ${descartadas.join(", ")}`]
+    : [] };
 }
 
 export function parseBinance(texto, tf) {
@@ -3492,6 +3514,7 @@ export function readPair(cfg, d, tf, opts = {}) {
   const L = [];
   L.push(cfg.label);
   L.push(`timeframe: ${tf.key}`);
+  if (d.avisosDados?.length) L.push(`dados_avisos: ${d.avisosDados.join("; ")}`);
   L.push(`preco_atual: ${num(live.close, D)}`);
   // A bandeira vem ANTES dos campos que ela qualifica: quem le de cima
   // para baixo -- pessoa ou agente -- precisa saber que nao ha vela em

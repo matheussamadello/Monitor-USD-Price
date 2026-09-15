@@ -586,7 +586,21 @@ if (typeof m.parseYahoo === "function") await teste("Yahoo rejeita OHLC parcial/
     assert.throws(() => m.parseYahoo(resposta(ruim), tf), /OHLC/);
   }
   const invertido = clone(q); invertido.low[10] = 6;
-  assert.throws(() => m.parseYahoo(resposta(invertido), tf), /inconsistente/);
+  const limpo = m.parseYahoo(resposta(invertido), tf);
+  assert.equal(limpo.closes.length, times.length - 1);
+  assert.ok(limpo.avisosDados[0].includes(new Date(times[10] * 1000).toISOString().slice(0, 10)));
+  const ultimoRuim = clone(q); ultimoRuim.low[times.length - 1] = 6;
+  assert.throws(() => m.parseYahoo(resposta(ultimoRuim), tf), /mais recente.*inconsistente/);
+  const duplicado = JSON.parse(resposta(q));
+  const dup = duplicado.chart.result[0];
+  dup.timestamp.push(times.at(-1) + 3600);
+  for (const [campo, xs] of Object.entries(dup.indicators.quote[0])) xs.push(q[campo].at(-1));
+  dup.indicators.quote[0].close[times.length - 1] = null;
+  const deduplicado = m.parseYahoo(JSON.stringify(duplicado), tf);
+  assert.equal(deduplicado.closes.length, times.length);
+  assert.equal(deduplicado.live.close, 5.05, "cotacao valida mais nova substitui a parcial do mesmo dia");
+  dup.indicators.quote[0].close[times.length] = null;
+  assert.throws(() => m.parseYahoo(JSON.stringify(duplicado), tf), /incompleto/, "cotacao mais nova incompleta nao e' ocultada");
   const ausente = clone(q); Object.values(ausente).forEach(xs => xs[10] = null);
   assert.equal(m.parseYahoo(resposta(ausente), tf).closes.length, times.length - 1, "sessao toda ausente e' ignorada");
   const ruim = clone(q); ruim.low[10] = null;
