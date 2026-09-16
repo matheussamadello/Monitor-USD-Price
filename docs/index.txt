@@ -1,4 +1,4 @@
-timestamp: 2026-09-16 00:15 UTC
+timestamp: 2026-09-16 00:46 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -15,7 +15,7 @@ vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-16
 candle_atual_open: 5.1693
 candle_atual_high: 5.1693
-candle_atual_low: 5.1692
+candle_atual_low: 5.1691
 candle_atual_close_provisorio: 5.1692
 candle_atual_var_pct_desde_abertura: -0.00
 ema89: 5.1544
@@ -68,16 +68,16 @@ niveis_manuais_alinhamento: parcial
 niveis_manuais_faixas_corroboradas: 2 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.011
+fracao_periodo_decorrida: 0.032
 volume_parcial: sim
-volume_atual: 130655.9000
+volume_atual: 619418.9000
 volume_ultima_fechada: 71652174.4000
 volume_media20: 55799464.4050
 volume_vs_media_pct: 28.41
 volume_referencia: ultima_vela_fechada
 volume_classificacao: acima_da_media
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 371
+trades_vela_atual: 1143
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -96,11 +96,11 @@ sombra_sup_pct_range: 27.78
 sombra_inf_pct_range: 49.49
 sombra_sup_vs_corpo: 1.22
 sombra_inf_vs_corpo: 2.18
-candle_atual_corpo_pct_range: 100.00
+candle_atual_corpo_pct_range: 50.00
 candle_atual_sombra_sup_pct_range: 0.00
-candle_atual_sombra_inf_pct_range: 0.00
+candle_atual_sombra_inf_pct_range: 50.00
 candle_atual_sombra_sup_vs_corpo: 0.00
-candle_atual_sombra_inf_vs_corpo: 0.00
+candle_atual_sombra_inf_vs_corpo: 1.00
 
 eventos: nenhum cruzamento nesta vela
 mediana_corpo_20: 0.012800
@@ -188,7 +188,7 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 4 de 4
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.011
+fracao_periodo_decorrida: 0.032
 volume_disponivel: nao
 
 estrutura_preco: LH_LL
@@ -303,16 +303,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 3 de 3
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.287
+fracao_periodo_decorrida: 0.290
 volume_parcial: sim
-volume_atual: 144561424.7000
+volume_atual: 145049468.3000
 volume_ultima_fechada: 385296743.5000
 volume_media20: 412529448.2450
 volume_vs_media_pct: -6.60
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 81944
+trades_vela_atual: 82715
 volume_semana_dias_fechados: 2
 volume_semana_soma_dias_fechados: 144430049.4000
 volume_semanas_anteriores_mesmos_dias_media: 130394567.7250
@@ -435,7 +435,7 @@ niveis_manuais_alinhamento: parcial
 niveis_manuais_faixas_corroboradas: 2 de 4
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.287
+fracao_periodo_decorrida: 0.290
 volume_disponivel: nao
 
 estrutura_preco: LH_HL
