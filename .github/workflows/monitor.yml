@@ -20,14 +20,14 @@ jobs:
   atualizar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # Historico completo. Push a partir de clone raso funciona, mas
           # o fetch/reset do loop de retry fica mais previsivel com o
           # historico inteiro.
           fetch-depth: 0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
