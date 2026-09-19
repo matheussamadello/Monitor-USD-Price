@@ -355,7 +355,7 @@ Uma barra com os quatro preços ausentes é ignorada como sessão sem dados. Cot
 - Topos ou fundos iguais recebem `lateral_empate`, sem produzir `estrutura_de_baixa`. No painel, a classificação aparece como “estrutura com empate”.
 - A retomada dos níveis processa os candles disponíveis em ordem. Um contato na vela atual impede arquivamento por inatividade; o estado dormente também registra a última vela avaliada.
 - **Carimbo de última vela processada.** A retomada acima parte do estado do próprio nível. Só que a máquina de um nível só abre registro quando ele é rompido pela primeira vez — e a maioria dos níveis configurados não tem registro nenhum. Para esses, não havia de onde partir: uma interrupção longa fazia um rompimento ocorrido durante a queda ser tratado como novo na volta. O estado agora guarda `ultimaVelaProcessada`, uma data por par e timeframe, que separa dois casos até então idênticos aos olhos do código: *primeira execução do monitor*, em que não há o que retomar, e *nível que simplesmente nunca rompeu*, em que há.
-- O carimbo tem três limites, e cada um existe para a mudança não poder inventar história. Ele **só vale quando o nível não tem registro próprio** — havendo registro, quem manda continua sendo ele. Ele **só vale quando a vela carimbada ainda está na janela** da série atual: um carimbo velho demais, ou de uma série reancorada, não casa e o comportamento volta a ser o de estabelecer a referência na última vela. E ele **só avança depois de um bloco lido com sucesso**, nunca para trás — par que falhou mantém o anterior, e resposta atrasada da fonte não recua o relógio.
+- Para retomar um nível sem registro próprio, o carimbo precisa estar na janela da série atual. Um carimbo antigo fora da janela permite estabelecer a referência na última vela, sem inventar história. Havendo registro próprio, a retomada parte dele. Separadamente, o carimbo protege todo o par/timeframe contra respostas anteriores: se a fonte devolver uma última vela mais antiga que a já processada, o bloco falha e a memória é preservada. Ele **só avança depois de um bloco lido com sucesso**, nunca para trás.
 - Nada disso vira notícia atrasada: o evento publicado continua sendo só o da última vela. Um ciclo que se fechou durante a interrupção é **recuperado no estado e silencioso no relatório**. Sem carimbo — primeira execução, ou estado gravado antes do campo existir — o comportamento é exatamente o anterior, o que torna a migração um não-evento.
 - Os READMEs, prompts e ajudas distinguem faixas manuais de níveis pontuais. A ausência de novidade em níveis/estrutura não exclui eventos próprios da EMA89 ou dos indicadores.
 
@@ -698,6 +698,8 @@ Ele armazena atualmente:
 - `ativos`: gatilhos internos ativos;
 - `em`: timestamp de atualização do estado;
 - `niveis`: estado persistente da máquina de rompimento/reteste;
+- `ema89Semanal`: travessias semanais pendentes, confirmadas ou canceladas da EMA89, por par;
+- `ultimaVelaProcessada`: última vela fechada processada por par e timeframe; permite retomar níveis sem registro e rejeitar respostas anteriores;
 - `zonas`: coleção completa de zonas vivas por timeframe, inclusive zonas que podem não estar entre as publicadas no relatório;
 - `contadoresZona`: contadores usados para preservar a identidade das zonas;
 - `historicoAssinaturas`: a assinatura da última condição registrada por par e timeframe. É o que faz a execução seguinte, sobre a mesma vela fechada, não repetir linha em `historico.jsonl`.
@@ -860,7 +862,7 @@ O núcleo é a **máquina de rompimento e reteste**, que roda só sobre os níve
 | reteste em curso | em `em_reteste` |
 | rompimento falhou | em `rompimento_falhou` |
 | nível recuperado | em `recuperado` |
-| rompido, sem reteste ainda | em `rompido` |
+| nível rompido | em `rompido`; um reteste ou recuperação na vela tem prioridade na leitura |
 | rompimento em avaliação | em `rompimento_candidato` |
 | cruzou a média diária | sem evento de nível, mas a EMA89 diária foi cruzada no fechamento |
 | sinais de enfraquecimento | sem os anteriores, mas `deterioracao_tendencia` traz algo |
@@ -878,7 +880,7 @@ Nenhum parâmetro deste projeto foi validado contra resultado. Os períodos, os 
 
 É um arquivo **append-only**, uma linha JSON por entrada, versionado junto com o resto. Ele não altera o relatório, não dispara nada e não é lido por nenhuma decisão do monitor.
 
-**Por que registra condição, e não alerta.** Os alertas não saem daqui. Quem decide alertar é o agente no ChatGPT, que lê o prompt e resolve sozinho, e o monitor não tem como ver essa decisão. O que o monitor vê, e pode registrar com precisão, são as condições que ele publicou e o preço de cada fechamento. Isso basta para a pergunta que importa: cada condição foi seguida de que movimento?
+**Por que registra condição, e não alerta.** Os alertas não saem daqui. Quem decide alertar é o agente no ChatGPT, que lê o prompt e resolve sozinho, e o monitor não tem como ver essa decisão. O histórico guarda as condições publicadas e os fechamentos; a análise usa apenas condições calculadas integralmente com velas fechadas.
 
 Grava uma linha por par e timeframe sempre que a **vela fechada** muda ou qualquer condição muda. Execuções horárias sobre a mesma vela fechada não repetem linha, porque a assinatura que decide isso ignora o horário. Como a vela entra na assinatura, todo fechamento gera linha mesmo sem condição nenhuma, e é dessa série de preços que saem os retornos futuros. Bloco em falha não vira entrada: registrar uma queda de fonte como se fosse leitura de mercado contaminaria a medição depois.
 
@@ -890,7 +892,9 @@ Cada linha traz a vela, o fechamento, o ATR, RSI, ADX com DI+/DI−, estrutura, 
 node analisar-historico.mjs 10
 ```
 
-O argumento é o horizonte em velas fechadas. O script junta cada condição ao que o preço fez depois e imprime, por condição, a quantidade de amostras, o retorno mediano **em ATR** e a fração de vezes em que subiu. Em ATR, e não em porcentagem, pelo mesmo motivo do resto do projeto: 3% é muito num par de câmbio e pouco num de cripto, e uma tabela que mistura os dois não quer dizer nada.
+O argumento é um inteiro positivo: o horizonte em fechamentos disponíveis no histórico. O script mede condições de velas fechadas a partir do fechamento correspondente e imprime, por condição, a quantidade de amostras, o retorno mediano **em ATR** e a fração de vezes em que subiu. Lacunas de coleta não são preenchidas. Em ATR, e não em porcentagem, pelo mesmo motivo do resto do projeto: 3% é muito num par de câmbio e pouco num de cripto, e uma tabela que mistura os dois não quer dizer nada.
+
+**Condições intradiárias ficam fora da medição.** Faixas de preço, toques e rompimentos intradiários, condições mistas como `pullback_com_volume_decrescente` e nomes desconhecidos são excluídos e contabilizados separadamente na saída. O arquivo permanece intacto, mas não guarda o preço observado necessário para calcular o retorno dessas condições: usar o fechamento anterior atribuiria a elas movimentos que já haviam ocorrido. Condições novas só entram na análise depois de validar sua origem em velas fechadas. Esta é uma análise descritiva de fechamentos, não o retorno de uma entrada executada após a publicação do alerta.
 
 A linha `TODAS AS VELAS (referência)` é o que o par fez em toda vela do período. **É contra ela que se compara, não contra zero.** Uma condição que não bate a referência não está acrescentando informação, por melhor que pareça o número absoluto. Condições com menos de cinco amostras são omitidas.
 
@@ -1039,7 +1043,7 @@ O workflow também possui `workflow_dispatch`, permitindo execução manual pela
 O workflow atual usa:
 
 ```yaml
-- uses: actions/setup-node@v5
+- uses: actions/setup-node@v7
   with:
     node-version: "22"
 ```
@@ -1052,14 +1056,14 @@ Isso não significa, por si só, que Node.js 22 seja uma exigência absoluta par
 
 A cada execução, o workflow:
 
-0. roda `node teste-fumaca.mjs`;
 1. faz `git fetch origin main`;
 2. faz `git reset --hard origin/main` antes de rodar o monitor;
-3. executa `node monitor.mjs`;
-4. adiciona a pasta `docs` ao commit;
-5. cria um commit se houver mudança;
-6. tenta enviar o commit para `main`;
-7. em caso de conflito por outro push concorrente, repete o ciclo até cinco vezes.
+3. roda `node teste-fumaca.mjs` sobre a revisão sincronizada, em cada tentativa;
+4. executa `node monitor.mjs`;
+5. adiciona a pasta `docs` ao commit;
+6. cria um commit se houver mudança;
+7. tenta enviar o commit para `main`;
+8. em caso de conflito por outro push concorrente, repete o ciclo até cinco vezes.
 
 O `reset` antes da execução é importante porque `docs/estado.json` funciona como memória persistente. Dessa forma, cada tentativa lê o estado mais recente já publicado antes de recalcular o relatório.
 
@@ -1180,10 +1184,13 @@ O monitor pode rodar várias vezes sobre a mesma vela fechada. As regras abaixo 
 
 - A máquina de níveis processa cada fechamento uma vez. Repetir a consulta não transforma a sombra do rompimento em um reteste posterior; respostas de velas anteriores também não regridem o estado.
 - `niveis_mudancas_nesta_vela` permanece disponível durante a mesma vela, inclusive após reiniciar o processo. O estado salva esses eventos em `mudancasNaVela`; consumidores deduplicam por par, timeframe, data da vela, nível e tipo de evento. Estados antigos continuam legíveis e não geram anúncios retroativos.
+- Retestes e recuperações são registrados em `transicoesNaVela` antes do reset por afastamento. Assim, o evento continua no relatório e no monitor visual mesmo que o estado operacional volte a `rompido` na mesma vela. Esse reset não produz outro anúncio de rompimento.
+- Contato exige que o intervalo entre mínima e máxima intercepte a faixa de tolerância do nível. Uma vela inteiramente fora dessa faixa, no lado contrário, pode caracterizar falha do rompimento, mas não renova `ultimoContato` nem acorda um registro arquivado.
+- Respostas anteriores à última vela já processada geram `FALHA` naquele par/timeframe; não alimentam indicadores, gatilhos ou histórico. Níveis, zonas, contadores e EMA89 permanecem salvos para a próxima consulta válida.
 - As sínteses consideram a direção do nível. Um reteste de uma perda de suporte não confirma entrada compradora; recuperar um suporte perdido não representa falha de um rompimento de alta.
 - O centro das zonas é suavizado uma vez por nova vela fechada. Uma ficha de remoção é mantida até a próxima vela para impedir que um retry recrie a zona com outro ID. Distância e posição em relação ao preço atual continuam podendo variar.
 - O volume da última vela fechada confirma apenas rompimentos ou perdas daquela mesma vela. Toques e rompimentos intradiários não recebem confirmação pelo volume do dia anterior.
-- `analisar-historico.mjs` conta uma observação por par, timeframe, vela e condição, incluindo a referência. Snapshots repetidos não aumentam a amostra; uma condição que aparece depois na mesma vela continua sendo registrada uma vez. Isso corrige a contagem, sem transformar a análise descritiva em backtest de execução.
+- `analisar-historico.mjs` conta uma observação por par, timeframe, vela e condição de fechamento, incluindo a referência. Snapshots repetidos não aumentam a amostra; condições intradiárias, mistas ou desconhecidas não usam retroativamente o fechamento anterior como preço de entrada.
 
 Execute `node teste-fumaca.mjs` para rodar a suíte existente e as regressões de `teste-regressoes.mjs`, sem rede. Para executar somente as reproduções dos defeitos, use `node teste-regressoes.mjs`. O workflow existente já roda o teste de fumaça antes de gerar o relatório.
 

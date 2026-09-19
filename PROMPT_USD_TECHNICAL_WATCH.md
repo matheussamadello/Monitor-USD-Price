@@ -933,6 +933,8 @@ Quando publicados, interprete os estados da máquina de rompimento/reteste do re
 
 `afastado` **não é um estado**. É um campo à parte, `nivel_X_afastado: sim|nao`, que diz se o preço está além da distância de reset daquele nível, em qualquer estado. Não alerta sozinho e não substitui a leitura de `nivel_X_estado`.
 
+Se a mesma vela confirmar um reteste ou uma recuperação e terminar além da distância de reset, o estado operacional pode voltar a `rompido`. O evento real permanece em `niveis_mudancas_nesta_vela` e no histórico do nível: use esse evento, com os filtros e a deduplicação habituais. O reset não é um novo rompimento e não invalida o reteste ou a recuperação registrados. Uma vela inteiramente fora da faixa de tolerância, no lado contrário, não é contato; o registro pode ser arquivado por inatividade mesmo após uma falha.
+
 Não transforme cada mudança descritiva de estado em mensagem.
 
 ### Perda de suporte e rompimento: forte x fraco

@@ -13,6 +13,33 @@ import { readFileSync } from "node:fs";
 
 const HORIZONTE = Number(process.argv[2] || 10);
 const MIN_AMOSTRAS = 5;
+if (!Number.isInteger(HORIZONTE) || HORIZONTE < 1) {
+  console.error("O horizonte deve ser um numero inteiro positivo de velas.");
+  process.exit(1);
+}
+
+// A base historica e' o fechamento, nao o preco observado em "em".
+// So medimos condicoes calculadas integralmente com velas fechadas.
+// Faixas, toques intradiarios e nomes desconhecidos ficam fora: os
+// registros antigos nao possuem o preco necessario para medi-los.
+const ALERTAS_FECHADOS = new Set([
+  "rsi_acima_70", "rsi_abaixo_30",
+  "di_plus_cruzando_acima_di_minus", "di_minus_cruzando_acima_di_plus",
+  "adx_subindo_com_di_plus_dominante", "adx_subindo_com_di_minus_dominante",
+  "perda_estrutura_alta_novo_LL", "novo_HL_apos_fundo_mais_baixo",
+  "novo_HH_apos_topo_mais_baixo", "topo_mais_baixo_apos_HH",
+  "rompimento_com_volume_acima_da_media", "rompimento_com_volume_fraco",
+  "queda_com_expansao_de_volume", "advance_block", "stalled_pattern",
+  "tres_soldados_em_contexto_de_reversao", "tres_soldados_em_contexto_de_continuacao",
+  "tres_soldados_com_sinais_de_exaustao", "confluencia_pullback_bullish",
+]);
+function alertaDeFechamento(a, e) {
+  return ALERTAS_FECHADOS.has(a) || (e.niveis_mud || []).includes(a) ||
+    /^(rompimento_confirmado_|perda_suporte_confirmada_).+/.test(a) ||
+    /^divergencia_(bullish|bearish)_(regular|oculta)_confirmada$/.test(a);
+}
+// pullback_com_volume_decrescente tambem fica fora: sua presenca e'
+// suprimida quando ocorre rompimento INTRADIARIO, apesar do nome.
 
 let linhas;
 try {
@@ -68,10 +95,16 @@ const anota = (nome, par, tf, vela, r) => {
   balde.get(k).push(r);
 };
 let semFuturo = 0;
+const excluidas = new Set();
 for (const e of entradas) {
+  const alertasFechados = (e.alertas || []).filter((a) => {
+    if (alertaDeFechamento(a, e)) return true;
+    excluidas.add(JSON.stringify([e.par, e.tf, e.vela, a]));
+    return false;
+  });
   const r = retorno(e.par, e.tf, e.vela, e.atr);
   if (r === null) { semFuturo++; continue; }
-  for (const a of e.alertas) anota(`alerta:${a}`, e.par, e.tf, e.vela, r);
+  for (const a of alertasFechados) anota(`alerta:${a}`, e.par, e.tf, e.vela, r);
   for (const a of e.deterioracao) anota(`deterioracao:${a}`, e.par, e.tf, e.vela, r);
   for (const a of e.conf_entrada) anota(`conf_entrada:${a}`, e.par, e.tf, e.vela, r);
   for (const a of e.conf_pullback) anota(`conf_pullback:${a}`, e.par, e.tf, e.vela, r);
@@ -91,6 +124,9 @@ const mediana = (xs) => {
 
 console.log(`Historico: ${entradas.length} entradas, ${ordenadas.size} series.`);
 console.log(`Horizonte: ${HORIZONTE} velas fechadas. Retorno em ATR da vela do sinal.`);
+console.log("Somente condicoes de velas fechadas; a base e' o fechamento, nao o horario de publicacao.");
+console.log(`Condicoes intradiarias, mistas ou desconhecidas excluidas: ${excluidas.size} observacoes.`);
+console.log("Analise descritiva de fechamentos; nao mede retorno de uma entrada executada apos o alerta.");
 console.log("Amostras unicas por par, timeframe, vela e condicao; snapshots repetidos nao aumentam n.");
 console.log(`Sem futuro suficiente para medir: ${semFuturo} entradas.\n`);
 

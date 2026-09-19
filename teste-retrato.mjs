@@ -63,6 +63,7 @@ const r2 = await build(fetchCassete, {
   ema89Semanal: r1.estadoEma89Semanal,
   zonas: r1.zonasEstado,
   contadoresZona: r1.contadoresZona,
+  ultimaVelaProcessada: r1.ultimaVelaProcessada,
 });
 
 const atual =

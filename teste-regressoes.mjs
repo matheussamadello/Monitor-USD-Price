@@ -229,19 +229,19 @@ await teste("historico conta condicao e referencia uma vez por vela", () => {
     };
     const precos = [100, 110, 109, 107, 108, 106, 111];
     const serie = (par, tf) => precos.map((fech, i) => ({ par, tf, vela: `2026-01-0${i + 1}`,
-      fech, atr: 1, alertas: ["constante"], deterioracao: [], conf_entrada: [],
+      fech, atr: 1, alertas: ["rsi_acima_70"], deterioracao: [], conf_entrada: [],
       ema89_confirmacao: "acima", ema89_evento_id: `${par}|${tf}|${i}`,
       conf_pullback: [], niveis_mud: [], estrutura: "alta", ema89_cruz: "nenhum" }));
     const rows = [];
     for (const [par, tf] of [["P/Q", "diario"], ["R/Q", "diario"], ["P/Q", "semanal"]]) {
       for (const e of serie(par, tf)) {
-        rows.push(e, { ...e, alertas: ["constante", "posterior"] });
+        rows.push(e, { ...e, alertas: ["rsi_acima_70", "di_plus_cruzando_acima_di_minus"] });
         if (e.vela === "2026-01-01") for (let i = 0; i < 10; i++) rows.push(e);
       }
     }
     const texto = medir(rows);
     for (const [par, tf] of [["P/Q", "diario"], ["R/Q", "diario"], ["P/Q", "semanal"]])
-      for (const condicao of ["alerta:constante", "alerta:posterior", "ema89_confirmou=acima", "TODAS AS VELAS (referencia)"]) {
+      for (const condicao of ["alerta:rsi_acima_70", "alerta:di_plus_cruzando_acima_di_minus", "ema89_confirmou=acima", "TODAS AS VELAS (referencia)"]) {
         const linha = texto.split("\n").find((l) => l.startsWith(`${par} | ${tf} | ${condicao}`));
         assert.ok(linha, `${par}/${tf}/${condicao} presente`);
         assert.match(linha, /\s6\s+0\.00\s+50%$/, linha);
@@ -647,6 +647,12 @@ await teste("falha de fonte nao avanca o carimbo de vela processada", async () =
   for (const [chave, valor] of Object.entries(adiantado.ultimaVelaProcessada))
     assert.equal(atrasado.ultimaVelaProcessada[chave], valor,
       `${chave}: resposta atrasada nao recua o carimbo`);
+  assert.match(atrasado.texto, /FALHA:.*serie desatualizada/);
+  assert.deepEqual(estadoDe(atrasado), adiantado, "fonte antiga preserva TODA a memoria");
+  assert.deepEqual(atrasado.gatilhos, [], "fonte antiga nao alimenta gatilhos");
+  assert.equal(m.registrarHistorico(jsonDe(atrasado)).entradas.length, 0);
+  assert.ok(Object.values(atrasado.zonas).every((zs) => zs.length === 0),
+    "zonas antigas nao sao apresentadas como recalculadas agora");
 
   // E o carimbo precisa CHEGAR ao readPair, nao so ser gravado. Aqui o
   // estado guarda o carimbo mas nenhum registro de nivel -- o caso do
@@ -744,10 +750,13 @@ await teste("carimbo de vela processada retoma nivel que nunca abriu registro", 
     assert.notDeepEqual(semCarimbo.estadoNiveis, comCarimbo.estadoNiveis,
       "e o carimbo precisa mesmo fazer diferenca neste cenario");
     // Carimbo velho demais para esta janela tambem volta ao baseline.
-    for (const fora of [1, times(154).at(-1) + tf.segundos, times(154)[0] - tf.segundos, NaN, null])
+    for (const fora of [1, times(154)[0] - tf.segundos, NaN, null])
       assert.deepEqual(m.readPair(cfg, dados(154), tf,
         { estadoNiveis: {}, ultimaVelaProcessada: fora }).estadoNiveis, semCarimbo.estadoNiveis,
         `carimbo fora da janela (${fora}) volta ao comportamento de baseline`);
+    assert.throws(() => m.readPair(cfg, dados(154), tf,
+      { ultimaVelaProcessada: times(154).at(-1) + tf.segundos }), /serie desatualizada/,
+      "carimbo FUTURO e' resposta atrasada, nunca primeira execucao");
 
     // Com registro proprio, quem manda continua sendo o estado do nivel:
     // um carimbo atrasado nao pode reprocessar velas ja aplicadas.
@@ -850,6 +859,148 @@ if (typeof m.parseYahoo === "function") await teste("barra de fim de semana nao 
   const sabadoBom = [...rows, { time: sabado, open: 9.0, high: 9.2, low: 8.9, close: 9.1 }];
   const e = m.parseYahoo(respostaYahoo(sabadoBom), diario);
   assert.equal(e.times.at(-1), rows.at(-1).time, "sabado valido tambem fica de fora");
+});
+
+await teste("fonte antiga nao promove nem recua zonas, inclusive sem carimbo global", () => {
+  const tf = m.TIMEFRAMES_TESTE[0];
+  const cfg = { ...m.PARES_TESTE[0], niveis: { faixas: [], resistencia: null, suporte: null } };
+  const dados = (n) => {
+    const closes = Array.from({ length: n }, (_, i) =>
+      100 + i * .014 + 9 * Math.sin(i * .29) + 3 * Math.sin(i * .077));
+    return { closes, opens: closes.map((c, i) => closes[i - 1] ?? c),
+      highs: closes.map((c, i) => Math.max(c, closes[i - 1] ?? c) + .7),
+      lows: closes.map((c, i) => Math.min(c, closes[i - 1] ?? c) - .7),
+      times: closes.map((_, i) => 1704067200 + i * tf.segundos),
+      volumes: closes.map(() => 1000), temVolume: true,
+      live: { open: closes.at(-1), close: closes.at(-1), high: closes.at(-1) + 1,
+        low: closes.at(-1) - 1, volume: 500, time: 1704067200 + n * tf.segundos } };
+  };
+  const recente = m.readPair(cfg, dados(165), tf);
+  const zonas = recente.zonasEstadoPar.map(m.zonaParaEstado);
+  assert.ok(zonas.some((z) => z.status === "candidata" && z.velasComScoreAlto === 1),
+    "fixture reproduz candidata que a resposta antiga promovia");
+  const salvo = clone(zonas);
+  const ctx = { zonasAnteriores: zonas, proximoId: recente.proximoIdZona };
+  assert.throws(() => m.readPair(cfg, dados(164), tf, ctx), /serie desatualizada/);
+  assert.throws(() => m.calcularZonas(cfg, tf, dados(164), ctx), /serie desatualizada/);
+  for (const z of zonas) {
+    assert.deepEqual(m.atualizarCiclo({ score: 100 }, z,
+      { tfKey: tf.key, ultimaVelaFechada: recente.ultimaVelaFechada - tf.segundos }), z);
+  }
+  assert.deepEqual(m.reconciliarAnteriores(zonas, [], tf.key,
+    recente.ultimaVelaFechada - tf.segundos), zonas.filter((z) => z.status !== "remover"));
+  assert.deepEqual(zonas, salvo, "rejeicao nao altera o estado recebido");
+  const retomada = m.readPair(cfg, dados(166), tf, {
+    ...ctx, proximoIdZona: recente.proximoIdZona, ultimaVelaProcessada: recente.ultimaVelaFechada });
+  assert.equal(retomada.ultimaVelaFechada, recente.ultimaVelaFechada + tf.segundos);
+});
+
+await teste("reteste e recuperacao sobrevivem ao reset na mesma vela, em ambos os sentidos", () => {
+  for (const tf of m.TIMEFRAMES_TESTE) for (const direcao of ["alta", "baixa"]) {
+    const alta = direcao === "alta";
+    const cfg = { ...m.PARES_TESTE[0], niveis: { faixas: [],
+      resistencia: alta ? 100 : null, resistenciaLabel: "100",
+      suporte: alta ? null : 100, suporteLabel: "100" } };
+    const chave = m.chaveNivel(cfg.key, tf.key, 100);
+    const espelho = (r) => alta ? r : ({ open: 200 - r.open,
+      high: 200 - r.low, low: 200 - r.high, close: 200 - r.close });
+    const inicial = Array.from({ length: 150 }, () => espelho({ open: 104, high: 105, low: 103, close: 104 }));
+    const dados = (rs) => ({
+      opens: rs.map((r) => r.open), closes: rs.map((r) => r.close),
+      highs: rs.map((r) => r.high), lows: rs.map((r) => r.low),
+      times: rs.map((_, i) => 1704067200 + i * tf.segundos),
+      volumes: rs.map(() => 100), temVolume: true,
+      live: { ...rs.at(-1), time: 1704067200 + rs.length * tf.segundos, volume: 50 },
+    });
+    const opcoes = (r) => ({ estadoNiveis: clone(r.estadoNiveis),
+      ultimaVelaProcessada: r.ultimaVelaFechada });
+    const base = m.readPair(cfg, dados(inicial), tf);
+    for (const recuperacao of [false, true]) {
+      const rs = recuperacao ? [...inicial, espelho({ open: 96, high: 97, low: 95, close: 96 })] : inicial;
+      const antes = recuperacao ? m.readPair(cfg, dados(rs), tf, opcoes(base)) : base;
+      const comReacao = [...rs, espelho({ open: 102, high: 110, low: 99, close: 108 })];
+      const agora = m.readPair(cfg, dados(comReacao), tf, opcoes(antes));
+      const e = agora.estadoNiveis[chave];
+      const tipo = recuperacao ? "recuperado" : "reteste_confirmado";
+      assert.equal(e.estado, "rompido", "reset por afastamento continua operacional");
+      assert.equal(e.afastado, true);
+      assert.deepEqual(e.mudancasNaVela, [tipo + "_100"], "evento real, sem rompimento artificial");
+      assert.ok(e.historico.some((h) => h.startsWith(tipo + "@")));
+      assert.match(agora.texto, new RegExp("^niveis_mudancas_nesta_vela: " + tipo + "_100$", "m"));
+      assert.equal(m.leituraCurta({ nivel_100_estado: e.estado,
+        niveis_mudancas_nesta_vela: e.mudancasNaVela }, cfg).chave, tipo);
+      if (!recuperacao && alta)
+        assert.match(agora.texto, /^confluencia_entrada: .*reteste_confirmado/m);
+      const retry = m.readPair(cfg, dados(comReacao), tf, opcoes(agora));
+      assert.deepEqual(retry.estadoNiveis, agora.estadoNiveis, "retry conserva o evento");
+      const replay = m.readPair(cfg, dados(comReacao), tf, opcoes(base));
+      assert.deepEqual(replay.estadoNiveis, agora.estadoNiveis, "replay preserva a mesma transicao");
+      const seguinte = m.readPair(cfg, dados([...comReacao,
+        espelho({ open: 108, high: 109, low: 107, close: 108 })]), tf, opcoes(agora));
+      assert.deepEqual(seguinte.estadoNiveis[chave].mudancasNaVela, []);
+    }
+  }
+});
+
+await teste("velas inteiras do lado contrario nao renovam contato nem acordam nivel arquivado", () => {
+  for (const direcao of ["alta", "baixa"]) {
+    const alta = direcao === "alta";
+    const ctx = { nivel: 100, direcao, atr: 4, tolAtr: .25, resetAtr: 1.5,
+      maxCandles: 30, segundos: DIA };
+    const vela = (dia, p) => ({ time: 1704067200 + dia * DIA,
+      open: p, close: p, high: p + 1, low: p - 1 });
+    let e = m.atualizarEstadoNivel(null, { ...ctx, vela: vela(0, alta ? 104 : 96) });
+    const contatoInicial = e.ultimoContato;
+    for (let dia = 1; dia <= 50; dia++) {
+      e = m.atualizarEstadoNivel(e, { ...ctx, vela: vela(dia, alta ? 90 : 110) });
+      assert.equal(e.ultimoContato, contatoInicial);
+      assert.equal(e.estado, dia <= 30 ? "rompimento_falhou" : "arquivado");
+    }
+    const acordou = m.atualizarEstadoNivel(e, { ...ctx,
+      vela: { ...vela(51, alta ? 104 : 96), low: alta ? 99 : 95, high: alta ? 105 : 101 } });
+    assert.equal(acordou.estado, "reteste_confirmado");
+    assert.equal(acordou.ultimoContato, 1704067200 + 51 * DIA);
+    // A fronteira da tolerancia conta como contato, mesmo sem penetrar
+    // o ponto; um gap logo fora dela nao conta.
+    const limite = m.atualizarEstadoNivel(e, { ...ctx,
+      vela: vela(51, alta ? 98 : 102) });
+    assert.notEqual(limite.estado, "arquivado");
+    const fora = m.atualizarEstadoNivel(e, { ...ctx,
+      vela: vela(51, alta ? 97.99 : 102.01) });
+    assert.equal(fora.estado, "arquivado");
+  }
+});
+
+await teste("historico exclui condicoes intradiarias em vez de antecipar seu preco de entrada", () => {
+  const dir = mkdtempSync(join(tmpdir(), "monitor-historico-fechado-"));
+  try {
+    mkdirSync(join(dir, "docs"));
+    const intradiarias = ["rompimento_intradiario_80000", "toque_suporte_intradiario_70000",
+      "faixa_compra", "regiao_suporte_1", "pullback_com_volume_decrescente", "nome_novo"];
+    const rows = Array.from({ length: 8 }, (_, i) => ({
+      par: "BTC/USD", tf: "diario", vela: `2026-09-${String(10 + i).padStart(2, "0")}`,
+      em: `2026-09-${String(11 + i).padStart(2, "0")}T16:33:19Z`,
+      fech: 76354.8 + i * 4500, atr: 1000,
+      alertas: [...intradiarias, "rompimento_confirmado_80000",
+        "divergencia_bullish_regular_confirmada", "recuperado_80000"],
+      deterioracao: [], conf_entrada: [], conf_pullback: [], niveis_mud: ["recuperado_80000"],
+      estrutura: "alta", ema89_cruz: "nenhum",
+    }));
+    writeFileSync(join(dir, "docs/historico.jsonl"),
+      [...rows, ...rows].map((r) => JSON.stringify(r)).join("\n"));
+    const script = fileURLToPath(new URL("./analisar-historico.mjs", import.meta.url));
+    const executar = (h) => spawnSync(process.execPath, [script, h], { cwd: dir, encoding: "utf8" });
+    const r = executar("1");
+    assert.equal(r.status, 0, r.stderr);
+    for (const a of intradiarias) assert.ok(!r.stdout.includes("alerta:" + a), a);
+    assert.match(r.stdout, /excluidas: 48 observacoes/);
+    assert.match(r.stdout, /alerta:rompimento_confirmado_80000\s+7\s+4\.50\s+100%/);
+    assert.match(r.stdout, /alerta:divergencia_bullish_regular_confirmada\s+7\s+4\.50\s+100%/);
+    assert.match(r.stdout, /nivel:recuperado_80000\s+7\s+4\.50\s+100%/);
+    assert.match(r.stdout, /TODAS AS VELAS \(referencia\)\s+7\s+4\.50\s+100%/);
+    for (const h of ["0", "-1", "1.5", "abc", "Infinity"])
+      assert.equal(executar(h).status, 1, "horizonte invalido: " + h);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 assert.equal(falhas, 0, `${falhas} de ${grupos} grupos de regressao falharam`);

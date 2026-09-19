@@ -31,12 +31,6 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Teste de fumaca
-        # Roda com series sinteticas, sem tocar na rede: se um refactor
-        # quebrou o parse ou o calculo, o job para aqui em vez de
-        # publicar um relatorio pela metade.
-        run: node teste-fumaca.mjs
-
       - name: Gerar e publicar
         run: |
           git config user.name "github-actions[bot]"
@@ -49,6 +43,10 @@ jobs:
             # reset jogaria fora, e o estado se perderia em silencio.
             git fetch origin main
             git reset --hard origin/main
+
+            # Testa a revisao que sera executada, inclusive se outro
+            # commit chegar entre tentativas. Falha impede publicacao.
+            node teste-fumaca.mjs
 
             node monitor.mjs
 
