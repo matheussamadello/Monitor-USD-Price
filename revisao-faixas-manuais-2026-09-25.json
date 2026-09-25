@@ -1,0 +1,686 @@
+{
+  "capturado_em": "2026-09-25T01:23:22.587Z",
+  "base_commit": "08e0c7e9bcc4a020e634bdfffc097118d5ba1eb4",
+  "criterio": "Faixas manuais fixas, ancoradas em nucleos de pivos confirmados dentro da regiao anterior. Teto total de 0,25 ATR diario e 1% do centro na calibracao. Uma faixa por regiao anterior, sem novas microzonas. Ancora isolada nao equivale a multiplos testes.",
+  "teto_atr_diario": 0.25,
+  "teto_fracao_preco": 0.01,
+  "faixas_manuais": [
+    {
+      "key": "usdt",
+      "par": "USDT/BRL",
+      "atr_diario_referencia": 0.038415308620100015,
+      "ultima_vela_diaria": 1790208000,
+      "suporte_pontual": 5.15,
+      "resistencia_pontual": 5.31,
+      "antes": [
+        [
+          5.3342,
+          5.3599,
+          "faixa_5_3342_5_3599"
+        ],
+        [
+          5.2892,
+          5.3059,
+          "faixa_5_2892_5_3059"
+        ],
+        [
+          5.2697,
+          5.2858,
+          "faixa_5_2697_5_2858"
+        ],
+        [
+          5.1868,
+          5.2124,
+          "faixa_5_1868_5_2124"
+        ],
+        [
+          5.138,
+          5.1668,
+          "regiao_suporte_5_1380_5_1668"
+        ]
+      ],
+      "depois": [
+        [
+          5.338,
+          5.3465,
+          "faixa_5_338_5_3465"
+        ],
+        [
+          5.2935,
+          5.3015,
+          "faixa_5_2935_5_3015"
+        ],
+        [
+          5.274,
+          5.2815,
+          "faixa_5_274_5_2815"
+        ],
+        [
+          5.191,
+          5.1965,
+          "faixa_5_191_5_1965"
+        ],
+        [
+          5.1525,
+          5.162,
+          "regiao_suporte_5_1525_5_162"
+        ]
+      ],
+      "ancoras": [
+        {
+          "label": "faixa_5_338_5_3465",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.34,
+              "time": 1761696000,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.3415,
+              "time": 1775001600,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.3448,
+              "time": 1774224000,
+              "tipo": "topo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.34,
+              "time": 1761696000,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.3415,
+              "time": 1775001600,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.3448,
+              "time": 1774224000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.3499,
+              "time": 1773446400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.3541,
+              "time": 1767916800,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_2935_5_3015",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.295,
+              "time": 1764806400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.3001,
+              "time": 1759276800,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.295,
+              "time": 1764806400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.3001,
+              "time": 1759276800,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_274_5_2815",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.2755,
+              "time": 1762905600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.28,
+              "time": 1758153600,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.2755,
+              "time": 1762905600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.28,
+              "time": 1758153600,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_191_5_1965",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.1926,
+              "time": 1789344000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.1948,
+              "time": 1788739200,
+              "tipo": "topo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.1926,
+              "time": 1789344000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.1948,
+              "time": 1788739200,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.2066,
+              "time": 1774396800,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "regiao_suporte_5_1525_5_162",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.1539,
+              "time": 1785283200,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.1587,
+              "time": 1770854400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.161,
+              "time": 1785888000,
+              "tipo": "topo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.1438,
+              "time": 1787443200,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.15,
+              "time": 1769558400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.1539,
+              "time": 1785283200,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.1587,
+              "time": 1770854400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.161,
+              "time": 1785888000,
+              "tipo": "topo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "usd",
+      "par": "USD/BRL",
+      "atr_diario_referencia": 0.055712773114697474,
+      "ultima_vela_diaria": 1790208000,
+      "suporte_pontual": 5.13,
+      "resistencia_pontual": 5.3,
+      "antes": [
+        [
+          5.3301,
+          5.3481,
+          "faixa_5_3301_5_3481"
+        ],
+        [
+          5.25,
+          5.2895,
+          "faixa_5_2500_5_2895"
+        ],
+        [
+          5.1615,
+          5.203,
+          "faixa_5_1615_5_2030"
+        ],
+        [
+          5.1223,
+          5.1607,
+          "faixa_5_1223_5_1607"
+        ],
+        [
+          5.0646,
+          5.1072,
+          "regiao_suporte_5_0646_5_1072"
+        ],
+        [
+          5.0318,
+          5.0617,
+          "regiao_suporte_5_0318_5_0617"
+        ],
+        [
+          4.9875,
+          5.0231,
+          "regiao_suporte_4_9875_5_0231"
+        ]
+      ],
+      "depois": [
+        [
+          5.3315,
+          5.341,
+          "faixa_5_3315_5_341"
+        ],
+        [
+          5.2525,
+          5.2595,
+          "faixa_5_2525_5_2595"
+        ],
+        [
+          5.168,
+          5.181,
+          "faixa_5_168_5_181"
+        ],
+        [
+          5.129,
+          5.1395,
+          "faixa_5_129_5_1395"
+        ],
+        [
+          5.068,
+          5.0805,
+          "regiao_suporte_5_068_5_0805"
+        ],
+        [
+          5.049,
+          5.0545,
+          "regiao_suporte_5_049_5_0545"
+        ],
+        [
+          4.9945,
+          5.0005,
+          "regiao_suporte_4_9945_5_0005"
+        ]
+      ],
+      "ancoras": [
+        {
+          "label": "faixa_5_3315_5_341",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.332845211029053,
+              "time": 1761696000,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.338500022888184,
+              "time": 1772496000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.339700222015381,
+              "time": 1770336000,
+              "tipo": "topo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.332845211029053,
+              "time": 1761696000,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.338500022888184,
+              "time": 1772496000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.339700222015381,
+              "time": 1770336000,
+              "tipo": "topo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_2525_5_2595",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.254000186920166,
+              "time": 1771286400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.2581281661987305,
+              "time": 1762992000,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.254000186920166,
+              "time": 1771286400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.2581281661987305,
+              "time": 1762992000,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.266174793243408,
+              "time": 1758153600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.281345844268799,
+              "time": 1764806400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.285799980163574,
+              "time": 1713312000,
+              "tipo": "topo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_168_5_181",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.169000148773193,
+              "time": 1769644800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.169899940490723,
+              "time": 1785283200,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.179800033569336,
+              "time": 1789344000,
+              "tipo": "topo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.169000148773193,
+              "time": 1769644800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.169899940490723,
+              "time": 1785283200,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.179800033569336,
+              "time": 1789344000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.1946001052856445,
+              "time": 1714521600,
+              "tipo": "topo"
+            }
+          ]
+        },
+        {
+          "label": "faixa_5_129_5_1395",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.1307501792907715,
+              "time": 1787529600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.1378068923950195,
+              "time": 1773100800,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.1307501792907715,
+              "time": 1787529600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.1378068923950195,
+              "time": 1773100800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.1522650718688965,
+              "time": 1770854400,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "regiao_suporte_5_068_5_0805",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.069602012634277,
+              "time": 1788825600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.079078197479248,
+              "time": 1716163200,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.069602012634277,
+              "time": 1788825600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.079078197479248,
+              "time": 1716163200,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.089900016784668,
+              "time": 1712102400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.102200031280518,
+              "time": 1778803200,
+              "tipo": "topo"
+            }
+          ]
+        },
+        {
+          "label": "regiao_suporte_5_049_5_0545",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 5.050539970397949,
+              "time": 1710806400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.050662040710449,
+              "time": 1784764800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.053299903869629,
+              "time": 1785456000,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 5.040200233459473,
+              "time": 1781481600,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.0432000160217285,
+              "time": 1714694400,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.050539970397949,
+              "time": 1710806400,
+              "tipo": "topo"
+            },
+            {
+              "preco": 5.050662040710449,
+              "time": 1784764800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.053299903869629,
+              "time": 1785456000,
+              "tipo": "fundo"
+            }
+          ]
+        },
+        {
+          "label": "regiao_suporte_4_9945_5_0005",
+          "tipo": "concentracao_de_pivos",
+          "pivos": [
+            {
+              "preco": 4.9959001541137695,
+              "time": 1709164800,
+              "tipo": "topo"
+            },
+            {
+              "preco": 4.997806072235107,
+              "time": 1780444800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 4.998499870300293,
+              "time": 1705968000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 4.999000072479248,
+              "time": 1712620800,
+              "tipo": "fundo"
+            }
+          ],
+          "candidatos_na_faixa_anterior": [
+            {
+              "preco": 4.9959001541137695,
+              "time": 1709164800,
+              "tipo": "topo"
+            },
+            {
+              "preco": 4.997806072235107,
+              "time": 1780444800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 4.998499870300293,
+              "time": 1705968000,
+              "tipo": "topo"
+            },
+            {
+              "preco": 4.999000072479248,
+              "time": 1712620800,
+              "tipo": "fundo"
+            },
+            {
+              "preco": 5.014699935913086,
+              "time": 1707091200,
+              "tipo": "topo"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "comparacao": {
+    "gatilhos_antes": [
+      {
+        "id": "usdt_faixa_5_1868_5_2124",
+        "msg": "USDT/BRL entrou na regiao 5.1868-5.2124 (agora 5.2064)"
+      },
+      {
+        "id": "usd_faixa_5_1615_5_2030",
+        "msg": "USD/BRL entrou na regiao 5.1615-5.2030 (agora 5.1912)"
+      }
+    ],
+    "gatilhos_depois": [],
+    "campos_alterados": {
+      "usdt|diario": [
+        "niveis_manuais_faixa_mais_proxima",
+        "niveis_manuais_distancia_atr",
+        "zonas_candidatas_a_faixa",
+        "alertas_tecnicos",
+        "zona_auto_1",
+        "niveis_manuais",
+        "zonas_automaticas"
+      ],
+      "usd|diario": [
+        "niveis_manuais_faixa_mais_proxima",
+        "niveis_manuais_distancia_atr",
+        "niveis_manuais_alinhamento",
+        "niveis_manuais_faixas_corroboradas",
+        "alertas_tecnicos",
+        "zona_auto_5",
+        "zona_auto_6",
+        "niveis_manuais",
+        "zonas_automaticas"
+      ],
+      "usdt|semanal": [
+        "niveis_manuais_faixa_mais_proxima",
+        "alertas_tecnicos",
+        "niveis_manuais"
+      ],
+      "usd|semanal": [
+        "niveis_manuais_faixa_mais_proxima",
+        "niveis_manuais_distancia_atr",
+        "alertas_tecnicos",
+        "niveis_manuais"
+      ]
+    },
+    "estrutura_indicadores_niveis_pontuais_inalterados": true,
+    "geometria_score_toques_rejeicoes_automaticas_inalterados": true
+  }
+}

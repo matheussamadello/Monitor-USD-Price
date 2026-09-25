@@ -537,9 +537,9 @@ ok(j.diario["USDT/BRL"] && typeof j.diario["USDT/BRL"].rsi_fechado === "number",
   "JSON tem o par USDT/BRL com indicadores");
 ok(typeof j.diario["USDT/BRL"].volume_vs_media_pct === "number",
   "JSON traz volume real do USDT/BRL");
-ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_3342_5_3599",
+ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label === "faixa_5_338_5_3465",
   "cada par publica as SUAS faixas manuais");
-ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_3301_5_3481",
+ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_3315_5_341",
   "as faixas do cambio nao foram trocadas pelas do cripto");
 
 console.log("\n== perda de suporte: corpo, nao so fechamento ==");

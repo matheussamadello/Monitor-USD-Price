@@ -135,18 +135,36 @@ teste('filhos novos continuam sujeitos a duas velas e evidencia independente', (
   assert.equal(b.status, 'ativa');
 });
 teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', () => {
-  const ref = JSON.parse(readFileSync(new URL('./revisao-zonas-2026-09-25.json', import.meta.url)));
+  const ref = JSON.parse(readFileSync(new URL('./revisao-faixas-manuais-2026-09-25.json', import.meta.url)));
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     assert.equal(cfg.niveis.suporte, r.suporte_pontual);
     assert.equal(cfg.niveis.resistencia, r.resistencia_pontual);
     assert.deepEqual(cfg.niveis.faixas, r.depois);
-    for (const [lo, hi] of cfg.niveis.faixas) {
+    assert.equal(cfg.niveis.faixas.length, r.antes.length, 'nao multiplica faixas manuais');
+    for (const [i, [lo, hi]] of cfg.niveis.faixas.entries()) {
       assert.ok(lo < hi);
-      assert.ok(hi - lo <= .8 * r.atr_diario_referencia + 1e-7);
+      assert.ok(hi - lo <= .25 * r.atr_diario_referencia + 1e-10);
+      assert.ok(hi - lo <= .01 * (lo + hi) / 2 + 1e-10);
+      assert.ok(lo >= r.antes[i][0] && hi <= r.antes[i][1], 'nucleo dentro da regiao anterior');
+      assert.ok(hi - lo < r.antes[i][1] - r.antes[i][0], 'todas as faixas ficaram menores');
+      const ancora = r.ancoras[i];
+      assert.ok(ancora.pivos.length > 0, 'sem faixa criada no vazio entre pivos');
+      assert.ok(ancora.pivos.every(p => p.preco > lo && p.preco < hi), 'folga em ambos os lados dos pivos');
+      assert.equal(ancora.tipo === 'concentracao_de_pivos', new Set(ancora.pivos.map(p => p.time)).size >= 2);
+      const ind = {rsi:null,adx:null,diPlus:null,diMinus:null,divergencias:[],estruturaEventos:[],enfraquecimento:[],padroes:[],mudancasNivel:[]};
+      const alertas = preco => m.alertasTecnicos(cfg, {live:{close:preco,high:preco,low:preco},opens:[preco],closes:[preco]}, ind);
+      const label = cfg.niveis.faixas[i][2];
+      for(const preco of [lo,(lo+hi)/2,hi]) assert.ok(alertas(preco).includes(label));
+      for(const preco of [lo-(hi-lo)*.01,hi+(hi-lo)*.01]) assert.ok(!alertas(preco).includes(label), 'ATR nao amplia a entrada na faixa manual');
     }
     const macro = cfg.niveis.resistenciaMacro;
-    if (macro) assert.ok(macro.superior - macro.inferior <= 1.2 * r.atr_semanal_referencia);
+    if (macro) {
+      assert.deepEqual(macro,r.macro_depois);
+      assert.ok(macro.superior-macro.inferior <= .25*r.atr_diario_referencia);
+      assert.ok(macro.superior-macro.inferior <= .01*(macro.superior+macro.inferior)/2);
+      assert.ok(r.pivos_macro.length > 0);
+    }
     // As regioes refinadas nao criam sobreposicoes internas novas.
     const fs = [...cfg.niveis.faixas].sort((a,b) => a[0] - b[0]);
     for (let i = 1; i < fs.length; i++) assert.ok(fs[i][0] >= fs[i-1][1]);

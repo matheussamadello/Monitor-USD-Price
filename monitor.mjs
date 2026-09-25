@@ -84,6 +84,8 @@ const TIMEFRAMES = [
 
 // ------------------------------------------------------------
 // NIVEIS MANUAIS — o unico lugar a editar quando o preco andar.
+// As notas datadas abaixo registram revisoes anteriores. Os limites atuais
+// foram refinados em revisao-faixas-manuais-2026-09-25.json.
 //
 // Tres consumidores leem daqui e so daqui: alertasTecnicos (faixas e
 // rompimento/perda intradiarios), niveisDoPar (maquina de estados de
@@ -117,14 +119,15 @@ const TIMEFRAMES = [
 // zona, e o diario foi a 4 de 4.
 const NIVEIS_USD = {
   faixas: [
-    // Recalibracao de largura em 2026-09-25: ver REVISAO_ZONAS_2026-09-25.md.
-    [5.3301, 5.3481, "faixa_5_3301_5_3481"],
-    [5.25, 5.2895, "faixa_5_2500_5_2895"],
-    [5.1615, 5.203, "faixa_5_1615_5_2030"],
-    [5.1223, 5.1607, "faixa_5_1223_5_1607"],
-    [5.0646, 5.1072, "regiao_suporte_5_0646_5_1072"],
-    [5.0318, 5.0617, "regiao_suporte_5_0318_5_0617"],
-    [4.9875, 5.0231, "regiao_suporte_4_9875_5_0231"],
+    // Nucleos manuais em 2026-09-25: teto de 0,25 ATR diario e 1% do centro.
+    // Evidencia: revisao-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
+    [5.3315, 5.341, "faixa_5_3315_5_341"],
+    [5.2525, 5.2595, "faixa_5_2525_5_2595"],
+    [5.168, 5.181, "faixa_5_168_5_181"],
+    [5.129, 5.1395, "faixa_5_129_5_1395"],
+    [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
+    [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
+    [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -524,12 +527,13 @@ const FONTES_CRIPTO = [
 // ------------------------------------------------------------
 const NIVEIS_USDT = {
   faixas: [
-    // Recalibracao de largura em 2026-09-25: ver REVISAO_ZONAS_2026-09-25.md.
-    [5.3342, 5.3599, "faixa_5_3342_5_3599"],
-    [5.2892, 5.3059, "faixa_5_2892_5_3059"],
-    [5.2697, 5.2858, "faixa_5_2697_5_2858"],
-    [5.1868, 5.2124, "faixa_5_1868_5_2124"],
-    [5.138, 5.1668, "regiao_suporte_5_1380_5_1668"],
+    // Nucleos manuais em 2026-09-25: teto de 0,25 ATR diario e 1% do centro.
+    // Evidencia: revisao-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
+    [5.338, 5.3465, "faixa_5_338_5_3465"],
+    [5.2935, 5.3015, "faixa_5_2935_5_3015"],
+    [5.274, 5.2815, "faixa_5_274_5_2815"],
+    [5.191, 5.1965, "faixa_5_191_5_1965"],
+    [5.1525, 5.162, "regiao_suporte_5_1525_5_162"],
   ],
   resistencia: 5.31,
   resistenciaLabel: "5_31",
