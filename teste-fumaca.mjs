@@ -1608,9 +1608,23 @@ console.log("\n== zona em observacao tambem envelhece ==");
   const comEvidencia = { score: 60, episodios: [{ rejeitado: true }, { rejeitado: false }] };
   ok(atualizarCiclo(comEvidencia, ant({ velasComScoreAlto: 1 }), ctx(3)).status === "ativa",
     "score alto por duas velas e evidencia estrutural ainda promove a ativa");
-  // E nada disso anda na mesma vela.
-  ok(atualizarCiclo(nova(60), ant({ ultimaVelaAvaliada: 2 }), ctx(400)).status === "candidata",
-    "reexecucao na mesma vela nao muda o estado");
+  // Na mesma vela, contadores e promocao nao andam.
+  const mesma = (extra) => ant({ ultimaVelaAvaliada: 2, ...(extra || {}) });
+  const reexec = atualizarCiclo(comEvidencia, mesma({ velasComScoreAlto: 1 }), ctx(3));
+  ok(reexec.status === "candidata" && reexec.velasComScoreAlto === 1,
+    "reexecucao na mesma vela nao promove nem conta vela com score alto");
+  const fracaMesma = atualizarCiclo(nova(60), mesma({ status: "enfraquecida", velasEnfraquecida: 4 }), ctx(400));
+  ok(fracaMesma.status === "enfraquecida" && fracaMesma.velasEnfraquecida === 4,
+    "reexecucao na mesma vela nao avanca a contagem da enfraquecida");
+  // Mas a rebaixa e' conferida: o pedaco de uma zona dividida herdava o
+  // `ativa` da mae e seguia ativo sem toque ha 127 velas ate a vela seguinte.
+  const herdada = atualizarCiclo(nova(85), mesma({ status: "ativa", velasComScoreAlto: 23, velasEnfraquecida: 7 }), ctx(127));
+  ok(herdada.status === "enfraquecida" && herdada.velasEnfraquecida === 0,
+    "ficha que herdou `ativa` sem toque recente enfraquece ja na mesma vela");
+  ok(atualizarCiclo(nova(60), mesma(), ctx(400)).status === "enfraquecida",
+    "o mesmo vale para candidata");
+  ok(atualizarCiclo(nova(85), mesma({ status: "ativa" }), ctx(3)).status === "ativa",
+    "reexecucao comum, com toque recente e score bom, nao muda nada");
 }
 
 console.log("\n== radar de promocao: zona madura que nenhuma faixa cobre ==");

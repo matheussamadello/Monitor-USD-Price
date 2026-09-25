@@ -229,9 +229,16 @@ console.log("\n== ciclo de vida da zona: os limiares de score ==");
   const morta = atualizarCiclo(nova(10), { status: "enfraquecida", ultimaVelaAvaliada: 1000, velasEnfraquecida: 0 }, ctx);
   ok(morta.status === "remover", `enfraquecida com score 10 (abaixo de 15) e' removida (${morta.status})`);
 
-  // Na MESMA vela nada envelhece.
-  const parada = atualizarCiclo(nova(10), { status: "ativa", ultimaVelaAvaliada: 2000, velasEnfraquecida: 0 }, ctx);
-  ok(parada.status === "ativa", "na mesma vela fechada o ciclo nao avanca");
+  // Na MESMA vela nada envelhece: a contagem da enfraquecida nao anda e
+  // ela nao e' removida. A rebaixa de uma ativa abaixo do corte, que so
+  // depende do score desta vela, e' conferida.
+  const parada = atualizarCiclo(nova(10), { status: "enfraquecida", ultimaVelaAvaliada: 2000, velasEnfraquecida: 3 }, ctx);
+  ok(parada.status === "enfraquecida" && parada.velasEnfraquecida === 3,
+    "na mesma vela fechada o ciclo nao avanca");
+  const rebaixada = atualizarCiclo(nova(25), { status: "ativa", ultimaVelaAvaliada: 2000, velasEnfraquecida: 0 }, ctx);
+  ok(rebaixada.status === "enfraquecida", "na mesma vela, ativa abaixo do corte enfraquece");
+  const mantida = atualizarCiclo(nova(35), { status: "ativa", ultimaVelaAvaliada: 2000, velasEnfraquecida: 0 }, ctx);
+  ok(mantida.status === "ativa", "na mesma vela, ativa acima do corte segue ativa");
 }
 
 // ------------------------------------------------------------

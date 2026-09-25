@@ -2944,16 +2944,30 @@ export function atualizarCiclo(z, anterior, ctx) {
   z.velasEnfraquecida = anterior ? anterior.velasEnfraquecida || 0 : 0;
   z.ultimaVelaAvaliada = ctx.ultimaVelaFechada;
 
+  const semToque =
+    ctx.velasDesdeUltimoToque === null ? Infinity : ctx.velasDesdeUltimoToque;
+  const deveEnfraquecer =
+    z.score < ZONA_SCORE_ENFRAQUECE || semToque > par.semToqueEnfraquece;
+
   if (!velaNova) {
-    // mesma vela: mantem o estado, so atualiza os campos calculados
+    // Mesma vela: contadores e promocao NAO andam -- reexecutar nao e'
+    // evidencia nova. A rebaixa, porem, e' conferida. Ela depende so do
+    // score e dos toques desta vela, entao numa reexecucao comum da o
+    // mesmo resultado da primeira avaliacao e nao muda nada. So muda
+    // quando a ficha trocou de conteudo sem vela nova: em 2026-09-24 o
+    // teto de largura dividiu zonas largas, e o pedaco que herdou o ID
+    // herdou tambem o `ativa` da mae. No USD/BRL, um pedaco sem toque
+    // havia 127 velas seguiu `ativa` e entrou no radar de promocao como
+    // regiao viva, ate a vela seguinte corrigir.
+    if ((z.status === "ativa" || z.status === "candidata") && deveEnfraquecer) {
+      z.status = "enfraquecida";
+      z.velasEnfraquecida = 0;
+    }
     return z;
   }
 
   if (z.score >= ZONA_SCORE_ATIVA) z.velasComScoreAlto += 1;
   else z.velasComScoreAlto = 0;
-
-  const semToque =
-    ctx.velasDesdeUltimoToque === null ? Infinity : ctx.velasDesdeUltimoToque;
 
   if (z.status === "candidata") {
     if (
@@ -2961,7 +2975,7 @@ export function atualizarCiclo(z, anterior, ctx) {
       evidenciaEstruturalIndependente(z, ctx.confluenciaSemanal)
     ) {
       z.status = "ativa";
-    } else if (z.score < ZONA_SCORE_ENFRAQUECE || semToque > par.semToqueEnfraquece) {
+    } else if (deveEnfraquecer) {
       // MESMO envelhecimento da ativa. Antes, candidata so tinha uma
       // saida -- virar ativa --, entao uma regiao que nunca se provou
       // tambem nunca era descartada: ficava no estado para sempre e
@@ -2971,7 +2985,7 @@ export function atualizarCiclo(z, anterior, ctx) {
       z.velasEnfraquecida = 0;
     }
   } else if (z.status === "ativa") {
-    if (z.score < ZONA_SCORE_ENFRAQUECE || semToque > par.semToqueEnfraquece) {
+    if (deveEnfraquecer) {
       z.status = "enfraquecida";
       z.velasEnfraquecida = 0;
     }
@@ -3825,7 +3839,9 @@ export function readPair(cfg, d, tf, opts = {}) {
             .map(
               (c) =>
                 `${num(c.inferior, D)}-${num(c.superior, D)} score=${c.score} ` +
-                `toques=${c.toques}${c.lado ? ` (${c.lado} do preco)` : ""}`
+                `toques=${c.toques}${
+                  c.lado === "no preco" ? " (no preco)" : c.lado ? ` (${c.lado} do preco)` : ""
+                }`
             )
             .join(" | ")
         : "nenhuma"
@@ -4879,7 +4895,7 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
     // ESTRUTURAIS, nao operacionais. Este radar recomenda virar FAIXA
     // MANUAL, e faixa manual nao expira nem se mexe com a volatilidade
     // do dia. Os limites operacionais sao centro +- uma janela derivada
-    // do ATR, com piso e teto em percentual do centro -- publicar eles
+    // do ATR, com teto em percentual do centro -- publicar eles
     // aqui fazia a recomendacao carregar a volatilidade de hoje para
     // dentro de um nivel permanente. No caso que motivou a correcao a
     // janela nem vinha do ATR: estava no teto de 1,5% do centro.

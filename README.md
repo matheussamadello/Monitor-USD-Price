@@ -606,7 +606,9 @@ Duas correções de 2026-09-12 fecharam buracos nesse ciclo, ambos encontrados p
 
 **`candidata` também envelhece.** Antes, essa situação só tinha uma saída: virar `ativa`. Uma região que nunca se provou também nunca era descartada — ficava no estado para sempre. Havia zona em observação **sem toque há 435 semanas** no estado do dólar, presente em todas as execuções registradas. E como `candidata` conta para a confluência semanal, que vale pontos no score das zonas diárias, regiões abandonadas anos atrás ainda ajudavam a empurrar o score que o radar usa para recomendar uma faixa manual nova. Agora `candidata` tem o mesmo envelhecimento que `ativa` sempre teve.
 
-Nenhuma das duas muda o que o monitor considera suporte, resistência, rompimento ou reteste. Elas mudam por quanto tempo uma região é lembrada.
+**Uma terceira, de 2026-09-25: a rebaixa não espera a vela seguinte.** Numa reexecução sobre a mesma vela fechada, o ciclo não anda — contadores e promoção dependem de vela nova, porque repetir a consulta não é evidência nova. A versão anterior aplicava isso a tudo, inclusive à rebaixa. Numa reexecução comum isso não fazia diferença, porque a rebaixa depende só do score e dos toques da vela, que a primeira avaliação já tinha conferido. Fazia diferença quando a ficha **mudava de conteúdo sem vela nova**: em 2026-09-24 o teto de largura dividiu zonas largas, e o pedaço que herdou o id herdou também a situação da mãe. No USD/BRL, o pedaço 5,2634–5,2841, **sem toque havia 127 velas**, seguiu `ativa` e o radar de promoção recomendou virar faixa manual uma região que o próprio ciclo de vida já devia ter enfraquecido. Quatro fichas estavam nesse estado nos três monitores. Agora a rebaixa (score abaixo de 30 ou sem toque além do limite) é conferida também na mesma vela; a contagem da carência e a promoção continuam só em vela nova.
+
+Nenhuma das três muda o que o monitor considera suporte, resistência, rompimento ou reteste. Elas mudam por quanto tempo uma região é lembrada.
 
 ### Radar de promoção
 
