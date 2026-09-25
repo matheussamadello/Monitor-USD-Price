@@ -476,6 +476,8 @@ Os valores anteriores e os pivôs com datas constam na [evidência desta calibra
 
 O relatório atual é a fonte de verdade para `niveis_manuais.faixas`. A mudança de configuração não reescreve o histórico. Labels antigos permanecem nos registros anteriores. Um novo label pode alterar a assinatura no primeiro processamento, sem indicar movimento novo de preço.
 
+A [auditoria de qualidade das faixas atuais](AUDITORIA_FAIXAS_2026-09-25.md) mede score, toques e rejeições nos limites exatos, com ressalvas de recência e confirmação posterior. Esses scores são diagnósticos retrospectivos, separados dos campos canônicos do monitor.
+
 ## Vigilância dos níveis manuais
 
 Os níveis manuais são a espinha da política de alerta: janela agressiva, confirmação conservadora e a própria revisão de níveis partem todos deles. Quando envelhecem, o monitor não passa a errar — ele fica **mudo** justamente na parte que mais importa, e nada avisa.
