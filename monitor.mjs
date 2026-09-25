@@ -2337,7 +2337,8 @@ const ZONA_MEIA_LARGURA_ATR = 0.25;
 const ZONA_LARGURA_MIN_PCT = 0.08;
 const ZONA_LARGURA_MAX_PCT = 1.0;
 const CLUSTER_DIAMETRO_MAX = 1.0; // distancia normalizada entre QUALQUER par
-export const ZONA_ESTRUTURAL_MAX_ATR = { diario: 0.8, semanal: 1.2 };
+// Teto de geometria: semanal usa coeficiente menor porque seu ATR e' maior.
+export const ZONA_ESTRUTURAL_MAX_ATR = { diario: 0.5, semanal: 0.3 };
 const CLUSTER_GAP_MIN_ATR = 0.2;
 const MATCH_MAX_ATR = 0.75;
 const MERGE_SOBREPOSICAO_MIN = 0.5;
@@ -2432,7 +2433,8 @@ function atrReferenciaZona(membros, atrAtual) {
 
 export function limitesEstruturais(membros, atrAtual = null) {
   const precos = membros.map((m) => m.preco);
-  const folga = 0.15 * atrReferenciaZona(membros, atrAtual);
+  // Folga estrutural pequena; a janela operacional historica fica intacta.
+  const folga = 0.05 * atrReferenciaZona(membros, atrAtual);
   return {
     inferior: Math.min(...precos) - folga,
     superior: Math.max(...precos) + folga,

@@ -549,13 +549,15 @@ No código atual essas zonas são **contexto técnico**. Elas não alteram sozin
 
 Usa ATR(14) de Wilder sobre velas fechadas e conserva o ATR da época de cada pivô. O agrupamento inicial continua exigindo compatibilidade entre **todos os pares** de pivôs, evitando encadeamento.
 
-O limite estrutural total, incluindo a folga, é **0,8 ATR fechado atual no diário** e **1,2 ATR no semanal**. Se um cluster exceder esse limite, procura-se o maior vão que separe duas concentrações: pelo menos dois pivôs de datas distintas em cada parte, vão de pelo menos 0,2 ATR de referência e pelo menos duas vezes o espaçamento médio interno de cada lado. O processo pode repetir-se para mais de duas concentrações.
+A [calibração de equivalência espacial](AUTO_EQUIVALENCIA_2026-09-25.md) aproxima a geometria automática das faixas manuais sem copiar seus preços ou scores. A folga estrutural caiu de 0,15 para 0,05 ATR por borda; a janela operacional continua com até 0,5 ATR total. O semanal usa coeficiente menor por ter ATR maior. A equivalência é aproximada, não uma garantia da mesma largura em preço.
+
+O limite estrutural total, incluindo a folga, é **0,5 ATR fechado atual no diário** e **0,3 ATR no semanal**. Se um cluster exceder esse limite, procura-se o maior vão que separe duas concentrações: pelo menos dois pivôs de datas distintas em cada parte, vão de pelo menos 0,2 ATR de referência e pelo menos duas vezes o espaçamento médio interno de cada lado. O processo pode repetir-se para mais de duas concentrações.
 
 Sem evidência de duas concentrações, conserva-se apenas o núcleo compacto com mais pivôs. Recência e menor amplitude desempatam a seleção. Pivôs periféricos não viram automaticamente novas zonas. Um cluster já compacto mantém todos os membros. Os filtros de score, rejeições, maturidade e o limite de três zonas publicadas por lado continuam valendo.
 
 ### Limites estruturais
 
-As bordas são os extremos dos **membros selecionados**, com folga de 0,15 vezes o menor entre o ATR médio desses pivôs e o ATR fechado atual de cada lado. Não se corta a borda de uma zona deixando seus membros fora dela.
+As bordas são os extremos dos **membros selecionados**, com folga de 0,05 vezes o menor entre o ATR médio desses pivôs e o ATR fechado atual de cada lado. Não se corta a borda de uma zona deixando seus membros fora dela.
 
 A fusão topo/fundo continua exigindo sobreposição estrutural mínima de 50%, mas agora também verifica todos os pares de pivôs e a largura final. O ATR dos membros é conservado até essa etapa. A suavização do centro só é aproveitada se permanecer dentro da concentração de pivôs da zona recalculada.
 

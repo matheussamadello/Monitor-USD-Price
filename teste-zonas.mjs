@@ -36,7 +36,7 @@ teste('nuvem uniforme e pontos isolados nao fabricam multiplas microzonas', () =
   for (const ps of [[100, 102, 104, 106, 108], [100, 109], [100, 100.1, 109]]) {
     const cs = m.dividirCluster(pivos(ps), 'diario', 10);
     assert.equal(cs.length, 1);
-    assert.ok(largura(m.limitesEstruturais(cs[0], 10)) <= 8 + 1e-10);
+    assert.ok(largura(m.limitesEstruturais(cs[0], 10)) <= 5 + 1e-10);
   }
   assert.deepEqual(m.dividirCluster(pivos([100, 100.1, 109]), 'diario', 10)[0]
     .map(p => p.preco), [100, 100.1], 'conserva a concentracao, nao o outlier');
@@ -61,8 +61,34 @@ teste('ATR atual maior nao infla os limites historicos', () => {
   assert.deepEqual(m.limitesEstruturais(ps, 10), m.limitesEstruturais(ps, 1000));
 });
 teste('cluster valido no ATR fechado atual nao perde membros por teto historico menor', () => {
-  const ps = pivos([547.66, 565.76], 33.64);
+  const ps = pivos([547.66, 563], 33.64);
   assert.equal(m.agruparPivos(ps, 'diario', 39.94)[0].length, 2);
+});
+teste('tetos proximos dos manuais e folga estrutural sem inflar pivo isolado', () => {
+  assert.deepEqual(m.ZONA_ESTRUTURAL_MAX_ATR, {diario:.5,semanal:.3});
+  const est=m.limitesEstruturais(pivos([100],10),10);
+  assert.deepEqual(est,{inferior:99.5,superior:100.5});
+  const op=m.limitesOperacionais(1000,10);
+  assert.deepEqual(op,{inferior:997.5,superior:1002.5}, 'folga estrutural nao encolhe janela de interacao');
+});
+teste('fronteira do teto admite o conjunto inteiro ou seleciona nucleo sem truncar', () => {
+  for(const [tf,extremo] of [['diario',104],['semanal',102]]) {
+    const cabe=m.dividirCluster(pivos([100,extremo]),tf,10);
+    assert.equal(cabe[0].length,2);
+    const excede=m.dividirCluster(pivos([100,extremo+.001]),tf,10);
+    assert.equal(excede.length,1,'dois pontos isolados nao fabricam duas zonas');
+    assert.equal(excede[0].length,1);
+  }
+});
+teste('reduzir folga com centro e pivos iguais preserva episodios e score proprio', () => {
+  const ps=pivos([100,100.2]),atual=zona(ps,'topo');
+  const antiga={...atual,limites_estruturais:{inferior:98.5,superior:101.7}};
+  const closes=[105,100.1,105,105,100.1,105,105,100.1,105];
+  const d={closes,highs:closes.map(x=>x+.1),lows:closes.map(x=>x-.1),times:closes.map((_,i)=>i*DIA)};
+  for(const z of [antiga,atual]) z.episodios=m.calcularEpisodios(z,d,closes.map(()=>2),1,closes.map(()=>1.4));
+  assert.deepEqual(atual.episodios,antiga.episodios);
+  const ctx={tfKey:'diario',velasDesdeUltimoToque:1,confluenciaSemanal:false,volumeForte:true};
+  assert.deepEqual(m.pontuarZona(atual,ctx),m.pontuarZona(antiga,ctx));
 });
 teste('fusao proxima preserva ATR dos pivos e folga', () => {
   const zs = [zona(pivos([100, 100.2]), 'topo'), zona(pivos([100.1, 100.3], 10, 'fundo'), 'fundo')];
@@ -76,7 +102,7 @@ teste('fusao nao reconstroi zona acima do teto nem encadeia extremos distantes',
   const zs = [zona(pivos([100, 104]), 'topo'), zona(pivos([102, 106], 10, 'fundo'), 'fundo')];
   const merged = m.fundirZonasOpostas(zs, 'diario', 10);
   assert.equal(merged.length, 2);
-  assert.ok(merged.every(z => largura(z.limites_estruturais) <= 8 + 1e-10));
+  assert.ok(merged.every(z => largura(z.limites_estruturais) <= 5 + 1e-10));
 });
 teste('janela operacional tem ate 0,5 ATR mesmo com volatilidade baixa', () => {
   for (const atr of [.001, 1, 10, 100]) {
