@@ -166,11 +166,16 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     assert.equal(cfg.niveis.suporte, r.suporte_pontual);
     assert.equal(cfg.niveis.resistencia, r.resistencia_pontual);
-    assert.deepEqual(cfg.niveis.faixas, r.depois);
-    assert.equal(cfg.niveis.faixas.length, r.antes.length, 'nao multiplica faixas manuais');
-    for (const [i, [lo, hi]] of cfg.niveis.faixas.entries()) {
-      assert.ok(lo < hi);
-      assert.ok(hi - lo <= .5 * r.atr_diario_referencia + 1e-10);
+    // O reajuste de 2026-09-25 continua valendo faixa a faixa. Promocoes
+    // posteriores do radar ACRESCENTAM faixas e nao podem mexer nas
+    // reajustadas, entao a correspondencia com o audit passou a ser por
+    // label. O que segue vale so para as reajustadas, porque compara cada
+    // uma com o estado dela ANTES do reajuste.
+    const porLabel = new Map(cfg.niveis.faixas.map(f => [f[2], f]));
+    assert.equal(r.antes.length, r.depois.length, 'o reajuste nao multiplica faixas manuais');
+    for (const [i, esperada] of r.depois.entries()) {
+      assert.deepEqual(porLabel.get(esperada[2]), esperada, `faixa reajustada ${esperada[2]} intacta`);
+      const [lo, hi] = esperada;
       assert.ok(lo <= r.antes[i][0] && hi >= r.antes[i][1], 'preserva todo o nucleo anterior');
       assert.ok(lo >= r.origem_ampla[i][0] && hi <= r.origem_ampla[i][1], 'dentro da regiao ampla original');
       assert.ok(hi - lo < r.origem_ampla[i][1] - r.origem_ampla[i][0], 'nao restaura faixas amplas inteiras');
@@ -178,9 +183,14 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
       assert.ok(ancora.pivos.length > 0, 'sem faixa criada no vazio entre pivos');
       assert.ok(ancora.pivos.every(p => p.preco > lo && p.preco < hi), 'folga em ambos os lados dos pivos');
       assert.equal(ancora.tipo === 'concentracao_de_pivos', new Set(ancora.pivos.map(p => p.time)).size >= 2);
+    }
+    // O teto de largura e o comportamento de entrada valem para TODA faixa
+    // configurada, inclusive as promovidas depois do reajuste.
+    for (const [lo, hi, label] of cfg.niveis.faixas) {
+      assert.ok(lo < hi);
+      assert.ok(hi - lo <= .5 * r.atr_diario_referencia + 1e-10);
       const ind = {rsi:null,adx:null,diPlus:null,diMinus:null,divergencias:[],estruturaEventos:[],enfraquecimento:[],padroes:[],mudancasNivel:[]};
       const alertas = preco => m.alertasTecnicos(cfg, {live:{close:preco,high:preco,low:preco},opens:[preco],closes:[preco]}, ind);
-      const label = cfg.niveis.faixas[i][2];
       for(const preco of [lo,(lo+hi)/2,hi]) assert.ok(alertas(preco).includes(label));
       for(const preco of [lo-(hi-lo)*.01,hi+(hi-lo)*.01]) assert.ok(!alertas(preco).includes(label), 'ATR nao amplia a entrada na faixa manual');
     }
