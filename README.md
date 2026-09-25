@@ -334,6 +334,18 @@ Isso também resolveu uma incoerência anterior: `rompimento_confirmado` é aval
 
 ### Estrutura recente e sequência ampliada no painel
 
+O título **Estrutura dos últimos pivôs confirmados** delimita a leitura recente: dois topos e dois fundos, sem concluir a tendência geral do ativo. Os seis valores canônicos não mudam. Na página, `estrutura_de_baixa` aparece como `estrutura_recente_de_baixa`, e `estrutura_de_alta_preservada` como `estrutura_recente_de_alta_preservada`; chips de eventos estruturais também qualificam o horizonte recente. Relatório, estado, histórico, prompts e automações conservam os identificadores originais.
+
+| Pivôs recentes | Sequência ampliada | Síntese visual |
+|---|---|---|
+| Baixa | Alta | Correção recente dentro de estrutura ampliada ainda altista |
+| Alta | Baixa | Recuperação recente dentro de estrutura ampliada ainda baixista |
+| Alta / baixa | Mesma direção | Estrutura recente e ampliada alinhadas em alta / baixa |
+| Lateral | Alta / baixa | Estrutura recente lateral dentro de contexto ampliado predominantemente altista / baixista |
+| Indefinidos ou sequência incompleta | Qualquer | Texto neutro que identifica a limitação da comparação |
+
+Essa divergência pode ocorrer porque as janelas são diferentes. Os tooltips esclarecem que a leitura recente não significa automaticamente uma reversão da tendência geral e deve ser comparada com a sequência ampliada e os demais indicadores.
+
 O painel mantém a **estrutura recente**, calculada pelos dois últimos topos e dois últimos fundos confirmados, e acrescenta a **sequência ampliada**: os quatro últimos pivôs de cada tipo, com três comparações por grupo. O diário continua confirmando pivôs com cinco velas posteriores fechadas; o semanal, com duas. A vela em formação não participa. Os pivôs podem abranger períodos diferentes, e suas datas e preços ficam acessíveis em “Ver pivôs e comparações”.
 
 - **Consistente:** as três comparações de topos e as três de fundos concordam com o padrão mostrado.
@@ -343,7 +355,7 @@ O painel mantém a **estrutura recente**, calculada pelos dois últimos topos e 
 
 Topos e fundos subindo indicam alta; ambos caindo, baixa; topos caindo com fundos subindo, contração; o inverso, expansão. Se a estrutura recente divergir do padrão ampliado, o painel mostra essa divergência. A contagem descreve a sequência observada e não mede a probabilidade de sucesso de uma operação.
 
-Essa informação é **exclusivamente visual**. Os campos existentes de estrutura, o relatório JSON/texto, o histórico, os gatilhos e os prompts dos alertas mantêm seu comportamento. Os dados visuais são calculados por par e timeframe na mesma execução que gera o HTML. As explicações básicas, divergências e quantidades insuficientes ficam no “?” ao lado de “Sequência ampliada”; cada classificação tem sua própria ajuda. O campo “EMA89 (fechado)” acrescenta “cruzou” somente quando houve mudança de lado no último fechamento, mantendo a distância em porcentagem.
+Essa informação é **exclusivamente visual**. Os campos existentes de estrutura, o relatório JSON/texto, o histórico, os gatilhos e os prompts dos alertas mantêm seu comportamento. Os dados visuais são calculados por par e timeframe na mesma execução que gera o HTML. Os tooltips explicam as duas janelas, os fractais 5/5 no diário e 2/2 no semanal e o atraso de confirmação (cinco velas diárias ou duas semanais fechadas à direita). Uma síntese descritiva visível relaciona os horizontes sem indicar compra, venda ou entrada. Quantidades insuficientes também ficam no “?” da sequência ampliada. O campo “EMA89 (fechado)” acrescenta “cruzou” somente quando houve mudança de lado no último fechamento, mantendo a distância em porcentagem.
 
 ### Validação dos candles do Yahoo
 

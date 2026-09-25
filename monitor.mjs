@@ -4443,6 +4443,7 @@ html[data-tema="claro"] .btn-tema .sol{display:block}
 dl{margin:0;display:grid;gap:8px}
 .m{display:flex;justify-content:space-between;gap:14px;align-items:baseline}
 .m dt{color:var(--fraco);font-size:13px;white-space:nowrap}
+.m.estrutura-ajuda dt{white-space:normal}
 .m dd{margin:0;font:13px/1.4 var(--mono);color:var(--txt);text-align:right}
 .m dd small{color:var(--fraco);font-size:11px;margin-left:6px}
 .m dd.alta{color:var(--alta)}
@@ -4462,6 +4463,7 @@ dl{margin:0;display:grid;gap:8px}
   padding-top:13px;border-top:1px dashed var(--linha)}
 .chip{font:11px/1 var(--mono);padding:5px 9px;border-radius:6px;
   background:var(--chip-bg);border:1px solid var(--chip-borda);color:var(--chip-txt)}
+.chip.estrutura-chip{max-width:100%;overflow-wrap:anywhere;line-height:1.4}
 .chip.risco{background:var(--risco-bg);border-color:var(--risco-borda);color:var(--risco-txt)}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
@@ -4605,19 +4607,34 @@ function pgLinha(rotulo, valor, classe, ajuda = "") {
 // sobrepoem de proposito -- a segunda e' sintese da primeira --, e
 // pintar a mesma string duas vezes em duas cores so confunde. Quem
 // esta nas duas sai como risco; quem so esta na sintese entra depois.
+// Somente rotulos do HTML. Os identificadores canonicos continuam nos
+// relatorios, estado, historico, prompts e regras de alerta.
+const ROTULOS_CHIPS_ESTRUTURA = {
+  estrutura_de_alta_preservada: "estrutura_recente_de_alta_preservada",
+  estrutura_de_baixa: "estrutura_recente_de_baixa",
+  estrutura_perda_estrutura_alta_novo_LL: "estrutura_recente_perda_estrutura_alta_novo_LL",
+  estrutura_topo_mais_baixo_apos_HH: "estrutura_recente_topo_mais_baixo_apos_HH",
+  perda_estrutura_alta_novo_LL: "perda_estrutura_recente_alta_novo_LL",
+  di_minus_dominante_com_estrutura_nao_altista: "di_minus_dominante_com_estrutura_recente_nao_altista",
+};
+
 function pgChips(alertas, deterioracao) {
   const det = new Set(deterioracao || []);
   const vistos = new Set();
   const out = [];
+  const chip = (x, risco) => {
+    const rotulo = ROTULOS_CHIPS_ESTRUTURA[x];
+    return `<span class="chip${risco ? " risco" : ""}${rotulo ? " estrutura-chip" : ""}">${pgEsc(rotulo || x)}</span>`;
+  };
   for (const x of alertas || []) {
     if (vistos.has(x)) continue;
     vistos.add(x);
-    out.push(`<span class="chip${det.has(x) ? " risco" : ""}">${pgEsc(x)}</span>`);
+    out.push(chip(x, det.has(x)));
   }
   for (const x of det) {
     if (vistos.has(x)) continue;
     vistos.add(x);
-    out.push(`<span class="chip risco">${pgEsc(x)}</span>`);
+    out.push(chip(x, true));
   }
   if (!out.length) return `<span class="chip vazio">nenhum</span>`;
   return out.join("");
@@ -4625,19 +4642,33 @@ function pgChips(alertas, deterioracao) {
 
 // Detalhe visual separado dos campos canonicos usados pelos alertas.
 const EXPLICACOES_ESTRUTURA_RECENTE = {
-  alta: "O último topo confirmado ficou acima do anterior, e o último fundo também. A comparação usa os 2 últimos pivôs de cada tipo.",
-  baixa: "O último topo e o último fundo confirmados ficaram abaixo dos anteriores. A comparação usa os 2 últimos pivôs de cada tipo.",
-  lateral_contracao: "O último topo confirmado ficou mais baixo, enquanto o fundo ficou mais alto. A faixa entre os extremos está se estreitando na comparação dos 2 últimos pivôs de cada tipo.",
-  lateral_expansao: "O último topo confirmado ficou mais alto, enquanto o fundo ficou mais baixo. A faixa entre os extremos está se ampliando na comparação dos 2 últimos pivôs de cada tipo.",
-  lateral_empate: "O último topo ou o último fundo confirmado repetiu o preço do anterior. Empate não é queda: a estrutura recente não confirma um padrão direcional completo, mesmo que o outro extremo tenha se movido.",
-  indefinida: "Ainda não há pelo menos 2 topos e 2 fundos confirmados com preços válidos para classificar a estrutura recente. Isso não significa que o mercado esteja lateral.",
-  "--": "A estrutura recente não está disponível nesta leitura.",
+  alta: "O topo mais recente e o fundo mais recente ficaram acima dos anteriores. Isso classifica a estrutura recente dos pivôs como alta.",
+  baixa: "O topo mais recente e o fundo mais recente ficaram abaixo dos anteriores. Isso classifica a estrutura recente dos pivôs como baixa.",
+  lateral_contracao: "O topo mais recente ficou mais baixo e o fundo mais recente ficou mais alto. A estrutura recente dos pivôs está em contração, com estreitamento entre esses extremos.",
+  lateral_expansao: "O topo mais recente ficou mais alto e o fundo mais recente ficou mais baixo. A estrutura recente dos pivôs está em expansão, com ampliação entre esses extremos.",
+  lateral_empate: "O topo ou o fundo mais recente repetiu o preço do anterior. Empate não é queda: a estrutura recente dos pivôs não confirma um padrão direcional completo, mesmo que o outro extremo tenha se movido.",
+  indefinida: "Ainda faltam topos ou fundos confirmados com preços válidos para classificar a estrutura recente dos pivôs. Isso não significa que o mercado esteja lateral.",
+  "--": "A estrutura recente dos pivôs não está disponível nesta leitura.",
 };
 
-function pgExplicacaoEstruturaVisual(v) {
-  if (!v) return "A sequência ampliada não está disponível nesta leitura.";
-  if (!v.completa) return "Ainda faltam pivôs para completar os 4 topos e 4 fundos confirmados. Confira as quantidades disponíveis abaixo; a falta de histórico não indica lateralidade.";
-  if (v.consistencia === "mista") return "Há 4 topos e 4 fundos confirmados, mas pelo menos um dos grupos não tem 2 das 3 comparações na mesma direção. Por isso, a sequência não recebe uma direção predominante. Preços iguais contam como neutros.";
+function pgConfirmacaoPivos(titulo) {
+  return titulo === "Semanal"
+    ? "No gráfico semanal, os pivôs usam fractal 2/2 e só são confirmados após 2 velas semanais fechadas à direita. Por isso, esta leitura estrutural é deliberadamente atrasada e pode ficar atrás do movimento atual do preço."
+    : "No gráfico diário, os pivôs usam fractal 5/5 e só são confirmados após 5 velas fechadas à direita. Por isso, esta leitura estrutural é deliberadamente atrasada e pode ficar atrás do movimento atual do preço.";
+}
+
+function pgExplicacaoEstruturaRecente(tend, titulo) {
+  return "A classificação usa apenas os 2 últimos topos e 2 últimos fundos confirmados. " +
+    (EXPLICACOES_ESTRUTURA_RECENTE[tend] || EXPLICACOES_ESTRUTURA_RECENTE["--"]) +
+    " Isso não significa automaticamente que a tendência geral do ativo virou de alta para baixa ou vice-versa, nem determina todo o contexto do mercado. Compare esta leitura com a sequência ampliada e com os demais indicadores. " +
+    pgConfirmacaoPivos(titulo);
+}
+
+function pgExplicacaoEstruturaVisual(v, titulo) {
+  const contexto = "A sequência ampliada usa os 4 últimos topos e 4 últimos fundos confirmados. Analisa uma janela mais ampla e pode apontar uma direção diferente da estrutura recente dos pivôs: isso não é contradição, mas diferença de horizonte estrutural. Compare também com os demais indicadores. " + pgConfirmacaoPivos(titulo) + " ";
+  if (!v) return contexto + "A sequência ampliada não está disponível nesta leitura.";
+  if (!v.completa) return contexto + "Ainda faltam pivôs para completar os 4 topos e 4 fundos confirmados. Confira as quantidades disponíveis; a falta de histórico não indica lateralidade.";
+  if (v.consistencia === "mista") return contexto + "Pelo menos um dos grupos não tem 2 das 3 comparações na mesma direção. Por isso, a sequência não recebe uma direção predominante. Preços iguais contam como neutros.";
   const direcoes = {
     alta: "topos subindo e fundos subindo",
     baixa: "topos caindo e fundos caindo",
@@ -4647,24 +4678,39 @@ function pgExplicacaoEstruturaVisual(v) {
   const regra = v.consistencia === "consistente"
     ? "As 3 comparações dos topos e as 3 dos fundos seguem esse padrão."
     : "Pelo menos 2 das 3 comparações em cada grupo seguem esse padrão, mas há uma exceção ou empate na sequência.";
-  return `Nos últimos 4 topos e 4 fundos confirmados, há ${direcoes[v.tendencia]}. ${regra} Preços iguais são neutros. Isso descreve a sequência observada; não é uma probabilidade de acerto nem confirma um rompimento.`;
+  return contexto + `Nos últimos 4 topos e 4 fundos confirmados, há ${direcoes[v.tendencia]}. ${regra} Preços iguais são neutros. Isso descreve a sequência observada; não é uma probabilidade de acerto nem confirma um rompimento.`;
 }
 
-function pgEstruturaVisual(v, recente, dec, id) {
-  const diverge = v && v.completa && v.tendencia !== "indefinida" &&
-    recente !== "indefinida" && recente !== "--" && v.tendencia !== recente;
-  const resumo = !v ? "A sequência ampliada não está disponível nesta leitura."
-    : v.completa
-      ? (diverge ? "A estrutura recente diverge da sequência ampliada."
-        : v.consistencia === "mista" ? "Os movimentos ainda não sustentam uma direção predominante."
-        : "")
-      : `${v.topos.length} de 4 topos e ${v.fundos.length} de 4 fundos disponíveis.`;
+function pgSinteseEstrutural(recente, v) {
+  if (!v) return "Sequência ampliada indisponível; comparação entre horizontes não disponível";
+  if (!v.completa) return "Sequência ampliada incompleta; ainda não é possível comparar os dois horizontes";
+  if (!recente || recente === "indefinida" || recente === "--")
+    return "Estrutura recente indefinida; a sequência ampliada descreve somente sua própria janela";
+  if (v.tendencia === "indefinida" || v.consistencia === "mista")
+    return "Sequência ampliada sem direção predominante; os horizontes não definem uma direção comum";
+  if (recente === "baixa" && v.tendencia === "alta")
+    return "Correção recente dentro de estrutura ampliada ainda altista";
+  if (recente === "alta" && v.tendencia === "baixa")
+    return "Recuperação recente dentro de estrutura ampliada ainda baixista";
+  if (recente === v.tendencia && (recente === "alta" || recente === "baixa"))
+    return `Estrutura recente e ampliada alinhadas em ${recente}`;
+  if (recente.startsWith("lateral_") && (v.tendencia === "alta" || v.tendencia === "baixa"))
+    return `Estrutura recente lateral dentro de contexto ampliado predominantemente ${v.tendencia === "alta" ? "altista" : "baixista"}`;
+  if (v.tendencia.startsWith("lateral_") && (recente === "alta" || recente === "baixa"))
+    return `Estrutura recente de ${recente} dentro de sequência ampliada lateral`;
+  return "Os dois horizontes apresentam padrões laterais; consulte os pivôs de cada janela";
+}
+
+function pgEstruturaVisual(v, recente, dec, id, titulo) {
+  const resumo = v && !v.completa
+    ? `${v.topos.length} de 4 topos e ${v.fundos.length} de 4 fundos disponíveis.` : "";
+  const explicacao = pgExplicacaoEstruturaVisual(v, titulo);
   const ajudaJanela = pgAjuda({ rotulo: "Sequência ampliada" },
-    `aj-janela-${id}`, "Comparação dos últimos 4 topos e 4 fundos confirmados." +
-      (resumo ? " " + resumo : ""));
+    `aj-janela-${id}`, explicacao + (resumo ? " " + resumo : ""));
   const ajuda = pgAjuda({ rotulo: v ? v.rotulo : "Sequência ampliada indisponível" },
-    `aj-sequencia-${id}`, pgExplicacaoEstruturaVisual(v));
-  if (!v) return `<div class="estrutura-ampliada"><div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span><strong class="fraco">Indisponível${ajuda}</strong></div></div>`;
+    `aj-sequencia-${id}`, explicacao);
+  const sintese = `<p class="estrutura-sintese">${pgEsc(pgSinteseEstrutural(recente, v))}</p>`;
+  if (!v) return `<div class="estrutura-ampliada"><div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span><strong class="fraco">Indisponível${ajuda}</strong></div>${sintese}</div>`;
   const classe = v.tendencia === "alta" ? "alta" : v.tendencia === "baixa" ? "baixa" : "fraco";
   const contagem = (c) => `${c.subindo} subindo · ${c.caindo} caindo · ${c.iguais} iguais`;
   const lista = (pontos) => pontos.length
@@ -4673,7 +4719,7 @@ function pgEstruturaVisual(v, recente, dec, id) {
   return `<div class="estrutura-ampliada">` +
     `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span>` +
     `<strong class="${classe}">${pgEsc(v.rotulo)}${ajuda}</strong></div>` +
-    `<details><summary>Ver pivôs e comparações</summary>` +
+    sintese + `<details><summary>Ver pivôs e comparações</summary>` +
     `<p>Topos: ${pgEsc(contagem(v.comparacoes.topos))}<br>` +
     `Fundos: ${pgEsc(contagem(v.comparacoes.fundos))}</p>` +
     `<p><b>Topos, do mais antigo ao mais recente</b><br>${lista(v.topos)}</p>` +
@@ -4739,10 +4785,10 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
     typeof diPlus === "number" && typeof diMinus === "number"
       ? (diPlus > diMinus ? "alta" : "baixa")
       : ""));
-  L.push(pgLinha("Estrutura recente", pgEsc(tend === "lateral_empate" ? "estrutura com empate" : tend),
+  L.push(pgLinha("Estrutura dos últimos pivôs confirmados", pgEsc(tend === "lateral_empate" ? "estrutura com empate" : tend),
     tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco",
-    pgAjuda({ rotulo: `Estrutura recente: ${tend}` }, `aj-estrutura-${id}`,
-      EXPLICACOES_ESTRUTURA_RECENTE[tend] || EXPLICACOES_ESTRUTURA_RECENTE["--"])));
+    pgAjuda({ rotulo: `Estrutura dos últimos pivôs confirmados: ${tend}` }, `aj-estrutura-${id}`,
+      pgExplicacaoEstruturaRecente(tend, titulo))));
   L.push(pgLinha("Níveis manuais",
     `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
     sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
@@ -4755,7 +4801,7 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
 
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
-    pgEstruturaVisual(estruturaVisual, tend, dec, id) +
+    pgEstruturaVisual(estruturaVisual, tend, dec, id, titulo) +
     `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia)}</div>` +
     `</div>`
   );
