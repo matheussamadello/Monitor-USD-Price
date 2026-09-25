@@ -1,5 +1,7 @@
 # Auditoria de qualidade das faixas manuais — USD
 
+> Registro histórico anterior ao [reajuste seletivo das faixas](REAJUSTE_FAIXAS_2026-09-25.md). As tabelas abaixo preservam os limites e resultados daquela auditoria.
+
 Séries capturadas em **2026-09-25T01:23:22.587Z**. As medidas abaixo são uma auditoria retrospectiva específica dos limites manuais, não scores canônicos publicados pelo monitor nem probabilidades de sucesso.
 
 ## Método

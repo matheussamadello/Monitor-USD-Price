@@ -442,17 +442,17 @@ Em integrações com bots ou LLMs, é recomendável que sinais de maior convicç
 
 ## Níveis manuais
 
-Faixas refinadas em 2026-09-25 com teto total de **0,25 ATR diário e 1% do preço central**, usando o menor dos dois limites na calibração. São referências fixas ancoradas em pivôs confirmados. Não acompanham o ATR automaticamente. Os níveis pontuais e seus ciclos de rompimento/reteste permanecem iguais.
+Faixas revistas em 2026-09-25 conforme as concentrações de pivôs e reações. O teto de segurança na calibração é **0,5 ATR diário de largura total**, sem largura alvo uniforme nem limite percentual de 1%. Apenas faixas que excluíam evidência próxima foram alargadas. Permanecem fixas até revisão manual. Os níveis pontuais e seus ciclos de rompimento/reteste continuam iguais.
 
-A faixa ampla foi substituída por um núcleo observado dentro dela, sem aumentar o número de faixas. Isso deixa lacunas entre referências distintas. Onde existe apenas um pivô confirmado, a faixa é uma âncora manual, sem alegação de múltiplos testes. O detector automático e sua tolerância operacional permanecem iguais.
+As faixas não mudam automaticamente com o ATR. A revisão preservou o número de referências e manteve separadas as concentrações distantes. Score e contagens da faixa antiga não são herdados pelos limites novos. O detector automático e sua tolerância operacional continuam iguais.
 
 ### USDT/BRL
 
-| Faixa atual | Label | Pivôs no núcleo |
+| Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
 | 5,338–5,3465 | `faixa_5_338_5_3465` | 5,34, 5,3415, 5,3448 |
 | 5,2935–5,3015 | `faixa_5_2935_5_3015` | 5,295, 5,3001 |
-| 5,274–5,2815 | `faixa_5_274_5_2815` | 5,2755, 5,28 |
+| 5,274–5,2858 | `faixa_5_274_5_2858` | 5,2755, 5,28 |
 | 5,191–5,1965 | `faixa_5_191_5_1965` | 5,1926, 5,1948 |
 | 5,1525–5,162 | `regiao_suporte_5_1525_5_162` | 5,1539, 5,1587, 5,161 |
 
@@ -460,10 +460,10 @@ Resistência pontual: **5,31**. Suporte pontual: **5,15**.
 
 ### USD/BRL
 
-| Faixa atual | Label | Pivôs no núcleo |
+| Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
 | 5,3315–5,341 | `faixa_5_3315_5_341` | 5,33284521, 5,33850002, 5,33970022 |
-| 5,2525–5,2595 | `faixa_5_2525_5_2595` | 5,25400019, 5,25812817 |
+| 5,2525–5,2675 | `faixa_5_2525_5_2675` | 5,25400019, 5,25812817, 5,26617479 |
 | 5,168–5,181 | `faixa_5_168_5_181` | 5,16900015, 5,16989994, 5,17980003 |
 | 5,129–5,1395 | `faixa_5_129_5_1395` | 5,13075018, 5,13780689 |
 | 5,068–5,0805 | `regiao_suporte_5_068_5_0805` | 5,06960201, 5,0790782 |
@@ -472,11 +472,9 @@ Resistência pontual: **5,31**. Suporte pontual: **5,15**.
 
 Resistência pontual: **5,3**. Suporte pontual: **5,13**.
 
-Os valores anteriores e os pivôs com datas constam na [evidência desta calibração](revisao-faixas-manuais-2026-09-25.json). A [revisão inicial de zonas](REVISAO_ZONAS_2026-09-25.md) é um registro histórico anterior a este refinamento.
+Os [resultados do reajuste](REAJUSTE_FAIXAS_2026-09-25.md) e a [evidência com pivôs, janelas e medidas](reajuste-faixas-manuais-2026-09-25.json) documentam os limites atuais. A [auditoria anterior](AUDITORIA_FAIXAS_2026-09-25.md) e a [calibração mais estreita](revisao-faixas-manuais-2026-09-25.json) permanecem como registros históricos.
 
-O relatório atual é a fonte de verdade para `niveis_manuais.faixas`. A mudança de configuração não reescreve o histórico. Labels antigos permanecem nos registros anteriores. Um novo label pode alterar a assinatura no primeiro processamento, sem indicar movimento novo de preço.
-
-A [auditoria de qualidade das faixas atuais](AUDITORIA_FAIXAS_2026-09-25.md) mede score, toques e rejeições nos limites exatos, com ressalvas de recência e confirmação posterior. Esses scores são diagnósticos retrospectivos, separados dos campos canônicos do monitor.
+O relatório atual é a fonte de verdade para `niveis_manuais.faixas`. A mudança não reescreve o histórico. Labels anteriores permanecem nos registros antigos. Novos limites podem aumentar o tempo dentro da faixa e alterar a assinatura no primeiro processamento; isso é manutenção de configuração, não movimento novo do preço.
 
 ## Vigilância dos níveis manuais
 
@@ -1123,7 +1121,7 @@ Exemplo da estrutura atual:
 const NIVEIS_USD = {
   faixas: [
     [5.3315, 5.341, "faixa_5_3315_5_341"],
-    [5.2525, 5.2595, "faixa_5_2525_5_2595"],
+    [5.2525, 5.2675, "faixa_5_2525_5_2675"],
     [5.168, 5.181, "faixa_5_168_5_181"],
     [5.129, 5.1395, "faixa_5_129_5_1395"],
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],

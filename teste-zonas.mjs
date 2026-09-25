@@ -135,7 +135,7 @@ teste('filhos novos continuam sujeitos a duas velas e evidencia independente', (
   assert.equal(b.status, 'ativa');
 });
 teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', () => {
-  const ref = JSON.parse(readFileSync(new URL('./revisao-faixas-manuais-2026-09-25.json', import.meta.url)));
+  const ref = JSON.parse(readFileSync(new URL('./reajuste-faixas-manuais-2026-09-25.json', import.meta.url)));
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     assert.equal(cfg.niveis.suporte, r.suporte_pontual);
@@ -144,10 +144,10 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
     assert.equal(cfg.niveis.faixas.length, r.antes.length, 'nao multiplica faixas manuais');
     for (const [i, [lo, hi]] of cfg.niveis.faixas.entries()) {
       assert.ok(lo < hi);
-      assert.ok(hi - lo <= .25 * r.atr_diario_referencia + 1e-10);
-      assert.ok(hi - lo <= .01 * (lo + hi) / 2 + 1e-10);
-      assert.ok(lo >= r.antes[i][0] && hi <= r.antes[i][1], 'nucleo dentro da regiao anterior');
-      assert.ok(hi - lo < r.antes[i][1] - r.antes[i][0], 'todas as faixas ficaram menores');
+      assert.ok(hi - lo <= .5 * r.atr_diario_referencia + 1e-10);
+      assert.ok(lo <= r.antes[i][0] && hi >= r.antes[i][1], 'preserva todo o nucleo anterior');
+      assert.ok(lo >= r.origem_ampla[i][0] && hi <= r.origem_ampla[i][1], 'dentro da regiao ampla original');
+      assert.ok(hi - lo < r.origem_ampla[i][1] - r.origem_ampla[i][0], 'nao restaura faixas amplas inteiras');
       const ancora = r.ancoras[i];
       assert.ok(ancora.pivos.length > 0, 'sem faixa criada no vazio entre pivos');
       assert.ok(ancora.pivos.every(p => p.preco > lo && p.preco < hi), 'folga em ambos os lados dos pivos');

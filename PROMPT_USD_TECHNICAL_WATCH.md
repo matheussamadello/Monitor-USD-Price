@@ -169,7 +169,7 @@ Todo alerta de mercado deve ser rotulado por horizonte — ver `Formato obrigat�
 
 ### Fonte de verdade dos níveis manuais
 
-Faixas refinadas em 2026-09-25 com teto total de **0,25 ATR diário e 1% do preço central**, usando o menor dos dois limites na calibração. São referências fixas ancoradas em pivôs confirmados. Não acompanham o ATR automaticamente. Os níveis pontuais e seus ciclos de rompimento/reteste permanecem iguais. Uma troca de limites ou labels é manutenção de configuração, não evidência de movimento novo do preço.
+Faixas revistas em 2026-09-25 conforme as concentrações de pivôs e reações. O teto de segurança na calibração é **0,5 ATR diário de largura total**, sem largura alvo uniforme nem limite percentual de 1%. Apenas faixas que excluíam evidência próxima foram alargadas. Permanecem fixas até revisão manual. Os níveis pontuais e seus ciclos de rompimento/reteste continuam iguais. Uma troca de limites ou labels é manutenção de configuração, não evidência de movimento novo do preço.
 
 Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_manuais`, leia as faixas do **par correspondente** diretamente do relatório e trate seus limites e labels como **fonte de verdade**.
 
@@ -180,7 +180,7 @@ Na configuração atual do projeto, as referências conhecidas são:
 #### USD/BRL
 
 - R$ 5,3315–5,341 — `faixa_5_3315_5_341`;
-- R$ 5,2525–5,2595 — `faixa_5_2525_5_2595`;
+- R$ 5,2525–5,2675 — `faixa_5_2525_5_2675`;
 - R$ 5,168–5,181 — `faixa_5_168_5_181`;
 - R$ 5,129–5,1395 — `faixa_5_129_5_1395`;
 - R$ 5,068–5,0805 — `regiao_suporte_5_068_5_0805`;
@@ -193,7 +193,7 @@ Na configuração atual do projeto, as referências conhecidas são:
 
 - R$ 5,338–5,3465 — `faixa_5_338_5_3465`;
 - R$ 5,2935–5,3015 — `faixa_5_2935_5_3015`;
-- R$ 5,274–5,2815 — `faixa_5_274_5_2815`;
+- R$ 5,274–5,2858 — `faixa_5_274_5_2858`;
 - R$ 5,191–5,1965 — `faixa_5_191_5_1965`;
 - R$ 5,1525–5,162 — `regiao_suporte_5_1525_5_162`;
 - resistência pontual de referência em torno de R$ 5,31;

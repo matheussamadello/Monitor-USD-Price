@@ -85,7 +85,7 @@ const TIMEFRAMES = [
 // ------------------------------------------------------------
 // NIVEIS MANUAIS — o unico lugar a editar quando o preco andar.
 // As notas datadas abaixo registram revisoes anteriores. Os limites atuais
-// foram refinados em revisao-faixas-manuais-2026-09-25.json.
+// estao documentados em reajuste-faixas-manuais-2026-09-25.json.
 //
 // Tres consumidores leem daqui e so daqui: alertasTecnicos (faixas e
 // rompimento/perda intradiarios), niveisDoPar (maquina de estados de
@@ -119,10 +119,10 @@ const TIMEFRAMES = [
 // zona, e o diario foi a 4 de 4.
 const NIVEIS_USD = {
   faixas: [
-    // Nucleos manuais em 2026-09-25: teto de 0,25 ATR diario e 1% do centro.
-    // Evidencia: revisao-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
+    // Faixas fixas revistas por pivos/reacoes em 2026-09-25; teto de 0,5 ATR na calibracao.
+    // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
     [5.3315, 5.341, "faixa_5_3315_5_341"],
-    [5.2525, 5.2595, "faixa_5_2525_5_2595"],
+    [5.2525, 5.2675, "faixa_5_2525_5_2675"],
     [5.168, 5.181, "faixa_5_168_5_181"],
     [5.129, 5.1395, "faixa_5_129_5_1395"],
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
@@ -527,11 +527,11 @@ const FONTES_CRIPTO = [
 // ------------------------------------------------------------
 const NIVEIS_USDT = {
   faixas: [
-    // Nucleos manuais em 2026-09-25: teto de 0,25 ATR diario e 1% do centro.
-    // Evidencia: revisao-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
+    // Faixas fixas revistas por pivos/reacoes em 2026-09-25; teto de 0,5 ATR na calibracao.
+    // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
     [5.338, 5.3465, "faixa_5_338_5_3465"],
     [5.2935, 5.3015, "faixa_5_2935_5_3015"],
-    [5.274, 5.2815, "faixa_5_274_5_2815"],
+    [5.274, 5.2858, "faixa_5_274_5_2858"],
     [5.191, 5.1965, "faixa_5_191_5_1965"],
     [5.1525, 5.162, "regiao_suporte_5_1525_5_162"],
   ],
