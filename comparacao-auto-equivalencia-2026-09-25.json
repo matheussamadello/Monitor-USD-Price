@@ -14,7 +14,7 @@
       "tf": "diario",
       "atr": 0.038415308620100015,
       "calculadas_antes": 29,
-      "calculadas_depois": 30,
+      "calculadas_depois": 54,
       "antes": [
         {
           "id": "usdt|diario|z21",
@@ -138,6 +138,102 @@
           "role_reversal": true
         },
         {
+          "id": "usdt|diario|z49",
+          "limites": {
+            "inferior": 5.218079234568995,
+            "superior": 5.221920765431005
+          },
+          "score": 72,
+          "toques": 5,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.22
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z50",
+          "limites": {
+            "inferior": 5.24149378661528,
+            "superior": 5.2451062133847195
+          },
+          "score": 27,
+          "toques": 1,
+          "rejeicoes": 1,
+          "status": "enfraquecida",
+          "pivos": [
+            5.2433
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z37",
+          "limites": {
+            "inferior": 5.190685515576845,
+            "superior": 5.196714484423154
+          },
+          "score": 63,
+          "toques": 3,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.1926,
+            5.1948
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z48",
+          "limites": {
+            "inferior": 5.152146751999969,
+            "superior": 5.162753248000031
+          },
+          "score": 98,
+          "toques": 5,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.1539,
+            5.161
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|diario|z4",
+          "limites": {
+            "inferior": 5.141879234568995,
+            "superior": 5.160620765431005
+          },
+          "score": 81,
+          "toques": 13,
+          "rejeicoes": 9,
+          "status": "ativa",
+          "pivos": [
+            5.1438,
+            5.15,
+            5.1587
+          ],
+          "role_reversal": true
+        }
+      ],
+      "depois_sem_reagrupamento": [
+        {
+          "id": "usdt|diario|z21",
+          "limites": {
+            "inferior": 5.204679234568995,
+            "superior": 5.208520765431005
+          },
+          "score": 73,
+          "toques": 7,
+          "rejeicoes": 3,
+          "status": "ativa",
+          "pivos": [
+            5.2066
+          ],
+          "role_reversal": true
+        },
+        {
           "id": "usdt|diario|z5",
           "limites": {
             "inferior": 5.257679234568995,
@@ -218,14 +314,15 @@
           ],
           "role_reversal": true
         }
-      ]
+      ],
+      "calculadas_depois_sem_reagrupamento": 30
     },
     {
       "par": "USD/BRL",
       "tf": "diario",
       "atr": 0.055712773114697474,
       "calculadas_antes": 26,
-      "calculadas_depois": 25,
+      "calculadas_depois": 47,
       "antes": [
         {
           "id": "usd|diario|z37",
@@ -330,6 +427,105 @@
       ],
       "depois": [
         {
+          "id": "usd|diario|z44",
+          "limites": {
+            "inferior": 5.19181446662991,
+            "superior": 5.197385743941379
+          },
+          "score": 83,
+          "toques": 9,
+          "rejeicoes": 6,
+          "status": "candidata",
+          "pivos": [
+            5.1946001052856445
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z45",
+          "limites": {
+            "inferior": 5.2130141698464625,
+            "superior": 5.228285745467258
+          },
+          "score": 85,
+          "toques": 4,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.215799808502197,
+            5.225500106811523
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|diario|z37",
+          "limites": {
+            "inferior": 5.2379141294106715,
+            "superior": 5.256785825575901
+          },
+          "score": 82,
+          "toques": 4,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.240699768066406,
+            5.2460150718688965,
+            5.254000186920166
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|diario|z4",
+          "limites": {
+            "inferior": 5.166214510117459,
+            "superior": 5.182585672225071
+          },
+          "score": 71,
+          "toques": 10,
+          "rejeicoes": 7,
+          "status": "ativa",
+          "pivos": [
+            5.169000148773193,
+            5.169899940490723,
+            5.179800033569336
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z24",
+          "limites": {
+            "inferior": 5.127964540635037,
+            "superior": 5.155050710524631
+          },
+          "score": 83,
+          "toques": 6,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.1307501792907715,
+            5.1378068923950195,
+            5.1522650718688965
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z57",
+          "limites": {
+            "inferior": 5.1143484555825465,
+            "superior": 5.119919732894016
+          },
+          "score": 81,
+          "toques": 8,
+          "rejeicoes": 5,
+          "status": "candidata",
+          "pivos": [
+            5.117134094238281
+          ],
+          "role_reversal": true
+        }
+      ],
+      "depois_sem_reagrupamento": [
+        {
           "id": "usd|diario|z37",
           "limites": {
             "inferior": 5.2379141294106715,
@@ -427,14 +623,15 @@
           ],
           "role_reversal": true
         }
-      ]
+      ],
+      "calculadas_depois_sem_reagrupamento": 25
     },
     {
       "par": "USDT/BRL",
       "tf": "semanal",
       "atr": 0.12208913509790909,
       "calculadas_antes": 16,
-      "calculadas_depois": 20,
+      "calculadas_depois": 43,
       "antes": [
         {
           "id": "usdt|semanal|z3",
@@ -562,6 +759,109 @@
       ],
       "depois": [
         {
+          "id": "usdt|semanal|z20",
+          "limites": {
+            "inferior": 5.213895543245104,
+            "superior": 5.236104456754896
+          },
+          "score": 82,
+          "toques": 9,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.23,
+            5.23,
+            5.22
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z41",
+          "limites": {
+            "inferior": 5.269395543245104,
+            "superior": 5.301104456754896
+          },
+          "score": 73,
+          "toques": 4,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.2755,
+            5.28,
+            5.295
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z22",
+          "limites": {
+            "inferior": 5.290895543245104,
+            "superior": 5.326104456754896
+          },
+          "score": 70,
+          "toques": 7,
+          "rejeicoes": 5,
+          "status": "enfraquecida",
+          "pivos": [
+            5.297,
+            5.32
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z2",
+          "limites": {
+            "inferior": 5.143895543245105,
+            "superior": 5.1701044567548955
+          },
+          "score": 81,
+          "toques": 10,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.15,
+            5.15,
+            5.15,
+            5.156,
+            5.164
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z16",
+          "limites": {
+            "inferior": 5.130895543245104,
+            "superior": 5.156104456754896
+          },
+          "score": 69,
+          "toques": 5,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.137,
+            5.15
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|semanal|z40",
+          "limites": {
+            "inferior": 5.098895543245105,
+            "superior": 5.128104456754896
+          },
+          "score": 78,
+          "toques": 7,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.105,
+            5.122
+          ],
+          "role_reversal": true
+        }
+      ],
+      "depois_sem_reagrupamento": [
+        {
           "id": "usdt|semanal|z17",
           "limites": {
             "inferior": 5.213895543245104,
@@ -663,14 +963,15 @@
           ],
           "role_reversal": true
         }
-      ]
+      ],
+      "calculadas_depois_sem_reagrupamento": 20
     },
     {
       "par": "USD/BRL",
       "tf": "semanal",
       "atr": 0.11875008091739903,
       "calculadas_antes": 28,
-      "calculadas_depois": 37,
+      "calculadas_depois": 65,
       "antes": [
         {
           "id": "usd|semanal|z47",
@@ -812,6 +1113,105 @@
           "role_reversal": true
         },
         {
+          "id": "usd|semanal|z61",
+          "limites": {
+            "inferior": 5.201562476880643,
+            "superior": 5.221237587206271
+          },
+          "score": 66,
+          "toques": 7,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.207499980926514,
+            5.2153000831604
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|semanal|z85",
+          "limites": {
+            "inferior": 5.217662406690214,
+            "superior": 5.229537414781954
+          },
+          "score": 82,
+          "toques": 11,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.223599910736084
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|semanal|z84",
+          "limites": {
+            "inferior": 5.15726239753494,
+            "superior": 5.169137405626681
+          },
+          "score": 66,
+          "toques": 5,
+          "rejeicoes": 1,
+          "status": "candidata",
+          "pivos": [
+            5.1631999015808105
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|semanal|z60",
+          "limites": {
+            "inferior": 5.115462375409696,
+            "superior": 5.127337383501437
+          },
+          "score": 68,
+          "toques": 5,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.121399879455566
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|semanal|z53",
+          "limites": {
+            "inferior": 5.086962295301054,
+            "superior": 5.122253345720675
+          },
+          "score": 84,
+          "toques": 13,
+          "rejeicoes": 8,
+          "status": "candidata",
+          "pivos": [
+            5.092899799346924,
+            5.10290002822876,
+            5.10890007019043,
+            5.1149001121521,
+            5.115799903869629,
+            5.116315841674805
+          ],
+          "role_reversal": true
+        }
+      ],
+      "depois_sem_reagrupamento": [
+        {
+          "id": "usd|semanal|z10",
+          "limites": {
+            "inferior": 5.186621261365507,
+            "superior": 5.2043375246452355
+          },
+          "score": 85,
+          "toques": 12,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.192558765411377,
+            5.198400020599365
+          ],
+          "role_reversal": true
+        },
+        {
           "id": "usd|semanal|z47",
           "limites": {
             "inferior": 5.2396627194953895,
@@ -896,11 +1296,13 @@
           ],
           "role_reversal": true
         }
-      ]
+      ],
+      "calculadas_depois_sem_reagrupamento": 37
     }
   ],
   "gatilhos_antes": [],
   "gatilhos_depois": [],
   "retries_estaveis": 3,
-  "base_commit": "effb3620858611a0df9aa577fb7b473165305ca5"
+  "base_commit": "effb3620858611a0df9aa577fb7b473165305ca5",
+  "reagrupamento_de_restos": "2026-09-25: o que sobra do nucleo de uma nuvem sem vao limpo passou a ser reagrupado em vez de descartado. depois/calculadas_depois refletem isso; os valores anteriores ficam em *_sem_reagrupamento. antes e gatilhos inalterados."
 }

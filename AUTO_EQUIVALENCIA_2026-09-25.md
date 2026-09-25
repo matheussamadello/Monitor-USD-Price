@@ -90,4 +90,19 @@ node teste-fumaca.mjs
 node teste-auditoria-faixas.mjs
 ```
 
-O teste de fumaça inclui os novos testes de fronteira, folga e preservação das interações, além de `teste-auto-equivalencia.mjs`, que reproduz o pipeline com [respostas reais congeladas](fixture-auto-equivalencia-2026-09-25.json), valida o [resultado registrado](comparacao-auto-equivalencia-2026-09-25.json) e executa três retries para verificar estabilidade de zonas, IDs e score. Os testes anteriores de split, ausência de microzonas artificiais, fusão, role reversal e qualidade continuam ativos.
+O teste de fumaça inclui os novos testes de fronteira, folga e preservação das interações, além de `teste-auto-equivalencia.mjs`, que reproduz o pipeline com [respostas reais congeladas](fixture-auto-equivalencia-2026-09-25.json), valida o [resultado registrado](comparacao-auto-equivalencia-2026-09-25.json) e executa três retries para verificar estabilidade de zonas, IDs e score. Os testes anteriores de split, fusão, role reversal e qualidade continuam ativos; o de "ausência de microzonas" foi substituído pelo de reagrupamento dos restos (adendo abaixo).
+
+## Adendo — restos reagrupados (2026-09-25, depois desta comparação)
+
+O split original, quando não achava vão limpo entre duas concentrações, conservava o núcleo compacto e **descartava** o resto. Esses pivôs saíam de toda zona. Nas séries reais desta captura, isso tirava 2 a 42 pivôs por série do sistema de zonas, inclusive pivôs perto do preço e o 79.490,7 que ancora a faixa manual 79.300–79.700 do BTC.
+
+Agora o resto de cada lado do núcleo é reagrupado pelo mesmo processo. Todo pivô confirmado termina em exatamente uma zona, e toda zona continua dentro do teto de largura. Com a mesma entrada congelada:
+
+| Par | TF | Zonas calculadas | Seleção publicada |
+|---|---|---:|---|
+| USDT/BRL | diario | 30 → 54 | 3 entraram, 3 saíram |
+| USD/BRL | diario | 25 → 47 | 3 entraram, 3 saíram |
+| USDT/BRL | semanal | 20 → 43 | 4 entraram, 4 saíram |
+| USD/BRL | semanal | 37 → 65 | 2 entraram, 2 saíram |
+
+Gatilhos ativos inalterados. As zonas que entraram na seleção pública têm score mediano igual ou maior que o das que saíram. Em [comparacao-auto-equivalencia-2026-09-25.json](comparacao-auto-equivalencia-2026-09-25.json), `depois` e `calculadas_depois` passaram a refletir o reagrupamento; os valores desta comparação original continuam gravados em `depois_sem_reagrupamento` e `calculadas_depois_sem_reagrupamento`. `antes` não mudou.

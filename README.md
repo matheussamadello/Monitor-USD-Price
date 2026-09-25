@@ -553,7 +553,9 @@ A [calibração de equivalência espacial](AUTO_EQUIVALENCIA_2026-09-25.md) apro
 
 O limite estrutural total, incluindo a folga, é **0,5 ATR fechado atual no diário** e **0,3 ATR no semanal**. Se um cluster exceder esse limite, procura-se o maior vão que separe duas concentrações: pelo menos dois pivôs de datas distintas em cada parte, vão de pelo menos 0,2 ATR de referência e pelo menos duas vezes o espaçamento médio interno de cada lado. O processo pode repetir-se para mais de duas concentrações.
 
-Sem evidência de duas concentrações, conserva-se apenas o núcleo compacto com mais pivôs. Recência e menor amplitude desempatam a seleção. Pivôs periféricos não viram automaticamente novas zonas. Um cluster já compacto mantém todos os membros. Os filtros de score, rejeições, maturidade e o limite de três zonas publicadas por lado continuam valendo.
+Sem evidência de duas concentrações, separa-se o núcleo compacto com mais pivôs (recência e menor amplitude desempatam) e **o que sobra de cada lado é reagrupado** pelo mesmo processo. Todo pivô confirmado termina em exatamente uma zona, e toda zona respeita o teto de largura. Um cluster já compacto mantém todos os membros.
+
+Até 2026-09-25 o resto era **descartado**. Medido nas séries reais daquele dia, isso tirava de toda zona de 2 a 42 pivôs por série — 28% no BTC diário, 34% no USD diário, 41% no USDT semanal —, vários perto do preço. Um deles era o 79.490,7 que ancora a faixa manual 79.300–79.700 do BTC, que por isso saía **sem corroboração**: o monitor acusava a faixa de desalinhada tendo jogado fora a própria evidência dela. O receio que motivava o descarte, zona fraca demais, já é resolvido adiante: zona fraca não passa do score mínimo de publicação nem dos critérios do radar. Com o reagrupamento, as zonas que entraram na lista publicada tinham score mediano igual ou maior que o das que saíram, nos três repositórios. Os filtros de score, rejeições, maturidade e o limite de três zonas publicadas por lado continuam valendo.
 
 ### Limites estruturais
 

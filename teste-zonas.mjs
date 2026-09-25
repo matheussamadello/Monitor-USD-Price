@@ -32,14 +32,24 @@ teste('mais de duas concentracoes e ordem de entrada', () => {
   assert.equal(cs.length, 3);
   assert.deepEqual(m.agruparPivos([...ps].reverse(), 'diario', 10), cs);
 });
-teste('nuvem uniforme e pontos isolados nao fabricam multiplas microzonas', () => {
+teste('nuvem uniforme e pontos isolados: nucleo preservado e nenhum pivo perdido', () => {
+  // Antes o que sobrava do nucleo era DESCARTADO, e pivos confirmados
+  // sumiam de toda zona -- inclusive o que ancora uma faixa manual. Agora
+  // o resto de cada lado e' reagrupado: todo pivo termina em exatamente
+  // uma zona, e nenhuma zona passa do teto.
   for (const ps of [[100, 102, 104, 106, 108], [100, 109], [100, 100.1, 109]]) {
     const cs = m.dividirCluster(pivos(ps), 'diario', 10);
-    assert.equal(cs.length, 1);
-    assert.ok(largura(m.limitesEstruturais(cs[0], 10)) <= 5 + 1e-10);
+    const idx = cs.flat().map(p => p.idx);
+    assert.equal(idx.length, ps.length, 'nenhum pivo perdido');
+    assert.equal(new Set(idx).size, ps.length, 'nenhum pivo em duas zonas');
+    for (const c of cs) assert.ok(largura(m.limitesEstruturais(c, 10)) <= 5 + 1e-10);
   }
-  assert.deepEqual(m.dividirCluster(pivos([100, 100.1, 109]), 'diario', 10)[0]
-    .map(p => p.preco), [100, 100.1], 'conserva a concentracao, nao o outlier');
+  // A concentracao continua junta; o ponto afastado nao a alarga, vira
+  // zona propria e estreita, que o score julga como qualquer outra.
+  assert.deepEqual(m.dividirCluster(pivos([100, 100.1, 109]), 'diario', 10)
+    .map(c => c.map(p => p.preco)), [[100, 100.1], [109]], 'conserva a concentracao e o outlier separado');
+  assert.deepEqual(m.dividirCluster(pivos([100, 102, 104, 106, 108]), 'diario', 10)
+    .map(c => c.map(p => p.preco)), [[100, 102], [104, 106, 108]], 'nucleo com mais pivos e o resto reagrupado');
 });
 teste('limites diarios e semanais em escalas de BTC, XMR e cambio', () => {
   for (const [tf, fator] of Object.entries(m.ZONA_ESTRUTURAL_MAX_ATR)) {
@@ -71,13 +81,14 @@ teste('tetos proximos dos manuais e folga estrutural sem inflar pivo isolado', (
   const op=m.limitesOperacionais(1000,10);
   assert.deepEqual(op,{inferior:997.5,superior:1002.5}, 'folga estrutural nao encolhe janela de interacao');
 });
-teste('fronteira do teto admite o conjunto inteiro ou seleciona nucleo sem truncar', () => {
+teste('fronteira do teto admite o conjunto inteiro ou separa sem truncar', () => {
   for(const [tf,extremo] of [['diario',104],['semanal',102]]) {
     const cabe=m.dividirCluster(pivos([100,extremo]),tf,10);
     assert.equal(cabe[0].length,2);
     const excede=m.dividirCluster(pivos([100,extremo+.001]),tf,10);
-    assert.equal(excede.length,1,'dois pontos isolados nao fabricam duas zonas');
-    assert.equal(excede[0].length,1);
+    // Um milesimo alem do teto: nao cabem juntos, e nenhum dos dois e'
+    // truncado nem jogado fora -- cada um vira a sua propria zona.
+    assert.deepEqual(excede.map(c=>c.map(p=>p.preco)),[[100],[extremo+.001]],'separa sem truncar nem perder pivo');
   }
 });
 teste('reduzir folga com centro e pivos iguais preserva episodios e score proprio', () => {
