@@ -430,54 +430,39 @@ Em integrações com bots ou LLMs, é recomendável que sinais de maior convicç
 
 ## Níveis manuais
 
-Os níveis manuais ficam centralizados em `NIVEIS_USD` dentro de `monitor.mjs`.
+As faixas foram revisadas em **2026-09-25**, usando o teto de **0,8 ATR diário** na calibração. São referências fixas até a próxima revisão, não limites dinâmicos. Faixas já compatíveis foram mantidas. Os níveis pontuais e seus ciclos de rompimento/reteste permanecem iguais.
 
-Os valores atuais foram calibrados na primeira execução real, em 2026-08-29, com o USD/BRL fechando a 5,1611.
+### USDT/BRL
 
-**USD/BRL** (`NIVEIS_USD`):
-
-| Faixa | Label | De onde veio |
-| --- | --- | --- |
-| R$ 5,25–5,36 | `faixa_5_25_5_36` | zona automática de resistência acima do preço |
-| R$ 5,13–5,21 | `faixa_5_13_5_21` | campo de batalha atual (zona de maior score) |
-| R$ 5,05–5,12 | `regiao_suporte_5_05_5_12` | zona de suporte imediatamente abaixo |
-| R$ 5,00–5,05 | `regiao_suporte_5_00_5_05` | promovida pelo radar em 2026-09-12: zona de score 73 com 6 toques, madura e descoberta |
-
-Além das faixas, o código mantém uma resistência pontual em **R$ 5,30** e um suporte pontual em **R$ 5,13** para a máquina de estados de rompimento/reteste. Nenhum dos dois é número redondo por acaso:
-
-- **5,30** é o centro da zona automática mais forte acima do preço (5,2255–5,3604, centro 5,2930) e coincide com a **EMA89 semanal** em 5,2926. Duas leituras independentes apontando o mesmo lugar.
-- **5,13** é tríplice confluência: **EMA89 diária** em 5,1321, borda inferior da zona de maior score (5,1306) e o último fundo mais alto da estrutura, o pivô de 2026-08-24 em 5,1308.
-
-**USDT/BRL** (`NIVEIS_USDT`), calibrado na primeira execução do par, com o USDT a 5,2133:
-
-| Faixa | Label |
+| Faixa atual | Label |
 | --- | --- |
-| R$ 5,27–5,35 | `faixa_5_27_5_35` |
-| R$ 5,17–5,22 | `faixa_5_17_5_22` |
-| R$ 5,12–5,16 | `regiao_suporte_5_12_5_16` |
+| 5,3342–5,3599 | `faixa_5_3342_5_3599` |
+| 5,2892–5,3059 | `faixa_5_2892_5_3059` |
+| 5,2697–5,2858 | `faixa_5_2697_5_2858` |
+| 5,1868–5,2124 | `faixa_5_1868_5_2124` |
+| 5,138–5,1668 | `regiao_suporte_5_1380_5_1668` |
 
-Resistência pontual em **R$ 5,31** e suporte em **R$ 5,15**, também por confluência:
+Resistência pontual: **5,31**. Suporte pontual: **5,15**.
 
-- **5,31** — centro da zona diária mais testada acima do preço (13 toques, 11 rejeições), com a **EMA89 semanal** logo acima em 5,3296 e a zona semanal cobrindo 5,2755–5,4300.
-- **5,15** — tríplice confluência: **EMA89 diária** em 5,1549, centro da zona diária de score 81 em 5,1532, e a zona semanal de score 80 (5,1050–5,2300) por dentro.
+### USD/BRL
 
-São uma leitura de um dia, não uma verdade permanente. Reveja quando o preço sair dessas regiões — o próprio relatório sinaliza isso quando as faixas deixam de conter o preço.
+| Faixa atual | Label |
+| --- | --- |
+| 5,3301–5,3481 | `faixa_5_3301_5_3481` |
+| 5,25–5,2895 | `faixa_5_2500_5_2895` |
+| 5,1615–5,203 | `faixa_5_1615_5_2030` |
+| 5,1223–5,1607 | `faixa_5_1223_5_1607` |
+| 5,0646–5,1072 | `regiao_suporte_5_0646_5_1072` |
+| 5,0318–5,0617 | `regiao_suporte_5_0318_5_0617` |
+| 4,9875–5,0231 | `regiao_suporte_4_9875_5_0231` |
 
-Os labels usam `_` no lugar da vírgula decimal (`5_60`, e não `5,60` nem `5.60`): eles entram em identificadores como `rompimento_confirmado_5_60` e em chaves de `docs/estado.json`, e um ponto ali atrapalha quem consome.
+Resistência pontual: **5,3**. Suporte pontual: **5,13**.
 
-### Calibragem para câmbio
+A revisão inclui faixas promovidas pelo radar. Quando uma faixa antiga cobria duas ou mais concentrações separadas, ela foi dividida. Regiões muito próximas puderam continuar juntas quando todos os pivôs relevantes e uma margem couberam no limite. Não foram criados suportes ou resistências pontuais novos.
 
-Alguns limiares foram reduzidos em relação aos monitores de cripto, porque um dia de USD/BRL anda tipicamente 0,3%–0,8%, e não 3%–5%:
+O [relatório da revisão](REVISAO_ZONAS_2026-09-25.md) registra os valores anteriores, os novos, a origem dos dados e os efeitos observados. Os scores e contagens desse relatório são históricos. O `relatorio.json` continua sendo a fonte de verdade para a configuração e leitura atuais.
 
-| Constante | BTC/XMR | USD/BRL | Por quê |
-| --- | --- | --- | --- |
-| `RETEST_TOLERANCIA_PCT_FALLBACK` | 0,5 | 0,25 | Com 0,5%, quase toda vela cairia "na zona" do nível e a máquina ficaria presa em `em_reteste`. |
-| `RETEST_RESET_PCT_FALLBACK` | 3 | 1,5 | Com 3%, o ciclo praticamente nunca encerraria por afastamento. |
-| `DIV_MIN_PRECO_PCT` | 0,3 | 0,15 | Variação mínima de preço entre pivôs para uma divergência valer. |
-| `ZONA_LARGURA_MIN_PCT` | 0,15 | 0,08 | Piso da largura da zona; 0,15% já seria mais largo que meio ATR diário. |
-| `ZONA_LARGURA_MAX_PCT` | 1,5 | 1,0 | Teto da largura da zona. |
-
-As faixas são publicadas diretamente no objeto `niveis_manuais` do `relatorio.json`, derivadas da configuração do código. Portanto, consumidores externos devem preferir o JSON como fonte de verdade dos valores atuais em vez de manter cópias eternas desses números.
+As faixas são serializadas diretamente em `niveis_manuais.faixas`, com `inferior`, `superior` e `label`. A mudança de configuração não reescreve `historico.jsonl`. Labels antigos permanecem nos registros históricos.
 
 ## Vigilância dos níveis manuais
 
@@ -550,34 +535,25 @@ No código atual essas zonas são **contexto técnico**. Elas não alteram sozin
 
 ### ATR e agrupamento de pivôs
 
-As zonas usam ATR(14) de Wilder calculado sobre velas fechadas. Cada pivô recebe o ATR correspondente à época em que ocorreu.
+Usa ATR(14) de Wilder sobre velas fechadas e conserva o ATR da época de cada pivô. O agrupamento inicial continua exigindo compatibilidade entre **todos os pares** de pivôs, evitando encadeamento.
 
-Os pivôs são agrupados por distância normalizada pela volatilidade histórica, com uma verificação entre todos os membros do cluster para evitar o efeito de encadeamento em que A≈B e B≈C acabariam unindo A e C mesmo quando estão distantes entre si.
+O limite estrutural total, incluindo a folga, é **0,8 ATR fechado atual no diário** e **1,2 ATR no semanal**. Se um cluster exceder esse limite, procura-se o maior vão que separe duas concentrações: pelo menos dois pivôs de datas distintas em cada parte, vão de pelo menos 0,2 ATR de referência e pelo menos duas vezes o espaçamento médio interno de cada lado. O processo pode repetir-se para mais de duas concentrações.
+
+Sem evidência de duas concentrações, conserva-se apenas o núcleo compacto com mais pivôs. Recência e menor amplitude desempatam a seleção. Pivôs periféricos não viram automaticamente novas zonas. Um cluster já compacto mantém todos os membros. Os filtros de score, rejeições, maturidade e o limite de três zonas publicadas por lado continuam valendo.
 
 ### Limites estruturais
 
-`limites_estruturais` representam a região histórica da zona. São derivados dos pivôs que formam o cluster e da volatilidade da época desses pivôs.
+As bordas são os extremos dos **membros selecionados**, com folga de 0,15 vezes o menor entre o ATR médio desses pivôs e o ATR fechado atual de cada lado. Não se corta a borda de uma zona deixando seus membros fora dela.
 
-Esses limites são usados principalmente para:
+A fusão topo/fundo continua exigindo sobreposição estrutural mínima de 50%, mas agora também verifica todos os pares de pivôs e a largura final. O ATR dos membros é conservado até essa etapa. A suavização do centro só é aproveitada se permanecer dentro da concentração de pivôs da zona recalculada.
 
-- identidade da zona;
-- matching entre execuções;
-- merge de regiões;
-- confluência histórica.
-
-Eles não são recalculados retroativamente apenas porque a volatilidade atual mudou.
+Um ATR atual menor pode exigir novo agrupamento. Mantidos os mesmos membros, um ATR atual maior não infla a folga histórica. Fichas antigas que excedem o teto ficam dormentes durante sua carência, sem aparecer no relatório ou corroborar outras zonas. Seus registros permanecem no estado até o envelhecimento normal.
 
 ### Limites operacionais
 
-`limites_operacionais` são ajustados ao regime atual de volatilidade. No código atual, são construídos em torno do centro da zona usando o ATR fechado atual.
+A janela operacional usa **centro ±0,25 ATR**, até 0,5 ATR de largura total. O teto percentual específico do ativo continua limitando volatilidades extremas. O piso percentual é apenas fallback quando não há ATR válido, para não alargar a janela em períodos de baixa volatilidade.
 
-São usados principalmente para medir:
-
-- interação atual do preço com a zona;
-- estado `em_teste`, `acima` ou `abaixo`;
-- distância operacional.
-
-Assim, uma mesma zona pode manter sua identidade estrutural enquanto sua faixa operacional se adapta à volatilidade corrente.
+Os episódios históricos usam o ATR de cada vela. Mantido o centro, a volatilidade de hoje não reescreve os toques passados. Quando há divisão ou mudança de agrupamento, os episódios, as rejeições, o volume e o role reversal são recalculados para cada região resultante, sem copiar o score da região antiga.
 
 ### Score e qualidade da zona
 
@@ -653,7 +629,7 @@ Uma zona pode publicar, entre outros campos:
 
 `confluencia_nivel_manual` cobre apenas os níveis pontuais: é verdadeiro quando o nível cai dentro dos limites estruturais da zona.
 
-`confluencia_faixa_manual` cobre as faixas de `NIVEIS_USD.faixas`. Como faixa é região e não linha, o critério é interseção entre a faixa e os limites estruturais da zona.
+`confluencia_faixa_manual` cobre as faixas de `NIVEIS_USD.faixas`. Como faixa é região e não linha, o critério é interseção entre a faixa e os limites operacionais da zona.
 
 `confluencia_manual_qualquer` agrega as duas. Consumidores externos não devem inferir que `confluencia_nivel_manual` representa sozinho toda forma possível de confluência manual.
 
@@ -1132,10 +1108,13 @@ Exemplo da estrutura atual:
 ```js
 const NIVEIS_USD = {
   faixas: [
-    [5.25, 5.36, "faixa_5_25_5_36"],
-    [5.13, 5.21, "faixa_5_13_5_21"],
-    [5.05, 5.12, "regiao_suporte_5_05_5_12"],
-    [5.0, 5.05, "regiao_suporte_5_00_5_05"],
+    [5.3301, 5.3481, "faixa_5_3301_5_3481"],
+    [5.25, 5.2895, "faixa_5_2500_5_2895"],
+    [5.1615, 5.203, "faixa_5_1615_5_2030"],
+    [5.1223, 5.1607, "faixa_5_1223_5_1607"],
+    [5.0646, 5.1072, "regiao_suporte_5_0646_5_1072"],
+    [5.0318, 5.0617, "regiao_suporte_5_0318_5_0617"],
+    [4.9875, 5.0231, "regiao_suporte_4_9875_5_0231"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -1207,3 +1186,7 @@ A memória sobrevive a reinícios, falhas de fonte e retries; respostas antigas 
 O histórico registra `ema89_confirmacao` e `ema89_evento_id`; a análise histórica conta `ema89_confirmou=acima/abaixo` na semana de confirmação, uma vez por vela. Registros antigos continuam legíveis.
 
 `node teste-ema89-semanal.mjs` verifica as sequências e a persistência em disco. Essa suíte também roda por `node teste-fumaca.mjs`. Os prompts públicos usam os novos campos e mantêm os filtros, os pares de referência e as regras de prioridade já existentes.
+
+### Regressões de largura das zonas
+
+`node teste-zonas.mjs` verifica compactação, divisão com evidência, ausência de divisão artificial, limites diário/semanal, fusão, tolerância operacional, score/toques/rejeições, role reversal, migração de fichas antigas e as faixas manuais desta calibração. É executado por `teste-fumaca.mjs`.

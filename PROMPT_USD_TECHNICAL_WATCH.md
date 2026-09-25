@@ -169,6 +169,8 @@ Todo alerta de mercado deve ser rotulado por horizonte — ver `Formato obrigat�
 
 ### Fonte de verdade dos níveis manuais
 
+Faixas revisadas em 2026-09-25 com teto de 0,8 ATR diário na calibração. As que já cabiam foram mantidas. Continuam fixas até revisão manual, e não acompanham o ATR automaticamente. Uma troca de limites ou labels é manutenção de configuração, não evidência de movimento novo do preço.
+
 Sempre que o `relatorio.json` publicar explicitamente faixas dentro de `niveis_manuais`, leia as faixas do **par correspondente** diretamente do relatório e trate seus limites e labels como **fonte de verdade**.
 
 Não misture os níveis de USD/BRL com os de USDT/BRL e não dependa eternamente de valores hardcoded neste prompt quando o JSON já trouxer a configuração atual.
@@ -177,18 +179,23 @@ Na configuração atual do projeto, as referências conhecidas são:
 
 #### USD/BRL
 
-- R$ 5,25–5,36 — `faixa_5_25_5_36`;
-- R$ 5,13–5,21 — `faixa_5_13_5_21`;
-- R$ 5,05–5,12 — `regiao_suporte_5_05_5_12`;
-- R$ 5,00–5,05 — `regiao_suporte_5_00_5_05`;
+- R$ 5,3301–5,3481 — `faixa_5_3301_5_3481`;
+- R$ 5,25–5,2895 — `faixa_5_2500_5_2895`;
+- R$ 5,1615–5,203 — `faixa_5_1615_5_2030`;
+- R$ 5,1223–5,1607 — `faixa_5_1223_5_1607`;
+- R$ 5,0646–5,1072 — `regiao_suporte_5_0646_5_1072`;
+- R$ 5,0318–5,0617 — `regiao_suporte_5_0318_5_0617`;
+- R$ 4,9875–5,0231 — `regiao_suporte_4_9875_5_0231`;
 - resistência pontual de referência em torno de R$ 5,30;
 - suporte pontual de referência em torno de R$ 5,13.
 
 #### USDT/BRL
 
-- R$ 5,27–5,35 — `faixa_5_27_5_35`;
-- R$ 5,17–5,22 — `faixa_5_17_5_22`;
-- R$ 5,12–5,16 — `regiao_suporte_5_12_5_16`;
+- R$ 5,3342–5,3599 — `faixa_5_3342_5_3599`;
+- R$ 5,2892–5,3059 — `faixa_5_2892_5_3059`;
+- R$ 5,2697–5,2858 — `faixa_5_2697_5_2858`;
+- R$ 5,1868–5,2124 — `faixa_5_1868_5_2124`;
+- R$ 5,138–5,1668 — `regiao_suporte_5_1380_5_1668`;
 - resistência pontual de referência em torno de R$ 5,31;
 - suporte pontual de referência em torno de R$ 5,15.
 
