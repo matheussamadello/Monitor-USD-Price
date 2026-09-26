@@ -1608,6 +1608,8 @@ console.log("\n== zona em observacao tambem envelhece ==");
   const comEvidencia = { score: 60, episodios: [{ rejeitado: true }, { rejeitado: false }] };
   ok(atualizarCiclo(comEvidencia, ant({ velasComScoreAlto: 1 }), ctx(3)).status === "ativa",
     "score alto por duas velas e evidencia estrutural ainda promove a ativa");
+  ok(atualizarCiclo(comEvidencia, ant({ velasComScoreAlto: 1 }), ctx(400)).status === "enfraquecida",
+    "mas nao promove regiao sem toque alem do limite: enfraquece");
   // Na mesma vela, contadores e promocao nao andam.
   const mesma = (extra) => ant({ ultimaVelaAvaliada: 2, ...(extra || {}) });
   const reexec = atualizarCiclo(comEvidencia, mesma({ velasComScoreAlto: 1 }), ctx(3));

@@ -217,4 +217,57 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
     for (let i = 1; i < fs.length; i++) assert.ok(fs[i][0] >= fs[i-1][1]);
   }
 });
+teste('serie aleatoria vela a vela: ciclo coerente, IDs unicos, teto e reexecucao estavel', () => {
+  // Propriedades que valem em qualquer serie. Foi assim, e nao por leitura,
+  // que apareceram as duas formas de `ativa` sem toque recente: herdada
+  // numa divisao de zona e promovida sem conferir o tempo sem toque.
+  let s = 7;
+  const rnd = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const LIM = { diario: 30, semanal: 8 };
+  const cfg = m.PARES_TESTE[0];
+  for (const tf of m.TIMEFRAMES_TESTE) {
+    const N = 230, o = [], h = [], l = [], c = [];
+    let p = 100;
+    for (let k = 0; k < N; k++) {
+      const ab = p; p *= 1 + (rnd() - 0.5) * 0.05;
+      if (rnd() < 0.03) p = 90 + rnd() * 20; // volta a regioes antigas
+      o.push(ab); c.push(p);
+      h.push(Math.max(ab, p) * (1 + rnd() * 0.02)); l.push(Math.min(ab, p) * (1 - rnd() * 0.02));
+    }
+    const t0 = 1699920000;
+    const times = Array.from({ length: N }, (_, i) => t0 + i * tf.segundos);
+    let ant = [], prox = 1;
+    for (let n = 150; n <= N; n++) {
+      const d = { times: times.slice(0, n), opens: o.slice(0, n), highs: h.slice(0, n), lows: l.slice(0, n),
+        closes: c.slice(0, n), volumes: Array(n).fill(100),
+        live: { time: t0 + n * tf.segundos, open: c[n - 1], high: c[n - 1], low: c[n - 1], close: c[n - 1], volume: 1 } };
+      const pivos = m.acharPivos(d.highs, d.lows, tf.pivos.esq, tf.pivos.dir);
+      const ctx = (za, pid) => ({ pivos, zonasAnteriores: structuredClone(za), zonasSemanais: [], proximoId: pid,
+        volumeMedia20: 100, niveisManuais: [], faixasManuais: [], resistenciaMacro: null });
+      const r = m.calcularZonas(cfg, tf, d, ctx(ant, prox));
+      const atr = m.atrSeries(d.highs, d.lows, d.closes).filter((x) => x !== null).at(-1);
+      const ids = r.zonasEstado.map((z) => z.id);
+      assert.equal(new Set(ids).size, ids.length, 'IDs unicos no estado');
+      for (const z of r.zonasEstado) {
+        if (z.status === 'ativa' || z.status === 'candidata')
+          assert.ok(z.velas_desde_ultimo_toque === null || z.velas_desde_ultimo_toque <= LIM[tf.key],
+            `${tf.key} ${z.id} ${z.status} sem toque ha ${z.velas_desde_ultimo_toque} velas (vela ${n})`);
+        if (!z.absorvida && !z.orfa && z.status !== 'remover')
+          assert.ok(z.limites_estruturais.superior - z.limites_estruturais.inferior <=
+            m.ZONA_ESTRUTURAL_MAX_ATR[tf.key] * atr + 1e-9, 'teto de largura');
+      }
+      const vivas = new Set(r.zonasVivas.map((z) => z.id));
+      assert.ok(r.zonas.every((z) => vivas.has(z.id)), 'publicadas sao vivas');
+      // Reexecucao na mesma vela: nada muda, exceto a ficha `remover` sem
+      // dona, que so ficava guardada ate a vela seguinte e sai antes.
+      const r2 = m.calcularZonas(cfg, tf, d, ctx(r.zonasEstado, r.proximoId));
+      assert.deepEqual(r2.zonas, r.zonas, `reexecucao nao muda as publicadas (vela ${n})`);
+      assert.equal(r2.proximoId, r.proximoId, 'reexecucao nao fabrica IDs');
+      const resumo = (zs) => zs.filter((z) => z.status !== 'remover')
+        .map((z) => [z.id, z.status, z.score, z.velasEnfraquecida, z.velasComScoreAlto]);
+      assert.deepEqual(resumo(r2.zonasEstado), resumo(r.zonasEstado), `reexecucao nao muda o estado (vela ${n})`);
+      ant = r.zonasEstado; prox = r.proximoId;
+    }
+  }
+});
 console.log(`  ${grupos} grupos de testes de zonas passaram`);

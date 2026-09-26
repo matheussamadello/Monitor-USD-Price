@@ -884,7 +884,15 @@ function fmtDia(epochSeconds) {
 }
 
 function num(v, dec) {
-  return v === null || v === undefined || Number.isNaN(v) ? "--" : v.toFixed(dec);
+  return v === null || v === undefined || Number.isNaN(v) ? "--" : fixo(v, dec);
+}
+
+// toFixed sem o "-0.00": um valor que arredonda para zero nao tem lado.
+// No relatorio o sinal e' lido como "abaixo do preco", entao uma zona com
+// o preco dentro dela saia com dist_pct=-0.00.
+export function fixo(v, dec) {
+  const s = v.toFixed(dec);
+  return /^-0(\.0+)?$/.test(s) ? s.slice(1) : s;
 }
 
 // ------------------------------------------------------------
@@ -2970,7 +2978,13 @@ export function atualizarCiclo(z, anterior, ctx) {
   else z.velasComScoreAlto = 0;
 
   if (z.status === "candidata") {
+    // Promover exige regiao VIVA. Score alto nao basta: ele decai com o
+    // tempo, mas pode seguir acima do corte depois do limite sem toque.
+    // Sem esta condicao a candidata virava `ativa` com 9 a 90 velas sem
+    // toque -- o mesmo estado incoerente que a rebaixa na mesma vela
+    // corrige, alcancado pela promocao numa vela nova.
     if (
+      !deveEnfraquecer &&
       z.velasComScoreAlto >= 2 &&
       evidenciaEstruturalIndependente(z, ctx.confluenciaSemanal)
     ) {
@@ -3353,7 +3367,7 @@ export function zonasParaTexto(zonas, dec, fmtDiaFn) {
         `operacional=${z.limites_operacionais.inferior.toFixed(dec)}-${z.limites_operacionais.superior.toFixed(dec)} ` +
         `centro=${z.centro.toFixed(dec)} toques=${z.numero_toques} ` +
         `rejeicoes=${z.numero_rejeicoes} role_reversal=${z.role_reversal ? "sim" : "nao"} ` +
-        `dist_pct=${z.distancia_preco_atual_pct.toFixed(2)} ` +
+        `dist_pct=${fixo(z.distancia_preco_atual_pct, 2)} ` +
         `confluencia_manual=${z.confluencia_nivel_manual ? "sim" : "nao"} ` +
         `confluencia_faixa=${z.confluencia_faixa_manual ? "sim" : "nao"} ` +
         `confluencia_macro=${z.confluencia_resistencia_macro ? "sim" : "nao"} ` +

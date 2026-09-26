@@ -1003,5 +1003,16 @@ await teste("historico exclui condicoes intradiarias em vez de antecipar seu pre
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+await teste("valor que arredonda para zero sai sem sinal", () => {
+  // dist_pct=-0.00 numa zona com o preco dentro: o sinal e' lido como lado.
+  assert.equal(m.fixo(-0.001, 2), "0.00");
+  assert.equal(m.fixo(-0.004, 2), "0.00");
+  assert.equal(m.fixo(-0.4, 0), "0");
+  assert.equal(m.fixo(-0.005, 2), "-0.01");
+  assert.equal(m.fixo(-1.23, 2), "-1.23");
+  assert.equal(m.fixo(-10.004, 2), "-10.00");
+  assert.equal(m.fixo(0.001, 2), "0.00");
+});
+
 assert.equal(falhas, 0, `${falhas} de ${grupos} grupos de regressao falharam`);
 console.log(`${grupos} grupos de regressao passaram.`);
