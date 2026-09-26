@@ -138,6 +138,14 @@ export const PRESENCA_ESPERADA = {
   FONTES_CRIPTO: ["Monitor-USD-Price"],
   buscarSerie: ["Monitor-USD-Price"],
   parseYahoo: ["Monitor-USD-Price"],
+  // Vela do USD/BRL montada das horas do Yahoo (o fechamento diario da
+  // fonte esta quebrado); o historico anterior as horas vem da serie
+  // longa lida por linhasYahoo.
+  parseYahooHibrido: ["Monitor-USD-Price"],
+  linhasYahoo: ["Monitor-USD-Price"],
+  horasYahoo: ["Monitor-USD-Price"],
+  sessaoCambio: ["Monitor-USD-Price"],
+  YAHOO_HORARIO: ["Monitor-USD-Price"],
   parseBinance: ["Monitor-USD-Price"],
   parseMercadoBitcoin: ["Monitor-USD-Price"],
   montarSerie: ["Monitor-USD-Price"],

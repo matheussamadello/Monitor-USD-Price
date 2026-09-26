@@ -1073,6 +1073,8 @@ O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 - O `preco_atual` pode repetir o último fechamento real. Não descreva isso como "dia sem variação".
 - Um `timestamp` novo com os mesmos dados pode ser comportamento normal de mercado fechado e não gera alerta.
 - Uma troca de fonte `query1` para `query2` na cascata do Yahoo é fallback de host e não é alerta.
+- Desde 2026-09-26 as velas do USD/BRL são **montadas das velas de 1 hora** do Yahoo, porque o fechamento diário e semanal da fonte vinha praticamente igual à abertura. Na primeira execução com a correção, indicadores, velas, pivôs, estrutura e zonas do USD/BRL mudam de uma vez (o semanal, por exemplo, passou de `lateral_contracao` para `alta`). Isso é **correção de dado, não movimento de mercado**: não alerte por essa mudança e não a trate como rompimento, virada de estrutura ou cruzamento. Leituras do USD/BRL anteriores a essa data, inclusive padrões de candle, foram feitas sobre o fechamento errado.
+- `dados_avisos` com `Yahoo 1h indisponivel` significa que as horas não vieram e a vela saiu da série longa com o fechamento reparado pela abertura seguinte. É aviso de qualidade de dado, não alerta; se persistir por vários dias, vale mencionar uma vez como manutenção.
 
 ### USDT/BRL
 

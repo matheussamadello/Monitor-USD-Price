@@ -53,7 +53,30 @@ Quando a cascata inteira cai, o bloco do par sai marcado com `FALHA:` citando o 
 
 Toda vela é ancorada na **meia-noite UTC do próprio dia**. O Yahoo carimba a vela no fuso da bolsa; sem a ancoragem, uma mudança de fuso jogaria velas para o dia seguinte e o estado persistido passaria a comparar velas que não são a mesma vela.
 
-Os timeframes são dois: `interval=1d` e `interval=1wk`.
+Os timeframes são dois, diário e semanal, e desde 2026-09-26 **as velas do USD/BRL são montadas das velas de 1 hora** do Yahoo (`interval=1h&range=730d`), com a série longa (`1d` e `1wk`) só para o histórico mais antigo que as horas. A razão está na seção seguinte.
+
+### O fechamento do Yahoo estava errado
+
+A vela diária de `USDBRL=X` traz a **abertura certa, mas o fechamento é praticamente a própria abertura**. Foi medido no próprio runner, com um diagnóstico temporário, em 2026-09-26:
+
+- corpo menor que 5% da amplitude em 84% a 100% das velas de **cada ano desde 2020**, e em 100% de 2023 a 2025;
+- contra o dia reconstruído das velas de 1 hora da mesma provedora, o erro do fechamento tem mediana de **0,0231** e p90 de 0,0674 — do tamanho da amplitude de um dia inteiro. Em 23/09/2026 o dólar fechou em 5,1641; o Yahoo diário dizia 5,0999;
+- a máxima e a mínima também vinham incompletas às vezes (a de 23/09 faltava 2,3 centavos);
+- o semanal herda o defeito: o fechamento da semana era o fechamento quebrado da sexta;
+- os dois hosts, o ticker `BRL=X`, `period1/period2`, `includePrePost` e o intervalo `5d` dão exatamente o mesmo.
+
+Na prática, RSI, EMA89, ADX, padrões de candle, corpo e sombras, rompimentos e retestes do USD/BRL eram calculados sobre a abertura do dia, não sobre o fechamento. O USDT/BRL, que vem da Binance, nunca foi afetado.
+
+**Como a vela é montada agora.** A série de 1 hora é coerente — a abertura de cada hora é o fechamento da anterior — e cobre 729 dias úteis, mais que as 720 velas guardadas. O dia é o **dia UTC**, a mesma fronteira do USDT/BRL. Ficam fora:
+
+- **sábado e domingo**, que não são pregão (havia 86 horas carimbadas no fim de semana, cotação repetida);
+- **horas sem amplitude** (máxima igual à mínima). São 2.782 de 17.520, concentradas entre 22h e 05h UTC: é a última cotação repetida durante a madrugada. Sem esse filtro a vela abria na cotação velha da véspera; com ele, abre no primeiro negócio do dia. Na segunda 21/09, por exemplo, as horas de 00h a 03h repetiam 5,1442 e o pregão abriu em 5,1287.
+
+A vela diária fecha na virada do dia UTC e a semanal na virada de sexta para sábado UTC. O que for mais antigo que as horas vem da série longa com o **fechamento reparado pela abertura da vela seguinte** — o dado certo mais próximo, com erro mediano de 0,0021 no mesmo diagnóstico — e máxima/mínima alargadas para contê-lo.
+
+**Se a consulta de 1 hora falhar**, o par não cai: a série inteira sai da longa reparada e `dados_avisos` diz `Yahoo 1h indisponivel (...)`. É muito melhor que o fechamento quebrado e bem pior que as horas, e por isso aparece escrito.
+
+**Efeito na primeira execução.** Comparando o código anterior e o novo sobre as mesmas respostas, no runner: USDT/BRL **idêntico**, gatilhos idênticos; no USD/BRL mudaram os indicadores, as velas, os pivôs e as zonas. Exemplos: o diário de 24/09 passou a fechar em 5,1912 (era 5,1643), o ATR14 diário foi de 0,0553 para 0,0504, e o semanal passou de `lateral_contracao` (LH_HL) para `alta` (HH_HL). O estado persistido (níveis, zonas, EMA89 semanal) não foi reconstruído: segue a partir do que estava salvo, e as velas novas já entram certas. `docs/historico.jsonl` guarda os fechamentos antigos do USD/BRL como eram; análises históricas do USD/BRL anteriores a 2026-09-26 carregam o defeito.
 
 ### Por que não há uma segunda provedora
 
@@ -81,7 +104,7 @@ O mesmo vale, em graus diferentes, para as outras fontes que o TradingView exibe
 O câmbio à vista não negocia sábado e domingo, e os dois monitores anteriores nunca precisaram lidar com isso — cripto negocia todo dia. Aqui há duas consequências práticas:
 
 - Depois do encerramento, a última cotação disponível também pertence à série fechada: a sexta-feira entra nos indicadores durante o fim de semana. `vela_atual_em_formacao: nao` identifica esse caso, e o bloco `candle_atual_*` sai em branco para a mesma barra não ser publicada duas vezes. Os campos provisórios repetem os indicadores fechados, sem anexar a mesma vela duas vezes; não são gerados padrões, divergências ou toques intradiários de uma vela inexistente.
-- No Yahoo, o encerramento usa `currentTradingPeriod.regular.end` quando o metadado corresponde à vela. Para fechar a semana, exige uma sessão de sexta-feira. Sem metadado aplicável, espera conservadoramente a virada do dia no fuso informado pela fonte, ou de sexta para sábado no semanal. Sem calendário de feriados, um encerramento antecipado pode ser reconhecido apenas nessa virada. Binance usa `closeTime`; Mercado Bitcoin usa o limite do período de 24 horas/7 dias. A semana cripto continua em formação no domingo.
+- No USD/BRL, a vela montada das horas fecha na virada do dia UTC, e a semana na virada de sexta para sábado UTC. Sem calendário de feriados, um encerramento antecipado só é reconhecido nessa virada. (A leitura direta da série longa, usada só para o histórico antigo, ainda sabe usar `currentTradingPeriod.regular.end`.) Binance usa `closeTime`; Mercado Bitcoin usa o limite do período de 24 horas/7 dias. A semana cripto continua em formação no domingo.
 - `retestMaxCandles` conta **dias corridos**, não pregões. Os 30 do diário valem cerca de 21 velas diárias reais.
 
 ### A vela-fantasma

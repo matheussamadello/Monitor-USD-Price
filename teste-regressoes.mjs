@@ -145,6 +145,13 @@ function respostaYahoo(rows, meta = {}) {
       open: rows.map((r) => r.open), high: rows.map((r) => r.high),
       low: rows.map((r) => r.low), close: rows.map((r) => r.close) }] } }] } });
 }
+// Duas horas por vela diaria que agregam exatamente de volta nela.
+function horasDe(rows) {
+  return rows.flatMap((r) => [
+    { time: r.time + 3600, open: r.open, high: r.high, low: r.low, close: r.open },
+    { time: r.time + 20 * 3600, open: r.open, high: r.high, low: r.low, close: r.close },
+  ]);
+}
 function respostaBinance(rows, passo) {
   return JSON.stringify(rows.map((r) => [r.time * 1000, r.open, r.high, r.low, r.close,
     r.volume, (r.time + passo) * 1000 - 1, 0, 100]));
@@ -472,6 +479,9 @@ await teste("USD restaurado nao cria reteste ao atravessar o fim de semana", asy
     return async (url) => {
       if (url.includes("yahoo") && url.includes("interval=1d"))
         return { ok: true, text: async () => respostaYahoo([...rows, falsa]) };
+      // As horas da mesma serie, inclusive a cotacao falsa de domingo.
+      if (url.includes("yahoo") && url.includes("interval=1h"))
+        return { ok: true, text: async () => respostaYahoo(horasDe([...rows, falsa])) };
       return outras(url);
     };
   };
@@ -826,6 +836,76 @@ if (typeof m.parseYahoo === "function") await teste("Yahoo rejeita OHLC parcial/
   assert.ok(r.parsed.lows.every(x => x === 4.9));
   const falha = await m.buscarSerie(async () => ({ ok: true, text: async () => resposta(ruim) }), cfg, tf);
   assert.equal(falha.ok, false); assert.match(falha.erro, /primaria:.*OHLC.*reserva:.*OHLC/);
+});
+
+if (typeof m.parseYahooHibrido === "function") await teste("USD/BRL montado das horas: fechamento real, madrugada e fim de semana fora", async () => {
+  // O fechamento diario e semanal do Yahoo vinha igual a abertura. A vela
+  // sai das horas; o historico anterior a elas sai da serie longa com o
+  // fechamento reparado pela abertura seguinte.
+  const H = 3600;
+  const diario = m.TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+  const semanal = m.TIMEFRAMES_TESTE.find((t) => t.key === "semanal");
+  const resp = (rows) => JSON.stringify({ chart: { error: null, result: [{ meta: { gmtoffset: 3600 },
+    timestamp: rows.map((r) => r.t), indicators: { quote: [{ open: rows.map((r) => r.o), high: rows.map((r) => r.h),
+      low: rows.map((r) => r.l), close: rows.map((r) => r.c) }] } }] } });
+  // Horas de 2026-08-03 (segunda) ate quinta 2026-09-24 21h UTC. Madrugada
+  // (22h-05h) plana, como no Yahoo; fim de semana com cotacao repetida.
+  const horas = []; let p = 5.1;
+  // Comeca ao meio-dia: o primeiro dia das horas vem incompleto, como no
+  // inicio do range, e tem de sair da serie longa.
+  for (let t = epoch("2026-08-03T12:00:00Z"); t <= epoch("2026-09-24T21:00:00Z"); t += H) {
+    const d = new Date(t * 1000), dow = d.getUTCDay(), hr = d.getUTCHours();
+    if (dow === 0 || dow === 6) { horas.push({ t, o: 9, h: 9.01, l: 8.99, c: 9 }); continue; } // nunca pode entrar
+    // Madrugada: cotacao velha repetida, diferente do preco de verdade
+    // (no Yahoo, 5,1442 parado ate o pregao abrir em 5,1287).
+    if (hr >= 22 || hr < 5) { const v = +(p + 0.015).toFixed(4); horas.push({ t, o: v, h: v, l: v, c: v }); continue; }
+    const o = p; p = +(p + (((t / H) % 7) - 3) * 0.001).toFixed(4);
+    horas.push({ t, o, h: Math.max(o, p) + 0.002, l: Math.min(o, p) - 0.002, c: p });
+  }
+  // Serie longa rotulada a meia-noite de Londres, fechamento quebrado.
+  const longo = [];
+  for (let dia = epoch("2024-01-01T00:00:00Z"); dia <= epoch("2026-09-24T00:00:00Z"); dia += DIA) {
+    if ([0, 6].includes(new Date(dia * 1000).getUTCDay())) continue;
+    const o = 5 + 0.05 * Math.sin(dia / 500000);
+    longo.push({ t: dia - H, o, h: o + 0.03, l: o - 0.03, c: o + 0.0001 });
+  }
+  await noInstante("2026-09-24T21:30:00Z", async () => {
+    const s = m.parseYahooHibrido([resp(horas), resp(longo)], diario);
+    const qua = epoch("2026-09-23T00:00:00Z"), i = s.times.indexOf(qua);
+    const reais = horas.filter((h) => h.t >= qua && h.t < qua + DIA && h.h > h.l);
+    assert.deepEqual([s.opens[i], s.highs[i], s.lows[i], s.closes[i]],
+      [reais[0].o, Math.max(...reais.map((h) => h.h)), Math.min(...reais.map((h) => h.l)), reais.at(-1).c],
+      "a vela e' a agregacao das horas com negocio, e o fechamento e' o da ultima hora");
+    assert.ok(s.times.every((t) => ![0, 6].includes(new Date(t * 1000).getUTCDay())), "fim de semana fora");
+    assert.ok(s.highs.every((h) => h < 8), "a cotacao repetida do fim de semana nao entra em vela nenhuma");
+    assert.equal(s.live.time, epoch("2026-09-24T00:00:00Z"), "quinta ainda em formacao ate a virada UTC");
+    assert.equal(s.live.close, horas.filter((h) => h.h > h.l).at(-1).c, "preco vivo e' a ultima hora com negocio");
+    // Historico anterior as horas: fechamento reparado pela abertura seguinte.
+    const j = s.times.indexOf(epoch("2025-06-02T00:00:00Z"));
+    const ant = longo.find((l) => l.t === epoch("2025-06-02T00:00:00Z") - H), seg = longo.find((l) => l.t === epoch("2025-06-03T00:00:00Z") - H);
+    assert.equal(s.closes[j], seg.o, "fechamento antigo = abertura do dia seguinte");
+    assert.ok(s.highs[j] >= Math.max(ant.h, seg.o) && s.lows[j] <= Math.min(ant.l, seg.o), "extremos contem o reparo");
+    assert.deepEqual(s.avisosDados, []);
+    const primeiro = epoch("2026-08-03T00:00:00Z");
+    assert.equal(s.opens[s.times.indexOf(primeiro)], longo.find((l) => l.t === primeiro - H).o,
+      "o primeiro dia das horas, incompleto, fica com a serie longa");
+    assert.equal(s.opens[s.times.indexOf(primeiro + DIA)], horas.find((h) => h.t >= primeiro + DIA + 5 * H).o,
+      "e o seguinte ja sai das horas");
+
+    const w = m.parseYahooHibrido([resp(horas), resp(longo)], semanal);
+    const k = w.times.indexOf(epoch("2026-09-14T00:00:00Z"));
+    const semana = horas.filter((h) => h.t >= epoch("2026-09-14T00:00:00Z") && h.t < epoch("2026-09-19T00:00:00Z") && h.h > h.l);
+    assert.equal(w.opens[k], semana[0].o, "semana abre no primeiro negocio de segunda");
+    assert.equal(w.closes[k], semana.at(-1).c, "e fecha no ultimo de sexta");
+    assert.equal(w.live.time, epoch("2026-09-21T00:00:00Z"));
+
+    // Sem as horas: a serie longa reparada, com aviso.
+    const falhas = [null, resp(longo)]; falhas.falhas = ["HTTP 503"];
+    const sem = m.parseYahooHibrido(falhas, diario);
+    assert.equal(sem.closes[sem.times.indexOf(qua)], longo.find((l) => l.t === epoch("2026-09-24T00:00:00Z") - H).o,
+      "sem horas, o fechamento e' a abertura seguinte");
+    assert.match(sem.avisosDados.join(" "), /Yahoo 1h indisponivel \(HTTP 503\)/);
+  });
 });
 
 if (typeof m.parseYahoo === "function") await teste("barra de fim de semana nao derruba a resposta do cambio", () => {

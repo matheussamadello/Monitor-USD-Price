@@ -464,12 +464,19 @@ const HOSTS_YAHOO = ["query1", "query2"];
 // uma correcao aplicada num repositorio so.
 const AGENTE_HTTP = "usd-monitor/1.0";
 
+// Duas consultas por host: as horas, de onde sai a vela, e a serie longa
+// do timeframe, para o historico anterior as horas. Ver parseYahooHibrido.
 const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
   nome: `yahoo/${host}`,
-  url: (cfg, tf) =>
-    `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.par)}` +
-    `?interval=${tf.intervalos.yahoo}&range=${tf.yahooRange}`,
-  parse: parseYahoo,
+  url: (cfg, tf) => {
+    const base = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.par)}`;
+    return [
+      // Opcional: sem as horas, a vela sai da serie longa reparada.
+      { url: `${base}?interval=${YAHOO_HORARIO.interval}&range=${YAHOO_HORARIO.range}`, opcional: true },
+      `${base}?interval=${tf.intervalos.yahoo}&range=${tf.yahooRange}`,
+    ];
+  },
+  parse: parseYahooHibrido,
 }));
 
 // Cascata do par de cripto. Aqui, ao contrario do cambio, existem duas
@@ -743,7 +750,10 @@ function montarSerie(linhas, {
   };
 }
 
-export function parseYahoo(texto, tf) {
+// Le a resposta do Yahoo e devolve as linhas validadas, ainda sem montar
+// a serie. Separado de parseYahoo para o parser hibrido reaproveitar a
+// mesma validacao na parte antiga do historico.
+function linhasYahoo(texto) {
   const json = JSON.parse(texto);
   const erro = json && json.chart && json.chart.error;
   if (erro) throw new Error("Yahoo: " + (erro.description || erro.code || "erro"));
@@ -787,8 +797,12 @@ export function parseYahoo(texto, tf) {
     }
     linhas.push({ time: dias[i], open, high, low, close });
   }
+  return { linhas, descartadas, off, sessao: r.meta?.currentTradingPeriod?.regular };
+}
+
+export function parseYahoo(texto, tf) {
+  const { linhas, descartadas, off, sessao } = linhasYahoo(texto);
   const periodo = tf?.segundos || 86400;
-  const sessao = r.meta?.currentTradingPeriod?.regular;
   const serie = montarSerie(linhas, {
     periodo,
     ignorarSemAmplitude: true,
@@ -812,6 +826,147 @@ export function parseYahoo(texto, tf) {
   return { ...serie, avisosDados: descartadas.length
     ? [`Yahoo: candles historicos com OHLC inconsistente descartados (${descartadas.length}): ${descartadas.join(", ")}`]
     : [] };
+}
+
+// ------------------------------------------------------------
+// USD/BRL a partir das velas de 1 hora
+//
+// O FECHAMENTO DIARIO DO YAHOO PARA CAMBIO ESTA ERRADO. Medido em
+// 2026-09-26 com um diagnostico no proprio runner: a vela diaria de
+// USDBRL=X traz a abertura certa, mas o fechamento e' praticamente a
+// propria abertura -- corpo menor que 5% da amplitude em 84% a 100% das
+// velas de cada ano desde 2020, e 100% de 2023 a 2025. Contra o dia
+// reconstruido das velas de 1 hora da mesma provedora, o erro do
+// fechamento tem mediana de 0,0231 e p90 de 0,0674 -- do tamanho da
+// amplitude de um dia inteiro. Exemplo: 23/09/2026 fechou em 5,1641, e
+// o Yahoo diario dizia 5,0999. A maxima e a minima tambem vinham
+// incompletas as vezes. O semanal herda: o fechamento da semana e' o
+// fechamento quebrado da sexta. Os dois hosts e o ticker BRL=X dao o
+// mesmo, e period1/period2, includePrePost e 5d tambem.
+//
+// A serie de 1 hora e' coerente (a abertura de cada hora e' o fechamento
+// da anterior) e cobre 729 dias uteis, mais que as 720 velas guardadas.
+// Entao a vela passa a ser MONTADA das horas, em dia UTC -- a mesma
+// fronteira do USDT/BRL na Binance. Fim de semana nao e' pregao.
+//
+// O que for mais antigo que as horas disponiveis vem da serie diaria ou
+// semanal, com o fechamento REPARADO pela abertura da vela seguinte, que
+// e' o dado certo mais proximo (erro mediano de 0,0021 no mesmo teste) e
+// maxima/minima alargadas para conte-lo.
+const YAHOO_HORARIO = { interval: "1h", range: "730d" };
+
+// Dia UTC da hora; sabado e domingo nao sao pregao. O Yahoo repete a
+// ultima cotacao no fim de semana (ver ignorarFimDeSemana em montarSerie),
+// e no diagnostico a primeira hora da segunda veio entre 00h e 03h UTC:
+// nao ha sessao de domingo a perder.
+function sessaoCambio(t) {
+  const dia = Math.floor(t / 86400) * 86400;
+  const dow = new Date(dia * 1000).getUTCDay();
+  return dow === 0 || dow === 6 ? null : dia;
+}
+
+function horasYahoo(texto) {
+  const json = JSON.parse(texto);
+  const erro = json && json.chart && json.chart.error;
+  if (erro) throw new Error("Yahoo 1h: " + (erro.description || erro.code || "erro"));
+  const r = json && json.chart && json.chart.result && json.chart.result[0];
+  if (!r || !Array.isArray(r.timestamp)) throw new Error("Yahoo 1h: resposta sem series");
+  const q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
+  const horas = [];
+  let descartadas = 0;
+  for (let i = 0; i < r.timestamp.length; i++) {
+    const precos = [q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]];
+    if (precos.every((v) => v === null || v === undefined)) continue;
+    const [open, high, low, close] = precos;
+    // Uma hora incompleta ou incoerente sai sozinha: e' uma entre ~16
+    // do dia, e o dia continua montado pelas outras.
+    if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0) ||
+        low > high || open < low || open > high || close < low || close > high) {
+      descartadas++;
+      continue;
+    }
+    // Hora sem amplitude e' cotacao repetida, nao negocio: fica fora,
+    // pelo mesmo motivo do filtro de amplitude zero de montarSerie.
+    if (high === low) continue;
+    horas.push({ t: Number(r.timestamp[i]), open, high, low, close });
+  }
+  if (!horas.length) throw new Error("Yahoo 1h: nenhuma vela valida");
+  return { horas: horas.sort((a, b) => a.t - b.t), descartadas };
+}
+
+export function parseYahooHibrido(textos, tf) {
+  const [textoHorario, textoLongo] = textos;
+  const periodo = tf?.segundos || 86400;
+  const semanal = periodo === SEMANA;
+  const duracao = semanal ? 5 * 86400 : 86400;
+  const chave = (dia) => (semanal ? inicioSemana(dia) : dia);
+
+  // Sem as horas (consulta opcional falhou, ou resposta sem nenhuma hora
+  // valida), a serie inteira sai da longa reparada. Continua muito melhor
+  // que o fechamento quebrado, e o aviso diz que foi assim.
+  let horas = [], horasFora = 0, semHoras = null;
+  if (textoHorario === null || textoHorario === undefined) {
+    semHoras = (textos.falhas && textos.falhas[0]) || "sem resposta";
+  } else {
+    try { ({ horas, descartadas: horasFora } = horasYahoo(textoHorario)); }
+    catch (err) { semHoras = err.message; }
+  }
+  const porPeriodo = new Map();
+  for (const h of horas) {
+    const dia = sessaoCambio(h.t);
+    if (dia === null) continue;
+    const k = chave(dia);
+    const a = porPeriodo.get(k);
+    if (!a) porPeriodo.set(k, { time: k, open: h.open, high: h.high, low: h.low, close: h.close, fim: k + duracao });
+    else { a.high = Math.max(a.high, h.high); a.low = Math.min(a.low, h.low); a.close = h.close; }
+  }
+  const montadas = [...porPeriodo.values()].sort((a, b) => a.time - b.time);
+  // O primeiro periodo das horas pode estar cortado pelo inicio do range:
+  // ele fica com a serie longa, e as horas valem a partir do seguinte.
+  if (!semHoras && montadas.length < 2) semHoras = "horas insuficientes";
+  const corte = semHoras ? Infinity : montadas[1].time;
+
+  const { linhas, descartadas } = linhasYahoo(textoLongo);
+  const antigas = new Map();
+  for (const l of linhas) {
+    if (l.high === l.low) continue;
+    const k = chave(l.time);
+    if (k >= corte) continue;
+    const a = antigas.get(k);
+    // Pedacos da mesma semana se fundem, como em montarSerie: abertura do
+    // primeiro, extremos do conjunto, fechamento do ultimo.
+    if (!a) antigas.set(k, { ...l, time: k });
+    else { a.high = Math.max(a.high, l.high); a.low = Math.min(a.low, l.low); a.close = l.close; }
+  }
+  const velhas = [...antigas.values()].sort((a, b) => a.time - b.time);
+  const primeiraMontada = montadas.find((m) => m.time >= corte);
+  const reparadas = velhas.map((l, i) => {
+    // Sem vela seguinte -- so acontece sem as horas, na vela mais nova --
+    // o fechamento da fonte fica: e' a cotacao viva, que o Yahoo mantem
+    // certa enquanto a vela esta aberta.
+    const seguinte = i + 1 < velhas.length ? velhas[i + 1] : primeiraMontada;
+    const close = seguinte ? seguinte.open : l.close;
+    const out = { time: l.time, open: l.open, high: Math.max(l.high, close), low: Math.min(l.low, close), close };
+    // Vela antiga ja terminou; a mais nova da serie longa segue o
+    // calendario da fonte, como em parseYahoo.
+    if (seguinte) out.fim = l.time + duracao;
+    return out;
+  });
+
+  const serie = montarSerie([...reparadas, ...montadas.filter((m) => m.time >= corte)], {
+    periodo,
+    ignorarSemAmplitude: true,
+    ignorarFimDeSemana: true,
+    fimPeriodo: (row) => row.time + duracao,
+  });
+  const avisos = [];
+  if (descartadas.length)
+    avisos.push(`Yahoo: candles historicos com OHLC inconsistente descartados (${descartadas.length}): ${descartadas.join(", ")}`);
+  if (horasFora)
+    avisos.push(`Yahoo 1h: ${horasFora} velas de 1 hora com OHLC incompleto ou inconsistente descartadas`);
+  if (semHoras)
+    avisos.push(`Yahoo 1h indisponivel (${semHoras}): velas montadas da serie ${semanal ? "semanal" : "diaria"} com o fechamento reparado pela abertura seguinte`);
+  return { ...serie, avisosDados: avisos };
 }
 
 export function parseBinance(texto, tf) {
@@ -858,11 +1013,29 @@ export async function buscarSerie(fetchImpl, cfg, tf, opts = {}) {
   const erros = [];
   for (const fonte of cfg.fontes) {
     try {
-      const res = await fetchImpl(fonte.url(cfg, tf), {
-        headers: { "User-Agent": AGENTE_HTTP },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const parsed = fonte.parse(await res.text(), tf);
+      // Uma fonte pode precisar de mais de uma consulta (o cambio pede as
+      // horas e a serie longa). Todas tem de responder; o parse recebe os
+      // textos na mesma ordem.
+      // Uma consulta `opcional` que falha chega ao parse como null, com
+      // o motivo em textos.falhas; as demais tem de responder.
+      const alvo = fonte.url(cfg, tf);
+      const textos = [];
+      textos.falhas = [];
+      for (const item of Array.isArray(alvo) ? alvo : [alvo]) {
+        const { url, opcional } = typeof item === "string" ? { url: item } : item;
+        try {
+          const res = await fetchImpl(url, {
+            headers: { "User-Agent": AGENTE_HTTP },
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          textos.push(await res.text());
+        } catch (err) {
+          if (!opcional) throw err;
+          textos.push(null);
+          textos.falhas.push(err.message);
+        }
+      }
+      const parsed = fonte.parse(Array.isArray(alvo) ? textos : textos[0], tf);
       validarAtualidadeSerie(cfg, tf, parsed, opts);
       return { ok: true, parsed, fonte: fonte.nome };
     } catch (err) {

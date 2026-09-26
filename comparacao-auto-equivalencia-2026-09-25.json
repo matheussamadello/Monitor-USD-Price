@@ -315,7 +315,104 @@
           "role_reversal": true
         }
       ],
-      "calculadas_depois_sem_reagrupamento": 30
+      "calculadas_depois_sem_reagrupamento": 30,
+      "depois_com_fechamento_quebrado": [
+        {
+          "id": "usdt|diario|z21",
+          "limites": {
+            "inferior": 5.204679234568995,
+            "superior": 5.208520765431005
+          },
+          "score": 73,
+          "toques": 7,
+          "rejeicoes": 3,
+          "status": "ativa",
+          "pivos": [
+            5.2066
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|diario|z49",
+          "limites": {
+            "inferior": 5.218079234568995,
+            "superior": 5.221920765431005
+          },
+          "score": 72,
+          "toques": 5,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.22
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z50",
+          "limites": {
+            "inferior": 5.24149378661528,
+            "superior": 5.2451062133847195
+          },
+          "score": 27,
+          "toques": 1,
+          "rejeicoes": 1,
+          "status": "enfraquecida",
+          "pivos": [
+            5.2433
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z37",
+          "limites": {
+            "inferior": 5.190685515576845,
+            "superior": 5.196714484423154
+          },
+          "score": 63,
+          "toques": 3,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.1926,
+            5.1948
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|diario|z48",
+          "limites": {
+            "inferior": 5.152146751999969,
+            "superior": 5.162753248000031
+          },
+          "score": 98,
+          "toques": 5,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.1539,
+            5.161
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|diario|z4",
+          "limites": {
+            "inferior": 5.141879234568995,
+            "superior": 5.160620765431005
+          },
+          "score": 81,
+          "toques": 13,
+          "rejeicoes": 9,
+          "status": "ativa",
+          "pivos": [
+            5.1438,
+            5.15,
+            5.1587
+          ],
+          "role_reversal": true
+        }
+      ],
+      "calculadas_depois_com_fechamento_quebrado": 54
     },
     {
       "par": "USD/BRL",
@@ -429,25 +526,25 @@
         {
           "id": "usd|diario|z44",
           "limites": {
-            "inferior": 5.19181446662991,
-            "superior": 5.197385743941379
+            "inferior": 5.1922152133487955,
+            "superior": 5.1969849972224935
           },
-          "score": 83,
+          "score": 77,
           "toques": 9,
-          "rejeicoes": 6,
+          "rejeicoes": 3,
           "status": "candidata",
           "pivos": [
             5.1946001052856445
           ],
-          "role_reversal": true
+          "role_reversal": false
         },
         {
           "id": "usd|diario|z45",
           "limites": {
-            "inferior": 5.2130141698464625,
-            "superior": 5.228285745467258
+            "inferior": 5.213414916565348,
+            "superior": 5.227884998748372
           },
-          "score": 85,
+          "score": 86,
           "toques": 4,
           "rejeicoes": 4,
           "status": "candidata",
@@ -460,11 +557,11 @@
         {
           "id": "usd|diario|z37",
           "limites": {
-            "inferior": 5.2379141294106715,
-            "superior": 5.256785825575901
+            "inferior": 5.238314876129557,
+            "superior": 5.256385078857015
           },
-          "score": 82,
-          "toques": 4,
+          "score": 80,
+          "toques": 5,
           "rejeicoes": 4,
           "status": "candidata",
           "pivos": [
@@ -477,51 +574,50 @@
         {
           "id": "usd|diario|z4",
           "limites": {
-            "inferior": 5.166214510117459,
-            "superior": 5.182585672225071
+            "inferior": 5.167515048553874,
+            "superior": 5.182184925506185
           },
-          "score": 71,
-          "toques": 10,
-          "rejeicoes": 7,
+          "score": 73,
+          "toques": 4,
+          "rejeicoes": 3,
           "status": "ativa",
           "pivos": [
-            5.169000148773193,
             5.169899940490723,
             5.179800033569336
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|diario|z57",
+          "limites": {
+            "inferior": 5.1498801799320475,
+            "superior": 5.171385040710042
+          },
+          "score": 98,
+          "toques": 13,
+          "rejeicoes": 11,
+          "status": "candidata",
+          "pivos": [
+            5.1522650718688965,
+            5.169000148773193
           ],
           "role_reversal": true
         },
         {
           "id": "usd|diario|z24",
           "limites": {
-            "inferior": 5.127964540635037,
-            "superior": 5.155050710524631
+            "inferior": 5.1283652873539225,
+            "superior": 5.1401917843318685
           },
-          "score": 83,
-          "toques": 6,
-          "rejeicoes": 4,
+          "score": 58,
+          "toques": 5,
+          "rejeicoes": 2,
           "status": "ativa",
           "pivos": [
             5.1307501792907715,
-            5.1378068923950195,
-            5.1522650718688965
+            5.1378068923950195
           ],
-          "role_reversal": true
-        },
-        {
-          "id": "usd|diario|z57",
-          "limites": {
-            "inferior": 5.1143484555825465,
-            "superior": 5.119919732894016
-          },
-          "score": 81,
-          "toques": 8,
-          "rejeicoes": 5,
-          "status": "candidata",
-          "pivos": [
-            5.117134094238281
-          ],
-          "role_reversal": true
+          "role_reversal": false
         }
       ],
       "depois_sem_reagrupamento": [
@@ -624,7 +720,107 @@
           "role_reversal": true
         }
       ],
-      "calculadas_depois_sem_reagrupamento": 25
+      "calculadas_depois_sem_reagrupamento": 25,
+      "depois_com_fechamento_quebrado": [
+        {
+          "id": "usd|diario|z44",
+          "limites": {
+            "inferior": 5.19181446662991,
+            "superior": 5.197385743941379
+          },
+          "score": 83,
+          "toques": 9,
+          "rejeicoes": 6,
+          "status": "candidata",
+          "pivos": [
+            5.1946001052856445
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z45",
+          "limites": {
+            "inferior": 5.2130141698464625,
+            "superior": 5.228285745467258
+          },
+          "score": 85,
+          "toques": 4,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.215799808502197,
+            5.225500106811523
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|diario|z37",
+          "limites": {
+            "inferior": 5.2379141294106715,
+            "superior": 5.256785825575901
+          },
+          "score": 82,
+          "toques": 4,
+          "rejeicoes": 4,
+          "status": "candidata",
+          "pivos": [
+            5.240699768066406,
+            5.2460150718688965,
+            5.254000186920166
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|diario|z4",
+          "limites": {
+            "inferior": 5.166214510117459,
+            "superior": 5.182585672225071
+          },
+          "score": 71,
+          "toques": 10,
+          "rejeicoes": 7,
+          "status": "ativa",
+          "pivos": [
+            5.169000148773193,
+            5.169899940490723,
+            5.179800033569336
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z24",
+          "limites": {
+            "inferior": 5.127964540635037,
+            "superior": 5.155050710524631
+          },
+          "score": 83,
+          "toques": 6,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.1307501792907715,
+            5.1378068923950195,
+            5.1522650718688965
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|diario|z57",
+          "limites": {
+            "inferior": 5.1143484555825465,
+            "superior": 5.119919732894016
+          },
+          "score": 81,
+          "toques": 8,
+          "rejeicoes": 5,
+          "status": "candidata",
+          "pivos": [
+            5.117134094238281
+          ],
+          "role_reversal": true
+        }
+      ],
+      "calculadas_depois_com_fechamento_quebrado": 47
     },
     {
       "par": "USDT/BRL",
@@ -964,7 +1160,111 @@
           "role_reversal": true
         }
       ],
-      "calculadas_depois_sem_reagrupamento": 20
+      "calculadas_depois_sem_reagrupamento": 20,
+      "depois_com_fechamento_quebrado": [
+        {
+          "id": "usdt|semanal|z20",
+          "limites": {
+            "inferior": 5.213895543245104,
+            "superior": 5.236104456754896
+          },
+          "score": 82,
+          "toques": 9,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.23,
+            5.23,
+            5.22
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z41",
+          "limites": {
+            "inferior": 5.269395543245104,
+            "superior": 5.301104456754896
+          },
+          "score": 73,
+          "toques": 4,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.2755,
+            5.28,
+            5.295
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z22",
+          "limites": {
+            "inferior": 5.290895543245104,
+            "superior": 5.326104456754896
+          },
+          "score": 70,
+          "toques": 7,
+          "rejeicoes": 5,
+          "status": "enfraquecida",
+          "pivos": [
+            5.297,
+            5.32
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z2",
+          "limites": {
+            "inferior": 5.143895543245105,
+            "superior": 5.1701044567548955
+          },
+          "score": 81,
+          "toques": 10,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.15,
+            5.15,
+            5.15,
+            5.156,
+            5.164
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usdt|semanal|z16",
+          "limites": {
+            "inferior": 5.130895543245104,
+            "superior": 5.156104456754896
+          },
+          "score": 69,
+          "toques": 5,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.137,
+            5.15
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usdt|semanal|z40",
+          "limites": {
+            "inferior": 5.098895543245105,
+            "superior": 5.128104456754896
+          },
+          "score": 78,
+          "toques": 7,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.105,
+            5.122
+          ],
+          "role_reversal": true
+        }
+      ],
+      "calculadas_depois_com_fechamento_quebrado": 43
     },
     {
       "par": "USD/BRL",
@@ -1099,8 +1399,8 @@
         {
           "id": "usd|semanal|z10",
           "limites": {
-            "inferior": 5.186621261365507,
-            "superior": 5.2043375246452355
+            "inferior": 5.186701177574879,
+            "superior": 5.204257608435864
           },
           "score": 85,
           "toques": 12,
@@ -1115,8 +1415,8 @@
         {
           "id": "usd|semanal|z61",
           "limites": {
-            "inferior": 5.201562476880643,
-            "superior": 5.221237587206271
+            "inferior": 5.201642393090015,
+            "superior": 5.221157670996899
           },
           "score": 66,
           "toques": 7,
@@ -1131,12 +1431,12 @@
         {
           "id": "usd|semanal|z85",
           "limites": {
-            "inferior": 5.217662406690214,
-            "superior": 5.229537414781954
+            "inferior": 5.217742322899586,
+            "superior": 5.229457498572582
           },
           "score": 82,
-          "toques": 11,
-          "rejeicoes": 3,
+          "toques": 12,
+          "rejeicoes": 4,
           "status": "candidata",
           "pivos": [
             5.223599910736084
@@ -1146,10 +1446,10 @@
         {
           "id": "usd|semanal|z84",
           "limites": {
-            "inferior": 5.15726239753494,
-            "superior": 5.169137405626681
+            "inferior": 5.157342313744312,
+            "superior": 5.169057489417309
           },
-          "score": 66,
+          "score": 68,
           "toques": 5,
           "rejeicoes": 1,
           "status": "candidata",
@@ -1161,27 +1461,27 @@
         {
           "id": "usd|semanal|z60",
           "limites": {
-            "inferior": 5.115462375409696,
-            "superior": 5.127337383501437
+            "inferior": 5.115542291619068,
+            "superior": 5.127257467292065
           },
-          "score": 68,
-          "toques": 5,
-          "rejeicoes": 2,
+          "score": 83,
+          "toques": 6,
+          "rejeicoes": 3,
           "status": "candidata",
           "pivos": [
             5.121399879455566
           ],
-          "role_reversal": false
+          "role_reversal": true
         },
         {
           "id": "usd|semanal|z53",
           "limites": {
-            "inferior": 5.086962295301054,
-            "superior": 5.122253345720675
+            "inferior": 5.0870422115104255,
+            "superior": 5.122173429511303
           },
-          "score": 84,
-          "toques": 13,
-          "rejeicoes": 8,
+          "score": 83,
+          "toques": 15,
+          "rejeicoes": 9,
           "status": "candidata",
           "pivos": [
             5.092899799346924,
@@ -1297,12 +1597,113 @@
           "role_reversal": true
         }
       ],
-      "calculadas_depois_sem_reagrupamento": 37
+      "calculadas_depois_sem_reagrupamento": 37,
+      "depois_com_fechamento_quebrado": [
+        {
+          "id": "usd|semanal|z10",
+          "limites": {
+            "inferior": 5.186621261365507,
+            "superior": 5.2043375246452355
+          },
+          "score": 85,
+          "toques": 12,
+          "rejeicoes": 4,
+          "status": "ativa",
+          "pivos": [
+            5.192558765411377,
+            5.198400020599365
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|semanal|z61",
+          "limites": {
+            "inferior": 5.201562476880643,
+            "superior": 5.221237587206271
+          },
+          "score": 66,
+          "toques": 7,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.207499980926514,
+            5.2153000831604
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|semanal|z85",
+          "limites": {
+            "inferior": 5.217662406690214,
+            "superior": 5.229537414781954
+          },
+          "score": 82,
+          "toques": 11,
+          "rejeicoes": 3,
+          "status": "candidata",
+          "pivos": [
+            5.223599910736084
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|semanal|z84",
+          "limites": {
+            "inferior": 5.15726239753494,
+            "superior": 5.169137405626681
+          },
+          "score": 66,
+          "toques": 5,
+          "rejeicoes": 1,
+          "status": "candidata",
+          "pivos": [
+            5.1631999015808105
+          ],
+          "role_reversal": true
+        },
+        {
+          "id": "usd|semanal|z60",
+          "limites": {
+            "inferior": 5.115462375409696,
+            "superior": 5.127337383501437
+          },
+          "score": 68,
+          "toques": 5,
+          "rejeicoes": 2,
+          "status": "candidata",
+          "pivos": [
+            5.121399879455566
+          ],
+          "role_reversal": false
+        },
+        {
+          "id": "usd|semanal|z53",
+          "limites": {
+            "inferior": 5.086962295301054,
+            "superior": 5.122253345720675
+          },
+          "score": 84,
+          "toques": 13,
+          "rejeicoes": 8,
+          "status": "candidata",
+          "pivos": [
+            5.092899799346924,
+            5.10290002822876,
+            5.10890007019043,
+            5.1149001121521,
+            5.115799903869629,
+            5.116315841674805
+          ],
+          "role_reversal": true
+        }
+      ],
+      "calculadas_depois_com_fechamento_quebrado": 65
     }
   ],
   "gatilhos_antes": [],
   "gatilhos_depois": [],
   "retries_estaveis": 3,
   "base_commit": "effb3620858611a0df9aa577fb7b473165305ca5",
-  "reagrupamento_de_restos": "2026-09-25: o que sobra do nucleo de uma nuvem sem vao limpo passou a ser reagrupado em vez de descartado. depois/calculadas_depois refletem isso; os valores anteriores ficam em *_sem_reagrupamento. antes e gatilhos inalterados."
+  "reagrupamento_de_restos": "2026-09-25: o que sobra do nucleo de uma nuvem sem vao limpo passou a ser reagrupado em vez de descartado. depois/calculadas_depois refletem isso; os valores anteriores ficam em *_sem_reagrupamento. antes e gatilhos inalterados.",
+  "fechamento_reparado": "2026-09-26: o fechamento diario e semanal do Yahoo para USDBRL=X vem quebrado (praticamente igual a abertura). O monitor passou a montar a vela das horas; esta captura nao tem as horas, entao o USD/BRL sai da serie longa com o fechamento reparado pela abertura seguinte. depois/calculadas_depois refletem isso; os anteriores ficam em *_com_fechamento_quebrado. USDT/BRL, antes e gatilhos inalterados."
 }
