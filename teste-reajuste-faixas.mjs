@@ -11,7 +11,12 @@ const resumo=x=>{const {episodios,role_reversals,...rest}=x;return {...rest,nume
 let alteradas=0;
 for(const r of ref.faixas_manuais){
  const cfg=PARES_TESTE.find(c=>c.key===r.key);
- assert.deepEqual(cfg.niveis.faixas,r.depois);
+ // O reajuste continua valendo faixa a faixa. Promocoes posteriores do
+ // radar ACRESCENTAM faixas e nao podem mexer nas reajustadas, entao a
+ // correspondencia com o audit e' por label, nao pela lista inteira.
+ const porLabel=new Map(cfg.niveis.faixas.map(f=>[f[2],f]));
+ for(const esperada of r.depois)
+  assert.deepEqual(porLabel.get(esperada[2]),esperada,`faixa reajustada ${esperada[2]} intacta`);
  assert.equal(r.antes.length,r.depois.length,'nao multiplica faixas');
  const d=input.series[r.key+'|diario'];
  const p=acharPivos(d.highs,d.lows,5,5);

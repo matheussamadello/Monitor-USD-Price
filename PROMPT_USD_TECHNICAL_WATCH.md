@@ -196,6 +196,8 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 5,274–5,2858 — `faixa_5_274_5_2858`;
 - R$ 5,191–5,1965 — `faixa_5_191_5_1965`;
 - R$ 5,1525–5,162 — `regiao_suporte_5_1525_5_162`;
+- R$ 5,12–5,137 — `faixa_5_12_5_137`;
+- R$ 5,0725–5,0896 — `faixa_5_0725_5_0896`;
 - resistência pontual de referência em torno de R$ 5,31;
 - suporte pontual de referência em torno de R$ 5,15.
 

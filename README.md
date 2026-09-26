@@ -478,8 +478,17 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 | 5,274–5,2858 | `faixa_5_274_5_2858` | 5,2755, 5,28 |
 | 5,191–5,1965 | `faixa_5_191_5_1965` | 5,1926, 5,1948 |
 | 5,1525–5,162 | `regiao_suporte_5_1525_5_162` | 5,1539, 5,1587, 5,161 |
+| 5,12–5,137 | `faixa_5_12_5_137` | 5,122, 5,135 (e 5,123, 5,137 de 2024) |
+| 5,0725–5,0896 | `faixa_5_0725_5_0896` | 5,0745, 5,0768, 5,0813, 5,0852, 5,0856, 5,0876 (e 5,079 de 2024) |
 
 Resistência pontual: **5,31**. Suporte pontual: **5,15**.
+
+As duas últimas foram **promovidas em 2026-09-26** a partir do radar, com os limites estruturais das zonas arredondados para fora na quarta casa:
+
+- **5,0725–5,0896** (zona `usdt|diario|z3`): score 94, 10 toques, 9 rejeições, confirmada no diário e no semanal, sem penalidade. Dois topos de maio viraram suporte em quatro fundos de julho a setembro.
+- **5,12–5,137** (zona `usdt|diario|z65`): score 78, 10 toques, 6 rejeições, confirmada nos dois timeframes, com a penalidade de ter sido rompida duas vezes sem reação.
+
+Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima. O suporte pontual de 5,15 fica no vão entre elas, fora de qualquer faixa, e a máquina de rompimento/reteste dele não muda. A terceira região que o radar apontava no mesmo dia, 5,2181–5,2219 (6 toques e 0,0038 de largura, nascida da divisão de zonas em 2026-09-24), ficou em observação.
 
 ### USD/BRL
 

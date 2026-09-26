@@ -541,6 +541,10 @@ const NIVEIS_USDT = {
     [5.274, 5.2858, "faixa_5_274_5_2858"],
     [5.191, 5.1965, "faixa_5_191_5_1965"],
     [5.1525, 5.162, "regiao_suporte_5_1525_5_162"],
+    // Promovidas em 2026-09-26 pelo radar: limites ESTRUTURAIS das zonas
+    // usdt|diario|z65 e usdt|diario|z3, arredondados para fora na 4a casa.
+    [5.12, 5.137, "faixa_5_12_5_137"],
+    [5.0725, 5.0896, "faixa_5_0725_5_0896"],
   ],
   resistencia: 5.31,
   resistenciaLabel: "5_31",
