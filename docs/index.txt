@@ -1,4 +1,4 @@
-timestamp: 2026-09-26 05:25 UTC
+timestamp: 2026-09-26 07:50 UTC
 fonte: USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=yahoo/query1
 fontes_em_cascata: USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)
 indicadores: RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial
@@ -10,13 +10,13 @@ nota: a linha "eventos:" existe so no bloco diario; no semanal ela se chama "eve
 
 USDT/BRL
 timeframe: diario
-preco_atual: 5.1993
+preco_atual: 5.1992
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-26
 candle_atual_open: 5.1968
 candle_atual_high: 5.1993
 candle_atual_low: 5.1968
-candle_atual_close_provisorio: 5.1993
+candle_atual_close_provisorio: 5.1992
 candle_atual_var_pct_desde_abertura: 0.05
 ema89: 5.1563
 posicao_vs_ema89: acima
@@ -41,7 +41,7 @@ atr14_pct: 0.73
 
 # PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
 # fechamento diario. NAO sao a referencia principal.
-rsi_provisorio: 55.00
+rsi_provisorio: 54.99
 di_plus_provisorio: 21.24
 di_minus_provisorio: 22.01
 adx_provisorio: 10.14
@@ -68,16 +68,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 5 de 5
 zonas_candidatas_a_faixa: 5.0726-5.0895 score=94 toques=10 (abaixo do preco) | 5.1201-5.1369 score=78 toques=10 (abaixo do preco) | 5.2181-5.2219 score=77 toques=6 (acima do preco)
 
-fracao_periodo_decorrida: 0.226
+fracao_periodo_decorrida: 0.327
 volume_parcial: sim
-volume_atual: 2870859.1000
+volume_atual: 3457957.3000
 volume_ultima_fechada: 94997875.5000
 volume_media20: 60318415.5850
 volume_vs_media_pct: 57.49
 volume_referencia: ultima_vela_fechada
 volume_classificacao: expansao_forte
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 5652
+trades_vela_atual: 6513
 
 estrutura_preco: LH_LL
 estrutura_tendencia: baixa
@@ -96,10 +96,10 @@ sombra_sup_pct_range: 28.18
 sombra_inf_pct_range: 39.09
 sombra_sup_vs_corpo: 0.86
 sombra_inf_vs_corpo: 1.19
-candle_atual_corpo_pct_range: 100.00
-candle_atual_sombra_sup_pct_range: 0.00
+candle_atual_corpo_pct_range: 96.00
+candle_atual_sombra_sup_pct_range: 4.00
 candle_atual_sombra_inf_pct_range: 0.00
-candle_atual_sombra_sup_vs_corpo: 0.00
+candle_atual_sombra_sup_vs_corpo: 0.04
 candle_atual_sombra_inf_vs_corpo: 0.00
 
 eventos: nenhum cruzamento nesta vela
@@ -243,13 +243,13 @@ deterioracao_tendencia: estrutura_de_baixa
 
 USDT/BRL
 timeframe: semanal
-preco_atual: 5.1993
+preco_atual: 5.1992
 vela_atual_em_formacao: sim
 candle_atual_data: 2026-09-21
 candle_atual_open: 5.1589
 candle_atual_high: 5.2169
 candle_atual_low: 5.1044
-candle_atual_close_provisorio: 5.1993
+candle_atual_close_provisorio: 5.1992
 candle_atual_var_pct_desde_abertura: 0.78
 ema89: 5.3160
 posicao_vs_ema89: abaixo
@@ -281,7 +281,7 @@ atr14_pct: 2.37
 
 # PROVISORIOS: incluem a vela em formacao e PODEM MUDAR ate o
 # fechamento semanal. NAO sao a referencia principal.
-rsi_provisorio: 51.63
+rsi_provisorio: 51.62
 di_plus_provisorio: 16.86
 di_minus_provisorio: 14.14
 adx_provisorio: 13.01
@@ -303,16 +303,16 @@ niveis_manuais_alinhamento: alinhado
 niveis_manuais_faixas_corroboradas: 5 de 5
 zonas_candidatas_a_faixa: nenhuma
 
-fracao_periodo_decorrida: 0.747
+fracao_periodo_decorrida: 0.761
 volume_parcial: sim
-volume_atual: 413407787.7000
+volume_atual: 413994885.9000
 volume_ultima_fechada: 391812567.0000
 volume_media20: 417082511.0100
 volume_vs_media_pct: -6.06
 volume_referencia: ultima_vela_fechada
 volume_classificacao: normal
 volume_tendencia_3_fechadas: irregular
-trades_vela_atual: 233260
+trades_vela_atual: 234121
 volume_semana_dias_fechados: 5
 volume_semana_soma_dias_fechados: 410536928.6000
 volume_semanas_anteriores_mesmos_dias_media: 341189628.1625
@@ -336,8 +336,8 @@ sombra_sup_pct_range: 52.17
 sombra_inf_pct_range: 26.78
 sombra_sup_vs_corpo: 2.48
 sombra_inf_vs_corpo: 1.27
-candle_atual_corpo_pct_range: 35.91
-candle_atual_sombra_sup_pct_range: 15.64
+candle_atual_corpo_pct_range: 35.82
+candle_atual_sombra_sup_pct_range: 15.73
 candle_atual_sombra_inf_pct_range: 48.44
 candle_atual_sombra_sup_vs_corpo: 0.44
 candle_atual_sombra_inf_vs_corpo: 1.35
@@ -495,7 +495,7 @@ deterioracao_tendencia: nenhuma
 trilho_disponivel: sim
 trilho_par: USDT/BRL
 trilho_fonte: binance
-trilho_preco: 5.1993
+trilho_preco: 5.1992
 trilho_dia: 2026-09-26
 trilho_premio_pct: 0.24
 trilho_usd_referencia: 5.1866
