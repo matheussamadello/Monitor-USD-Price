@@ -24,7 +24,7 @@ import {
   readPair, PARES_TESTE, TIMEFRAMES_TESTE, atrSeries, acharPivos,
   detectarDivergencias, situacaoNiveis, casarZonas, atualizarCiclo,
   zonasCandidatas, rsiSeries, alinhamentoNiveis, anatomia, compradoraForte,
-  vendedoraForte, contextoAntesDoTrio, suavizarCentro,
+  vendedoraForte, contextoAntesDoTrio, suavizarCentro, zonaJaRepresentadaPorFaixaParaRadar,
 } from "./monitor.mjs";
 
 let falhas = 0, checagens = 0;
@@ -283,6 +283,87 @@ console.log("\n== radar: so regiao muito marcada e longe das faixas ==");
   }], niveis, 1000, "diario");
   ok(comLimites.length === 1 && comLimites[0].inferior === 900 && comLimites[0].superior === 1100,
     `o radar publica os limites estruturais (${JSON.stringify(comLimites[0] && [comLimites[0].inferior, comLimites[0].superior])})`);
+}
+
+console.log("\n== radar: zona colada numa faixa ja esta representada ==");
+{
+  // Coberta pela faixa OU colada nela (vao < 0,2 ATR diario, o mesmo vao
+  // que o agrupador exige para separar duas concentracoes de pivos).
+  const ATR = 100;
+  const z = (lo, hi, extra = {}) => ({
+    score: 90, numero_toques: 8, status: "ativa",
+    limites_estruturais: { inferior: lo, superior: hi }, ...extra,
+  });
+  const niveis = { faixas: [[1000, 1040, "f"]] };
+  const radar = (zs, atr = ATR, tf = "diario") => zonasCandidatas(zs, niveis, 900, tf, atr);
+
+  // 1. Fortemente sobreposta: fora, com e sem ATR.
+  ok(radar([z(1005, 1035)]).length === 0 && radar([z(1005, 1035)], null).length === 0,
+    "zona fortemente sobreposta a uma faixa nao entra no radar");
+  // 2. Sem sobreposicao, praticamente adjacente (vao de 0,05 ATR): fora.
+  ok(radar([z(960, 995)]).length === 0, "zona sem sobreposicao mas colada na faixa (0,05 ATR) nao entra");
+  ok(radar([z(1030, 1080)]).length === 0,
+    "sobreposicao parcial abaixo de 35% tambem e' colada: nao entra");
+  ok(radar([z(960, 995)], null).length === 1,
+    "sem ATR so a sobreposicao vale: na duvida, o radar mostra");
+  // 3. O caso real do BTC: 75.873,93-76.122,27 a 27,73 de 76.150-76.700.
+  const btc = zonasCandidatas([z(75873.93, 76122.27, { score: 82, numero_toques: 6 })],
+    { faixas: [[76150, 76700, "faixa_76150_76700"]] }, 84000, "diario", 2483.49);
+  ok(btc.length === 0, "75.873,93-76.122,27 colada em 76.150-76.700 (0,011 ATR) nao e' recomendada");
+  // 4. Claramente separada: continua.
+  ok(radar([z(700, 740)]).length === 1, "zona a 2,6 ATR da faixa continua no radar");
+  // 5. Distancia material, mesmo dentro de 1 ATR: continua.
+  ok(radar([z(900, 950)]).length === 1, "zona a 0,5 ATR da faixa (dentro de 1 ATR) continua no radar");
+  // Borda do criterio: 0,2 ATR exato ja e' vao real; 0,19 nao.
+  ok(radar([z(960, 980)]).length === 1, "vao de exatamente 0,2 ATR: regiao distinta, entra");
+  ok(radar([z(960, 981)]).length === 0, "vao de 0,19 ATR: colada, nao entra");
+  ok(zonaJaRepresentadaPorFaixaParaRadar({ inferior: 1059, superior: 1100 }, [1000, 1040], ATR) === true &&
+     zonaJaRepresentadaPorFaixaParaRadar({ inferior: 1060, superior: 1100 }, [1000, 1040], ATR) === false,
+    "o criterio vale igual acima da faixa");
+  // 7-10. Os filtros de sempre continuam, com ATR.
+  ok(radar([z(700, 740, { score: 69 })]).length === 0, "score abaixo de 70 nao entra");
+  ok(radar([z(700, 740, { numero_toques: 4 })]).length === 0, "menos de 5 toques nao entra");
+  for (const status of ["candidata", "enfraquecida", "remover"])
+    ok(radar([z(700, 740, { status })]).length === 0, `status ${status} nao entra`);
+  ok(radar([z(700, 740)], ATR, "semanal").length === 0, "no semanal o radar continua sem rodar");
+  // 11. Alinhamento e confluencia NAO mudam de semantica: a zona colada
+  // que o radar suprime continua sem corroborar a faixa.
+  const colada = { limites_operacionais: { inferior: 960, superior: 995 } };
+  ok(alinhamentoNiveis(niveis, [colada]).corroboradas === 0,
+    "zona colada, sem sobreposicao, continua nao corroborando a faixa no alinhamento");
+  ok(alinhamentoNiveis(niveis, [{ limites_operacionais: { inferior: 1005, superior: 1035 } }]).corroboradas === 1,
+    "e a sobreposta continua corroborando");
+
+  // Ponta a ponta, pelo relatorio: o ATR diario tem de chegar ao radar.
+  // Serie de semente fixa que produz uma candidata (93,77-94,70, ATR ~2,6).
+  let sem = 2;
+  const rnd = () => ((sem = (sem * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const tf = TIMEFRAMES_TESTE.find((t) => t.key === "diario");
+  const N = 320, o = [], h = [], l = [], c = [];
+  let p = 100;
+  for (let k = 0; k < N; k++) {
+    const ab = p; p *= 1 + (rnd() - 0.5) * 0.05; if (rnd() < 0.04) p = 95 + rnd() * 10;
+    o.push(ab); c.push(p); h.push(Math.max(ab, p) * (1 + rnd() * 0.02)); l.push(Math.min(ab, p) * (1 - rnd() * 0.02));
+  }
+  const t0 = 1699920000, times = Array.from({ length: N }, (_, i) => t0 + i * 86400);
+  const fatia = (n) => ({ temVolume: true, emFormacao: true, times: times.slice(0, n), opens: o.slice(0, n),
+    highs: h.slice(0, n), lows: l.slice(0, n), closes: c.slice(0, n), volumes: Array(n).fill(100),
+    live: { time: t0 + n * 86400, open: c[n - 1], high: c[n - 1], low: c[n - 1], close: c[n - 1], volume: 1, trades: 1 } });
+  const linhaRadar = (faixas) => {
+    const cfg = { ...PARES_TESTE[0], niveis: { ...PARES_TESTE[0].niveis, faixas } };
+    let ant = [], prox = 1, r;
+    for (let n = N - 8; n <= N; n++) {
+      r = readPair(cfg, fatia(n), tf, { zonasAnteriores: ant, proximoIdZona: prox });
+      ant = r.zonasEstadoPar; prox = r.proximoIdZona;
+    }
+    return (r.texto.match(/^zonas_candidatas_a_faixa: (.*)$/m) || [])[1];
+  };
+  const livre = linhaRadar([]);
+  ok(livre && livre !== "nenhuma" && !livre.includes("|"), `a serie tem uma candidata sem faixas (${livre})`);
+  ok(linhaRadar([[94.75, 96, "colada"]]) === "nenhuma",
+    "no relatorio, faixa colada 0,05 acima da candidata a tira do radar");
+  ok(linhaRadar([[96.5, 97, "longe"]]) === livre,
+    "e faixa a 0,7 ATR nao mexe nela");
 }
 
 // ------------------------------------------------------------

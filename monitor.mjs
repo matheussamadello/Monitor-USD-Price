@@ -4021,7 +4021,7 @@ export function readPair(cfg, d, tf, opts = {}) {
   // Conjunto INTEIRO de zonas vivas, nao o recorte publicado: ver o
   // comentario em calcularZonas.
   const candidatas = zonasCandidatas(
-    zonasRes.zonasVivas || zonasAutomaticas, cfg.niveis, closes[i], tf.key
+    zonasRes.zonasVivas || zonasAutomaticas, cfg.niveis, closes[i], tf.key, atr[i]
   );
   L.push(
     `zonas_candidatas_a_faixa: ${
@@ -5074,7 +5074,39 @@ const ADX_FORTE = 25;
 const CANDIDATA_SCORE_MIN = 70;
 const CANDIDATA_TOQUES_MIN = 5;
 
-export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
+// Uma zona ja esta REPRESENTADA por uma faixa manual, para fins de
+// promocao, quando a faixa a cobre (a sobreposicao de sempre) ou quando
+// as duas estao coladas: o vao entre as bordas e' menor que
+// CLUSTER_GAP_MIN_ATR (0,2) ATR diario, sobreposicao parcial incluida.
+//
+// A pergunta aqui e' outra que a da confluencia e a do alinhamento. La
+// se quer saber se ha sobreposicao suficiente para chamar de confluencia
+// tecnica; aqui, se promover a zona criaria uma faixa NOVA ou so um
+// fragmento encostado numa que ja existe. Em 2026-09-26 o radar sugeriu
+// 75.874-76.122 no BTC, a 27,73 de 76.150-76.700 (0,011 ATR): o pivo de
+// 75.998,1 ja tinha sido avaliado e deixado de fora na recalibracao.
+//
+// 0,2 ATR nao e' numero novo: e' o vao que o proprio agrupador exige
+// para separar uma nuvem de pivos em duas zonas (dividirCluster). Uma
+// zona mais perto que isso de uma faixa nao tem a separacao que o
+// monitor exige para chamar duas concentracoes de distintas. Acima
+// dele, duas regioes seguem distintas mesmo dentro de 1 ATR uma da
+// outra. Medido nos cinco pares no dia: suprime a de 76k (0,011), mantem
+// a de 78k (0,385 ATR ate 79.300).
+//
+// Sem ATR, so a sobreposicao vale -- na duvida, o radar mostra.
+// Historico de recalibracao nao entra: a configuracao ja e' o registro da
+// decisao, e a geometria dela vale sempre, nao so logo depois da revisao.
+export function zonaJaRepresentadaPorFaixaParaRadar(L, faixa, atr) {
+  const F = { inferior: faixa[0], superior: faixa[1] };
+  if (sobreposicaoFrac(F, L) >= CONFLUENCIA_SOBREPOSICAO_MIN) return true;
+  if (!(atr > 0)) return false;
+  // Negativo quando se sobrepoem: colada, portanto.
+  const vao = Math.max(L.inferior, F.inferior) - Math.min(L.superior, F.superior);
+  return vao < CLUSTER_GAP_MIN_ATR * atr;
+}
+
+export function zonasCandidatas(zonas, niveis, precoRef, tfKey, atr = null) {
   // SO no diario. No semanal a estrutura fica num patamar diferente e um
   // unico conjunto de faixas serve aos dois timeframes: promover zona
   // semanal quebraria o alinhamento diario, que e' o operacional.
@@ -5113,12 +5145,10 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey) {
     // cinco pares, 7 delas enfraquecidas. Com este filtro, 2 -- as duas
     // ativas, que eram exatamente as que o corte de exibicao escondia.
     if (z.status && z.status !== "ativa") continue;
-    const coberta = faixas.some(
-      ([lo, hi]) =>
-        sobreposicaoFrac({ inferior: lo, superior: hi }, L) >=
-        CONFLUENCIA_SOBREPOSICAO_MIN
-    );
-    if (coberta) continue;
+    // Coberta OU colada numa faixa: promover so fragmentaria a
+    // configuracao. Ver zonaJaRepresentadaPorFaixaParaRadar.
+    const representada = faixas.some((f) => zonaJaRepresentadaPorFaixaParaRadar(L, f, atr));
+    if (representada) continue;
     out.push({
       inferior: L.inferior,
       superior: L.superior,
