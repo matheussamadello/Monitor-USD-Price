@@ -145,6 +145,13 @@ function respostaYahoo(rows, meta = {}) {
       open: rows.map((r) => r.open), high: rows.map((r) => r.high),
       low: rows.map((r) => r.low), close: rows.map((r) => r.close) }] } }] } });
 }
+// Duas horas por vela diaria que agregam exatamente de volta nela.
+function horasDe(rows) {
+  return rows.flatMap((r) => [
+    { time: r.time + 3600, open: r.open, high: r.high, low: r.low, close: r.open },
+    { time: r.time + 20 * 3600, open: r.open, high: r.high, low: r.low, close: r.close },
+  ]);
+}
 function respostaBinance(rows, passo) {
   return JSON.stringify(rows.map((r) => [r.time * 1000, r.open, r.high, r.low, r.close,
     r.volume, (r.time + passo) * 1000 - 1, 0, 100]));
@@ -472,6 +479,9 @@ await teste("USD restaurado nao cria reteste ao atravessar o fim de semana", asy
     return async (url) => {
       if (url.includes("yahoo") && url.includes("interval=1d"))
         return { ok: true, text: async () => respostaYahoo([...rows, falsa]) };
+      // As horas da mesma serie, inclusive a cotacao falsa de domingo.
+      if (url.includes("yahoo") && url.includes("interval=1h"))
+        return { ok: true, text: async () => respostaYahoo(horasDe([...rows, falsa])) };
       return outras(url);
     };
   };

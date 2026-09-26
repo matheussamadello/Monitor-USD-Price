@@ -124,6 +124,12 @@ function fonteSintetica(extras, precoVivo = 100) {
   const agora = (semanaViva + 2 * dia + dia / 2) * 1000;
   const fetch = async (url) => {
     const u = new URL(url), iv = u.searchParams.get("interval");
+    // As horas do cambio ficam fora: a mesma consulta de 1h serve aos dois
+    // timeframes, e aqui diario e semanal sao series independentes de
+    // proposito. Sem elas o monitor usa a serie longa com o fechamento
+    // reparado pela abertura seguinte -- e nesta serie a abertura de cada
+    // vela ja e' o fechamento da anterior, entao o reparo nao muda nada.
+    if (iv === "1h") return { ok: false, status: 404 };
     const semanal = ["10080", "1w", "1wk"].includes(iv);
     const passo = semanal ? semana : dia;
     const closes = semanal ? [...Array(99).fill(100), 99.8, ...extras, precoVivo] : [...Array(110).fill(100), precoVivo];

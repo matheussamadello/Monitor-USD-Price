@@ -109,6 +109,14 @@ function respYahoo(rows) {
     },
   });
 }
+// Duas horas por dia que agregam de volta na vela diaria: a primeira
+// fica na abertura, a segunda fecha. Mesma maxima e minima nas duas.
+function horasDe(dias) {
+  return dias.flatMap((r) => [
+    { t: r.t + 3600, o: r.o, h: r.h, l: r.l, c: r.o },
+    { t: r.t + 20 * 3600, o: r.o, h: r.h, l: r.l, c: r.c },
+  ]);
+}
 // hostsFora: quais hosts do Yahoo estao derrubados nesta simulacao.
 // Mexe SO na ultima vela, a que esta em formacao. Tudo que ja fechou
 // continua identico entre execucoes.
@@ -123,6 +131,9 @@ function soAVivaMudou(rows, fator) {
 
 function fakeFetch({
   hostsFora = [],
+  // Derruba so a consulta de 1 hora do Yahoo: a vela sai da serie longa
+  // reparada, que e' o caminho de degradacao.
+  horasFora = false,
   series = porTf,
   seriesUsdt = usdtPorTf,
   usdtFora = [],
@@ -153,7 +164,12 @@ function fakeFetch({
       return { ok: false, status: host === "query1" ? 429 : 502, text: async () => "" };
     }
     const iv = url.match(/interval=([^&]+)/)[1];
-    return { ok: true, text: async () => respYahoo(soAVivaMudou(series[iv], mexerNaViva)) };
+    if (iv === "1h" && horasFora) return { ok: false, status: 503, text: async () => "" };
+    // As horas saem da propria serie diaria, e somam exatamente de volta
+    // a ela: o monitor monta a vela das horas (ver parseYahooHibrido).
+    const rows = iv === "1h" ? horasDe(soAVivaMudou(series["1d"], mexerNaViva))
+      : soAVivaMudou(series[iv], mexerNaViva);
+    return { ok: true, text: async () => respYahoo(rows) };
   };
   f.chamadas = chamadas;
   return f;
@@ -325,7 +341,11 @@ await cenario("semana em pedacos (Yahoo semanal)", {
   // semana corrente saia como fechada com o fechamento de quarta, e
   // nascia uma "semana" de um dia. O filtro de amplitude zero nao pega,
   // porque o pedaco tem amplitude.
+  // Com as horas, a semana recente sai delas e os pedacos nem entram.
+  // Sem as horas, a serie semanal e' a fonte da vela viva -- e' ai que os
+  // pedacos ainda precisam se fundir numa semana so.
   series: { "1d": diario, "1wk": emPedacos(semanal) },
+  horasFora: true,
 }, (r) => {
   const ult = semanal[semanal.length - 1];
   const seg = inicioSemana(ult.t);

@@ -17,98 +17,32 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
-      - name: Medir o defeito e testar reparos
+      - name: Comparar o codigo atual com o novo (USD/BRL das horas)
         run: |
+          git fetch -q origin main
+          mkdir -p /tmp/velho && git show origin/main:monitor.mjs > /tmp/velho/monitor.mjs && git show origin/main:ema89-semanal.mjs > /tmp/velho/ema89-semanal.mjs
           cat > /tmp/diag.mjs <<'EOF'
-          const UA = { "User-Agent": "Mozilla/5.0" };
-          const f4 = (x) => (typeof x === "number" ? x.toFixed(4) : String(x));
-          const dia = (t) => new Date(t * 1000).toISOString().slice(0, 10);
-          const med = (a) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : NaN; };
-          const pct = (a, q) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.floor(b.length * q)] : NaN; };
-          async function yahoo(q) {
-            const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/USDBRL%3DX?${q}`, { headers: UA });
-            const j = await r.json();
-            const x = j.chart.result[0], qq = x.indicators.quote[0], off = x.meta.gmtoffset || 0;
-            return x.timestamp.map((t, i) => ({ t, d: dia(t + off), o: qq.open[i], h: qq.high[i], l: qq.low[i], c: qq.close[i] }))
-              .filter((v) => [v.o, v.h, v.l, v.c].every((y) => typeof y === "number"));
+          import { readFileSync } from "node:fs";
+          const novo = await import(process.cwd() + "/monitor.mjs");
+          const velho = await import("/tmp/velho/monitor.mjs");
+          const estado = JSON.parse(readFileSync("docs/estado.json", "utf8"));
+          const rn = await novo.build(fetch, structuredClone(estado));
+          const rv = await velho.build(fetch, structuredClone(estado));
+          const bloco = (t, sec, par) => { const s = (t.split("========== " + sec + " ==========")[1] || "").split("\n==========")[0];
+            const i = s.indexOf("\n" + par + "\n"); if (i < 0) return []; const r = s.slice(i + 1); const j = r.slice(1).search(/\n[A-Z0-9]+\/[A-Z]+\n/);
+            return (j < 0 ? r : r.slice(0, j + 1)).split("\n"); };
+          for (const sec of ["GRAFICO DIARIO", "GRAFICO SEMANAL"]) for (const par of ["USD/BRL", "USDT/BRL"]) {
+            const a = bloco(rv.texto, sec, par), b = bloco(rn.texto, sec, par);
+            const campo = (l) => l.split(/[:=]/)[0];
+            const mapa = (ls) => new Map(ls.filter((l) => l.includes(":")).map((l) => [l.split(":")[0], l]));
+            const ma = mapa(a), mb = mapa(b); let dif = 0;
+            console.log(`\n===== ${sec} ${par}: ${a.length} -> ${b.length} linhas`);
+            for (const [k, v] of mb) { const w = ma.get(k); if (w !== v) { dif++; if (par === "USD/BRL" || !/preco|candle_atual|provisorio|dist|var_pct|volume_atual|fracao/.test(k)) console.log(`  VELHO ${w ?? "(ausente)"}\n  NOVO  ${v}`); } }
+            for (const [k, v] of ma) if (!mb.has(k)) console.log(`  SAIU  ${v}`);
+            console.log(`  ${dif} campos diferentes`);
           }
-          // 1. Diario 5y: desde quando o fechamento e' igual a abertura?
-          const d5 = await yahoo("interval=1d&range=10y");
-          const porAno = new Map();
-          for (const v of d5) {
-            const ano = v.d.slice(0, 4), amp = v.h - v.l;
-            if (!(amp > 0)) continue;
-            const a = porAno.get(ano) || { n: 0, planos: 0 };
-            a.n++; if (Math.abs(v.c - v.o) / amp < 0.05) a.planos++;
-            porAno.set(ano, a);
-          }
-          console.log("== diario 10y: fracao de velas com |c-o| < 5% da amplitude, por ano");
-          for (const [ano, a] of porAno) console.log(`${ano}: ${a.planos}/${a.n} = ${(100 * a.planos / a.n).toFixed(0)}%`);
-          // Mes a mes nos ultimos 3 anos, para achar a virada.
-          const porMes = new Map();
-          for (const v of d5.filter((v) => v.d >= "2023-01")) {
-            const m = v.d.slice(0, 7), amp = v.h - v.l; if (!(amp > 0)) continue;
-            const a = porMes.get(m) || { n: 0, planos: 0 }; a.n++; if (Math.abs(v.c - v.o) / amp < 0.05) a.planos++; porMes.set(m, a);
-          }
-          console.log("por mes:", [...porMes].map(([m, a]) => `${m}:${Math.round(100 * a.planos / a.n)}%`).join(" "));
-
-          // 2. Horario: quanto historico existe, e o dia reconstruido.
-          const h = await yahoo("interval=1h&range=730d");
-          const dias = new Map();
-          for (const v of h) {
-            const k = dia(v.t); const a = dias.get(k);
-            if (!a) dias.set(k, { d: k, o: v.o, h: v.h, l: v.l, c: v.c, n: 1 });
-            else { a.h = Math.max(a.h, v.h); a.l = Math.min(a.l, v.l); a.c = v.c; a.n++; }
-          }
-          const hd = [...dias.values()].filter((a) => ![0, 6].includes(new Date(a.d + "T00:00Z").getUTCDay()));
-          console.log(`\n== horario 730d: ${h.length} velas, ${hd.length} dias uteis, de ${hd[0]?.d} a ${hd.at(-1)?.d}`);
-          console.log("horas por dia: p10", pct(hd.map((a) => a.n), 0.1), "mediana", med(hd.map((a) => a.n)));
-          const continuidade = hd.slice(1).map((a, i) => Math.abs(a.o - hd[i].c));
-          console.log("horario |abertura - fechamento anterior|: mediana", f4(med(continuidade)), "p90", f4(pct(continuidade, 0.9)));
-
-          // 3. Comparar, dia a dia, o diario do Yahoo com o reconstruido e com o reparo c(N) := o(N+1).
-          const dmap = new Map(d5.map((v) => [v.d, v]));
-          const erroC = [], erroReparo = [], erroO = [], erroH = [], erroL = [];
-          const dd = d5.filter((v) => dias.has(v.d));
-          for (let i = 0; i < dd.length; i++) {
-            const y = dd[i], r = dias.get(y.d);
-            erroC.push(Math.abs(y.c - r.c)); erroO.push(Math.abs(y.o - r.o));
-            erroH.push(r.h - y.h); erroL.push(y.l - r.l);
-            const prox = d5[d5.indexOf(y) + 1];
-            if (prox) erroReparo.push(Math.abs(prox.o - r.c));
-          }
-          console.log(`\n== diario Yahoo x dia reconstruido do horario (${dd.length} dias)`);
-          console.log("|fechamento| mediana", f4(med(erroC)), "p90", f4(pct(erroC, 0.9)));
-          console.log("|abertura|   mediana", f4(med(erroO)), "p90", f4(pct(erroO, 0.9)));
-          console.log("reparo o(N+1) como fechamento: mediana", f4(med(erroReparo)), "p90", f4(pct(erroReparo, 0.9)));
-          console.log("maxima do horario acima da diaria: mediana", f4(med(erroH)), "p90", f4(pct(erroH, 0.9)), "min", f4(Math.min(...erroH)));
-          console.log("minima do horario abaixo da diaria: mediana", f4(med(erroL)), "p90", f4(pct(erroL, 0.9)), "min", f4(Math.min(...erroL)));
-          console.log("ultimos 12 dias (yahoo | reconstruido):");
-          for (const y of dd.slice(-12)) { const r = dias.get(y.d);
-            console.log(`  ${y.d} Y o=${f4(y.o)} h=${f4(y.h)} l=${f4(y.l)} c=${f4(y.c)} | H o=${f4(r.o)} h=${f4(r.h)} l=${f4(r.l)} c=${f4(r.c)} n=${r.n}`); }
-
-          // 4. Semanal do Yahoo: tem o mesmo defeito?
-          const w = await yahoo("interval=1wk&range=2y");
-          console.log("\n== semanal 2y (ultimas 10): corpo/amplitude");
-          for (const v of w.slice(-10)) console.log(`  ${v.d} o=${f4(v.o)} h=${f4(v.h)} l=${f4(v.l)} c=${f4(v.c)} corpo/amp=${((Math.abs(v.c - v.o)) / (v.h - v.l)).toFixed(2)}`);
-          const wp = w.filter((v) => v.h > v.l); console.log("semanal: fracao com |c-o|<5% da amplitude:", (100 * wp.filter((v) => Math.abs(v.c - v.o) / (v.h - v.l) < 0.05).length / wp.length).toFixed(0) + "%");
-          const cont = w.slice(1).map((v, i) => Math.abs(v.o - w[i].c));
-          console.log("semanal |abertura - fechamento anterior|: mediana", f4(med(cont)), "p90", f4(pct(cont, 0.9)));
-
-          // 5. USDT/BRL (espelho que o monitor usa) x reconstruido: spread tipico.
-          const b = await fetch("https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=40");
-          console.log(`\n== USDT/BRL data-api.binance.vision: HTTP ${b.status}`);
-          if (b.ok) { const k = await b.json(); const sp = [];
-            for (const x of k) { const d = dia(x[0] / 1000), r = dias.get(d), y = dmap.get(d);
-              if (!r) continue; sp.push(+x[4] - r.c);
-              console.log(`  ${d} USDT c=${f4(+x[4])} | USD reconstruido c=${f4(r.c)} | USD Yahoo diario c=${f4(y?.c)}`); }
-            console.log("spread USDT - USD reconstruido: mediana", f4(med(sp))); }
-
-          // 6. Alternativas de consulta do diario (mesmo defeito?).
-          const agora = Math.floor(Date.now() / 1000);
-          for (const q of [`interval=1d&period1=${agora - 20 * 86400}&period2=${agora}`, "interval=1d&range=1mo&includePrePost=true", "interval=5d&range=3mo"]) {
-            try { const v = await yahoo(q); const ult = v.slice(-4);
-              console.log(`\n== ${q}:`, ult.map((x) => `${x.d} o=${f4(x.o)} c=${f4(x.c)}`).join(" | ")); } catch (e) { console.log(q, "erro", e.message); }
-          }
+          console.log("\nGATILHOS velho:", rv.gatilhos, "\nGATILHOS novo:", rn.gatilhos);
+          console.log("fonte novo:", (rn.texto.match(/^fonte: .*$/m) || [])[0]);
+          console.log("avisos novo:", (rn.texto.match(/^dados_avisos: .*$/gm) || []).join(" || "));
           EOF
           node /tmp/diag.mjs
