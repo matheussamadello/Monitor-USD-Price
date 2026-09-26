@@ -46,3 +46,18 @@ jobs:
           console.log("avisos novo:", (rn.texto.match(/^dados_avisos: .*$/gm) || []).join(" || "));
           EOF
           node /tmp/diag.mjs
+          cat > /tmp/horas.mjs <<'EOF'
+          const r = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/USDBRL%3DX?interval=1h&range=730d", { headers: { "User-Agent": "Mozilla/5.0" } });
+          const x = (await r.json()).chart.result[0], q = x.indicators.quote[0];
+          const janelas = [["2026-09-18T18:00Z", "2026-09-21T05:00Z"], ["2026-09-22T20:00Z", "2026-09-23T04:00Z"], ["2026-09-25T18:00Z", "2026-09-26T09:00Z"]];
+          for (const [a, b] of janelas) {
+            console.log("\n--", a, b);
+            x.timestamp.forEach((t, i) => { if (t >= Date.parse(a) / 1000 && t <= Date.parse(b) / 1000)
+              console.log(new Date(t * 1000).toISOString(), q.open[i], q.high[i], q.low[i], q.close[i], q.high[i] === q.low[i] ? "PLANA" : ""); });
+          }
+          let planas = 0, dias = new Map(), fds = 0;
+          x.timestamp.forEach((t, i) => { const dow = new Date(t * 1000).getUTCDay(); if (dow === 0 || dow === 6) fds++;
+            if (q.high[i] !== null && q.high[i] === q.low[i]) { planas++; const h = new Date(t * 1000).getUTCHours(); dias.set(h, (dias.get(h) || 0) + 1); } });
+          console.log("\nhoras planas:", planas, "de", x.timestamp.length, "por hora UTC:", JSON.stringify([...dias].sort((a, b) => a[0] - b[0])), "| horas em sab/dom:", fds);
+          EOF
+          node /tmp/horas.mjs
