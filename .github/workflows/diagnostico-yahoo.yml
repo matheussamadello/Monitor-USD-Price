@@ -1,0 +1,99 @@
+name: Diagnostico Yahoo (temporario)
+
+# Execucao manual, so leitura. Investiga por que as velas diarias do
+# USD/BRL (Yahoo) chegam com abertura quase igual ao fechamento. Nao
+# publica nada; o resultado fica no log.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Comparar diario, horario e referencias
+        run: |
+          cat > /tmp/diag.mjs <<'EOF'
+          import { parseYahoo, TIMEFRAMES_TESTE } from "./monitor.mjs";
+          const UA = { "User-Agent": "Mozilla/5.0" };
+          const f4 = (x) => (typeof x === "number" ? x.toFixed(4) : String(x));
+          const iso = (t) => new Date(t * 1000).toISOString().replace(":00.000Z", "Z");
+          async function yahoo(par, intervalo, range, host = "query1") {
+            const url = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(par)}?interval=${intervalo}&range=${range}`;
+            const r = await fetch(url, { headers: UA });
+            const texto = await r.text();
+            return { status: r.status, texto, json: r.ok ? JSON.parse(texto) : null };
+          }
+          function linhas(json) {
+            const r = json.chart.result[0], q = r.indicators.quote[0];
+            return r.timestamp.map((t, i) => ({ t, o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i] }));
+          }
+          function metaResumo(json) {
+            const m = json.chart.result[0].meta;
+            return JSON.stringify({ exchangeTimezoneName: m.exchangeTimezoneName, gmtoffset: m.gmtoffset,
+              dataGranularity: m.dataGranularity, regularMarketTime: m.regularMarketTime && iso(m.regularMarketTime),
+              regularMarketPrice: m.regularMarketPrice, previousClose: m.previousClose, chartPreviousClose: m.chartPreviousClose,
+              currentTradingPeriod: m.currentTradingPeriod });
+          }
+
+          for (const par of ["USDBRL=X", "BRL=X"]) {
+            for (const host of ["query1", "query2"]) {
+              const d = await yahoo(par, "1d", "1mo", host);
+              console.log(`\n===== ${par} 1d 1mo ${host}: HTTP ${d.status}`);
+              if (!d.json) { console.log(d.texto.slice(0, 300)); continue; }
+              console.log("meta:", metaResumo(d.json));
+              let prevC = null;
+              for (const x of linhas(d.json)) {
+                const corpo = x.c != null && x.o != null ? Math.abs(x.c - x.o) : null;
+                const amp = x.h != null && x.l != null ? x.h - x.l : null;
+                const gap = prevC != null && x.o != null ? x.o - prevC : null;
+                console.log(`${iso(x.t)} o=${f4(x.o)} h=${f4(x.h)} l=${f4(x.l)} c=${f4(x.c)} corpo=${f4(corpo)} amp=${f4(amp)} corpo/amp=${corpo != null && amp ? (corpo / amp).toFixed(2) : "-"} gap_vs_fech_ant=${f4(gap)}`);
+                if (x.c != null) prevC = x.c;
+              }
+              if (host === "query2") continue;
+              // O que o monitor enxerga, com o mesmo range que ele pede.
+              try {
+                const longa = await yahoo(par, "1d", "5y", host);
+                const s = parseYahoo(longa.texto, TIMEFRAMES_TESTE.find((t) => t.key === "diario"));
+                const n = s.times.length;
+                console.log(`parseYahoo: ${n} fechadas; ultimas 8:`);
+                for (let i = Math.max(0, n - 8); i < n; i++)
+                  console.log(`  ${iso(s.times[i])} o=${f4(s.opens[i])} h=${f4(s.highs[i])} l=${f4(s.lows[i])} c=${f4(s.closes[i])}`);
+                console.log("  live:", JSON.stringify(s.live), "avisos:", JSON.stringify(s.avisosDados || []));
+              } catch (e) { console.log("parseYahoo erro:", e.message); }
+            }
+          }
+
+          // Horario agregado por dia UTC: abertura = primeira hora, fechamento = ultima.
+          const h = await yahoo("USDBRL=X", "1h", "1mo");
+          console.log(`\n===== USDBRL=X 1h 1mo: HTTP ${h.status}`);
+          if (h.json) {
+            console.log("meta:", metaResumo(h.json));
+            const dias = new Map();
+            for (const x of linhas(h.json)) {
+              if ([x.o, x.h, x.l, x.c].some((v) => v == null)) continue;
+              const dia = iso(Math.floor(x.t / 86400) * 86400).slice(0, 10);
+              const a = dias.get(dia);
+              if (!a) dias.set(dia, { o: x.o, h: x.h, l: x.l, c: x.c, n: 1, primeira: iso(x.t), ultima: iso(x.t) });
+              else { a.h = Math.max(a.h, x.h); a.l = Math.min(a.l, x.l); a.c = x.c; a.n++; a.ultima = iso(x.t); }
+            }
+            for (const [dia, a] of dias)
+              console.log(`${dia} o=${f4(a.o)} h=${f4(a.h)} l=${f4(a.l)} c=${f4(a.c)} corpo=${f4(Math.abs(a.c - a.o))} amp=${f4(a.h - a.l)} horas=${a.n} ${a.primeira}..${a.ultima}`);
+            const ult = linhas(h.json).filter((x) => x.c != null).slice(-6);
+            console.log("ultimas horas:", ult.map((x) => `${iso(x.t)} c=${f4(x.c)}`).join(" | "));
+          }
+
+          // Referencia de mercado: USDT/BRL na Binance, dia UTC.
+          const b = await fetch("https://api.binance.com/api/v3/klines?symbol=USDTBRL&interval=1d&limit=25");
+          console.log(`\n===== Binance USDTBRL 1d: HTTP ${b.status}`);
+          if (b.ok) for (const k of await b.json())
+            console.log(`${iso(k[0] / 1000).slice(0, 10)} o=${f4(+k[1])} h=${f4(+k[2])} l=${f4(+k[3])} c=${f4(+k[4])}`);
+          EOF
+          cp /tmp/diag.mjs ./diag.mjs
+          node diag.mjs
