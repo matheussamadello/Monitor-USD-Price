@@ -4868,44 +4868,48 @@ function pgChips(alertas, deterioracao) {
 }
 
 // Detalhe visual separado dos campos canonicos usados pelos alertas.
+// Textos dos (?) curtos de proposito: eram 670 a 850 caracteres, uma
+// parede de texto num balao. Ficaram os fatos -- quais pivos, o que a
+// leitura NAO diz, e por que ela atrasa.
 const EXPLICACOES_ESTRUTURA_RECENTE = {
-  alta: "O topo mais recente e o fundo mais recente ficaram acima dos anteriores. Isso classifica a estrutura recente dos pivôs como alta.",
-  baixa: "O topo mais recente e o fundo mais recente ficaram abaixo dos anteriores. Isso classifica a estrutura recente dos pivôs como baixa.",
-  lateral_contracao: "O topo mais recente ficou mais baixo e o fundo mais recente ficou mais alto. A estrutura recente dos pivôs está em contração, com estreitamento entre esses extremos.",
-  lateral_expansao: "O topo mais recente ficou mais alto e o fundo mais recente ficou mais baixo. A estrutura recente dos pivôs está em expansão, com ampliação entre esses extremos.",
-  lateral_empate: "O topo ou o fundo mais recente repetiu o preço do anterior. Empate não é queda: a estrutura recente dos pivôs não confirma um padrão direcional completo, mesmo que o outro extremo tenha se movido.",
-  indefinida: "Ainda faltam topos ou fundos confirmados com preços válidos para classificar a estrutura recente dos pivôs. Isso não significa que o mercado esteja lateral.",
-  "--": "A estrutura recente dos pivôs não está disponível nesta leitura.",
+  alta: "topo e fundo mais recentes acima dos anteriores",
+  baixa: "topo e fundo mais recentes abaixo dos anteriores",
+  lateral_contracao: "topo mais baixo e fundo mais alto, a faixa entre eles estreitando",
+  lateral_expansao: "topo mais alto e fundo mais baixo, a faixa entre eles abrindo",
+  lateral_empate: "topo ou fundo repetiu o preço anterior: sem direção (empate não é queda)",
+  indefinida: "ainda faltam pivôs confirmados para classificar (não quer dizer lateral)",
+  "--": "leitura indisponível",
 };
 
 function pgConfirmacaoPivos(titulo) {
   return titulo === "Semanal"
-    ? "No gráfico semanal, os pivôs usam fractal 2/2 e só são confirmados após 2 velas semanais fechadas à direita. Por isso, esta leitura estrutural é deliberadamente atrasada e pode ficar atrás do movimento atual do preço."
-    : "No gráfico diário, os pivôs usam fractal 5/5 e só são confirmados após 5 velas fechadas à direita. Por isso, esta leitura estrutural é deliberadamente atrasada e pode ficar atrás do movimento atual do preço.";
+    ? "Atrasa de propósito: com fractal 2/2, cada pivô só se confirma após 2 velas semanais fechadas à direita."
+    : "Atrasa de propósito: com fractal 5/5, cada pivô só se confirma após 5 velas fechadas à direita.";
 }
 
 function pgExplicacaoEstruturaRecente(tend, titulo) {
-  return "A classificação usa apenas os 2 últimos topos e 2 últimos fundos confirmados. " +
+  return "Últimos 2 topos e 2 fundos confirmados: " +
     (EXPLICACOES_ESTRUTURA_RECENTE[tend] || EXPLICACOES_ESTRUTURA_RECENTE["--"]) +
-    " Isso não significa automaticamente que a tendência geral do ativo virou de alta para baixa ou vice-versa, nem determina todo o contexto do mercado. Compare esta leitura com a sequência ampliada e com os demais indicadores. " +
+    ". É a estrutura recente, não a tendência geral: compare com a sequência ampliada. " +
     pgConfirmacaoPivos(titulo);
 }
 
 function pgExplicacaoEstruturaVisual(v, titulo) {
-  const contexto = "A sequência ampliada usa os 4 últimos topos e 4 últimos fundos confirmados. Analisa uma janela mais ampla e pode apontar uma direção diferente da estrutura recente dos pivôs: isso não é contradição, mas diferença de horizonte estrutural. Compare também com os demais indicadores. " + pgConfirmacaoPivos(titulo) + " ";
-  if (!v) return contexto + "A sequência ampliada não está disponível nesta leitura.";
-  if (!v.completa) return contexto + "Ainda faltam pivôs para completar os 4 topos e 4 fundos confirmados. Confira as quantidades disponíveis; a falta de histórico não indica lateralidade.";
-  if (v.consistencia === "mista") return contexto + "Pelo menos um dos grupos não tem 2 das 3 comparações na mesma direção. Por isso, a sequência não recebe uma direção predominante. Preços iguais contam como neutros.";
+  const contexto = "Últimos 4 topos e 4 fundos confirmados, janela mais ampla que a da estrutura recente: se as duas discordarem, é diferença de horizonte, não contradição. ";
+  const fim = " " + pgConfirmacaoPivos(titulo);
+  if (!v) return contexto + "Sequência indisponível nesta leitura." + fim;
+  if (!v.completa) return contexto + "Ainda faltam pivôs para fechar 4 e 4; falta de histórico não é lateralidade." + fim;
+  if (v.consistencia === "mista") return contexto + "Sem direção predominante: algum grupo não tem 2 de 3 comparações no mesmo sentido (preço igual é neutro)." + fim;
   const direcoes = {
-    alta: "topos subindo e fundos subindo",
-    baixa: "topos caindo e fundos caindo",
-    lateral_contracao: "topos caindo e fundos subindo, estreitando a faixa entre os extremos",
-    lateral_expansao: "topos subindo e fundos caindo, ampliando a faixa entre os extremos",
+    alta: "topos e fundos subindo",
+    baixa: "topos e fundos caindo",
+    lateral_contracao: "topos caindo e fundos subindo (faixa estreitando)",
+    lateral_expansao: "topos subindo e fundos caindo (faixa abrindo)",
   };
   const regra = v.consistencia === "consistente"
-    ? "As 3 comparações dos topos e as 3 dos fundos seguem esse padrão."
-    : "Pelo menos 2 das 3 comparações em cada grupo seguem esse padrão, mas há uma exceção ou empate na sequência.";
-  return contexto + `Nos últimos 4 topos e 4 fundos confirmados, há ${direcoes[v.tendencia]}. ${regra} Preços iguais são neutros. Isso descreve a sequência observada; não é uma probabilidade de acerto nem confirma um rompimento.`;
+    ? "nas 3 comparações de cada grupo"
+    : "em pelo menos 2 das 3 comparações de cada grupo";
+  return contexto + `Agora: ${direcoes[v.tendencia]} ${regra}.` + fim;
 }
 
 function pgSinteseEstrutural(recente, v) {

@@ -147,18 +147,22 @@ try {
     assert.equal(JSON.stringify(dados), serializado, "valores e campos canonicos nao mudam na renderizacao");
     for (const par of PARES_TESTE.filter(p => !p.semCartao)) for (const tf of ["diario", "semanal"]) {
       const tooltip = pagina.match(new RegExp(`id="aj-estrutura-${par.key}-${tf}" role="tooltip">([^<]+)`))?.[1];
-      assert.ok(tooltip?.includes("2 últimos topos e 2 últimos fundos confirmados"));
-      assert.ok(tooltip.includes("não significa automaticamente que a tendência geral"));
-      assert.ok(tooltip.includes("sequência ampliada e com os demais indicadores"));
+      // Os fatos, curtos: quais pivos, o que a leitura nao diz e por que
+      // atrasa. O teto de tamanho impede o balao de voltar a ser parede.
+      assert.ok(tooltip?.includes("2 topos e 2 fundos confirmados"));
+      assert.ok(tooltip.includes("não a tendência geral"));
+      assert.ok(tooltip.includes("sequência ampliada"));
       assert.ok(tooltip.includes(tf === "diario" ? "fractal 5/5" : "fractal 2/2"));
       assert.ok(tooltip.includes(tf === "diario" ? "após 5 velas fechadas à direita" : "após 2 velas semanais fechadas à direita"));
-      assert.ok(tooltip.includes("deliberadamente atrasada"));
+      assert.ok(tooltip.includes("Atrasa de propósito"));
+      assert.ok(tooltip.length <= 300, `balao da estrutura recente com ${tooltip.length} caracteres`);
       for (const tipo of ["janela", "sequencia"]) {
         const ajuda = pagina.match(new RegExp(`id="aj-${tipo}-${par.key}-${tf}" role="tooltip">([^<]+)`))?.[1];
-        assert.ok(ajuda?.includes("4 últimos topos e 4 últimos fundos confirmados"));
+        assert.ok(ajuda?.includes("4 topos e 4 fundos confirmados"));
         assert.ok(ajuda.includes("janela mais ampla"));
-        assert.ok(ajuda.includes("não é contradição, mas diferença de horizonte estrutural"));
+        assert.ok(ajuda.includes("diferença de horizonte, não contradição"));
         assert.ok(ajuda.includes(tf === "diario" ? "fractal 5/5" : "fractal 2/2"));
+        assert.ok(ajuda.length <= 380, `balao da sequencia ampliada com ${ajuda.length} caracteres`);
       }
     }
   }
