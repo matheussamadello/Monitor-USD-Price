@@ -25,6 +25,7 @@ import {
   detectarDivergencias, situacaoNiveis, casarZonas, atualizarCiclo,
   zonasCandidatas, rsiSeries, alinhamentoNiveis, anatomia, compradoraForte,
   vendedoraForte, contextoAntesDoTrio, suavizarCentro, zonaJaRepresentadaPorFaixaParaRadar,
+  lerCandidatasRadar, motivoObservacaoRadar,
 } from "./monitor.mjs";
 
 let falhas = 0, checagens = 0;
@@ -364,6 +365,46 @@ console.log("\n== radar: zona colada numa faixa ja esta representada ==");
     "no relatorio, faixa colada 0,05 acima da candidata a tira do radar");
   ok(linhaRadar([[96.5, 97, "longe"]]) === livre,
     "e faixa a 0,7 ATR nao mexe nela");
+}
+
+console.log("\n== painel: as mesmas verificacoes do prompt sobre o radar ==");
+{
+  const lidas = lerCandidatasRadar("78101.29-78336.71 score=71 toques=9 (abaixo do preco) | 5.0725-5.0896 score=94 toques=10 (abaixo do preco)");
+  ok(lidas.length === 2 && lidas[0].inferior === 78101.29 && lidas[0].superior === 78336.71 &&
+     lidas[0].score === 71 && lidas[0].toques === 9 && lidas[1].score === 94,
+    "a linha do radar e' lida de volta em limites, score e toques");
+  ok(lerCandidatasRadar("nenhuma").length === 0 && lerCandidatasRadar(undefined).length === 0,
+    "'nenhuma' e campo ausente dao lista vazia");
+  const c = (lo, hi, score) => ({ inferior: lo, superior: hi, score, toques: 9 });
+  const btc = [[88700, 89300], [82171, 82908], [80469, 80721], [79300, 79700],
+    [76150, 76700], [74700, 75100], [73400, 73800], [64600, 65700]];
+  // Pivo unico: largura ate 0,12 ATR.
+  ok(/pivô único/.test(motivoObservacaoRadar(c(78101.29, 78336.71, 71), btc, 2354.26)),
+    "BTC 78.101-78.337: pivo unico (0,1 ATR) com score 71 fica em observacao");
+  ok(motivoObservacaoRadar(c(78101.29, 78336.71, 84), btc, 2354.26) === null,
+    "o mesmo pivo unico com score 84 passa (como 80.469-80.721, promovida com 84)");
+  ok(motivoObservacaoRadar(c(100, 112.1, 71), [], 100) === null,
+    "acima de 0,12 ATR ja nao e' pivo unico");
+  ok(/pivô único/.test(motivoObservacaoRadar(c(100, 111.9, 71), [], 100)),
+    "ate 0,12 ATR e' pivo unico");
+  // Fragmentacao: vizinhas a menos de 1 ATR.
+  const usd = [[5.168, 5.181], [5.129, 5.1395], [5.068, 5.0805]];
+  ok(/0,57|0.57/.test(motivoObservacaoRadar(c(5.1400, 5.1600, 90), usd, 0.0504) || ""),
+    "candidata larga entre faixas a 0,57 ATR fica em observacao, com o vao no motivo");
+  ok(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020], [1121, 1140]], 100) === null,
+    "vizinhas a 1,01 ATR: passa");
+  ok(/entre faixas/.test(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020], [1119, 1140]], 100) || ""),
+    "vizinhas a 0,99 ATR: observacao");
+  ok(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020]], 100) === null,
+    "faixa de um lado so nao fragmenta nada");
+  // As promocoes ja feitas passariam; as recusadas, nao.
+  ok(motivoObservacaoRadar(c(5.0725, 5.0896, 94), [[5.1525, 5.162]], 0.038) === null &&
+     motivoObservacaoRadar(c(82171, 82908, 90), [[88700, 89300], [79300, 79700]], 2514.23) === null,
+    "USDT 5,0725-5,0896 e BTC 82.171-82.908 passariam");
+  ok(motivoObservacaoRadar(c(5.2181, 5.2219, 77), [[5.191, 5.1965], [5.274, 5.2858]], 0.038) !== null,
+    "USDT 5,2181-5,2219 (pivo unico, 77) fica em observacao");
+  ok(motivoObservacaoRadar(c(78101.29, 78336.71, 71), btc, null) === null,
+    "sem ATR nao ha como medir: passa, como no radar");
 }
 
 // ------------------------------------------------------------

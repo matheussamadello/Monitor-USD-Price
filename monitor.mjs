@@ -4715,6 +4715,7 @@ dl{margin:0;display:grid;gap:8px}
 .lh .lz{font:11px/1.5 var(--mono);color:var(--fraco);flex:1 1 100%}
 .leitura .lradar{display:block;margin-top:9px;font:11px/1.5 var(--mono);
   color:var(--atencao)}
+.leitura .lradar.obs{color:var(--fraco)}
 /* O (?) fica discreto ate alguem procurar por ele: a linha e' para
    ser lida de relance, e um circulo forte ao lado de cada rotulo
    competiria com o proprio rotulo. Abre no hover E no foco -- o
@@ -5565,6 +5566,48 @@ function pgLinhaLeitura(tag, L, id, extra) {
   );
 }
 
+// O radar publica o que passa nos criterios MINIMOS. O prompt manda o
+// agente comunicar so o que passa tambem nestas verificacoes (revisao
+// silenciosa dos niveis manuais), e o painel aplica as mesmas, para os
+// dois nao dizerem coisas diferentes. Os numeros sao os do prompt: se
+// um mudar, muda nos dois.
+//   - pivo unico: largura estrutural ate 0,12 ATR diario e' o preco de um
+//     pivo mais a folga de 0,05 ATR de cada lado. So com score >= 80;
+//   - fragmentacao: entre duas faixas vizinhas a menos de 1 ATR uma da
+//     outra, uma terceira faixa so multiplicaria alertas de entrada.
+// A terceira verificacao do prompt (esperar depois de uma correcao que
+// refez as zonas) so existe hoje para o USD/BRL, que nao tem cartao.
+const RADAR_PIVO_UNICO_LARGURA_ATR = 0.12;
+const RADAR_PIVO_UNICO_SCORE_MIN = 80;
+const RADAR_VAO_VIZINHAS_MIN_ATR = 1;
+
+// Le a linha zonas_candidatas_a_faixa do relatorio de volta em objetos.
+export function lerCandidatasRadar(linha) {
+  if (!linha || linha === "nenhuma") return [];
+  return String(linha).split(" | ").map((bruto) => {
+    const m = /^\s*([\d.]+)-([\d.]+) score=(\d+) toques=(\d+)/.exec(bruto);
+    return m && { bruto: bruto.trim(), inferior: Number(m[1]), superior: Number(m[2]),
+      score: Number(m[3]), toques: Number(m[4]) };
+  }).filter(Boolean);
+}
+
+// null quando a candidata passa; senao, o motivo para ficar em observacao.
+// Sem ATR nao ha como medir: na duvida, passa, como no proprio radar.
+export function motivoObservacaoRadar(c, faixas, atr) {
+  if (!(atr > 0)) return null;
+  const largura = c.superior - c.inferior;
+  if (largura <= RADAR_PIVO_UNICO_LARGURA_ATR * atr && c.score < RADAR_PIVO_UNICO_SCORE_MIN)
+    return `pivô único com score abaixo de ${RADAR_PIVO_UNICO_SCORE_MIN}`;
+  const abaixo = (faixas || []).filter(([, hi]) => hi <= c.inferior).map(([, hi]) => hi);
+  const acima = (faixas || []).filter(([lo]) => lo >= c.superior).map(([lo]) => lo);
+  if (abaixo.length && acima.length) {
+    const vao = Math.min(...acima) - Math.max(...abaixo);
+    if (vao < RADAR_VAO_VIZINHAS_MIN_ATR * atr)
+      return `entre faixas a ${fixo(vao / atr, 2)} ATR uma da outra`;
+  }
+  return null;
+}
+
 function pgLeitura(cfg, dados) {
   const longa = leituraLonga((dados.semanal || {})[cfg.label], cfg.dec);
   const curta = leituraCurta((dados.diario || {})[cfg.label], cfg);
@@ -5572,11 +5615,23 @@ function pgLeitura(cfg, dados) {
   // de MANUTENCAO, nao leitura de mercado, entao entra discreto e no fim
   // da caixa, separado das duas leituras.
   const dia = (dados.diario || {})[cfg.label] || {};
-  const cand = dia.zonas_candidatas_a_faixa;
+  // Recomendacao so para o que passa nas verificacoes do prompt; o resto
+  // aparece discreto, em observacao, com o motivo.
+  const atrDia = Number(dia.atr14);
+  const faixasPar = (cfg.niveis && cfg.niveis.faixas) || [];
+  const recomendadas = [], emObservacao = [];
+  for (const c of lerCandidatasRadar(dia.zonas_candidatas_a_faixa)) {
+    const motivo = motivoObservacaoRadar(c, faixasPar, atrDia);
+    if (motivo) emObservacao.push(`${c.bruto} — ${motivo}`);
+    else recomendadas.push(c.bruto);
+  }
   const radar =
-    cand && cand !== "nenhuma"
-      ? `<span class="lradar">região amadurecida sem faixa manual: ${pgEsc(cand)}</span>`
-      : "";
+    (recomendadas.length
+      ? `<span class="lradar">região amadurecida sem faixa manual: ${pgEsc(recomendadas.join(" | "))}</span>`
+      : "") +
+    (emObservacao.length
+      ? `<span class="lradar obs">em observação, sem recomendação: ${pgEsc(emObservacao.join(" | "))}</span>`
+      : "");
   // Longo primeiro: enquadramento antes do evento do dia. A ordem
   // inversa faria o fato de hoje parecer mais importante que a escala em
   // que este monitor decide, que e' o contrario do que ele assume.
