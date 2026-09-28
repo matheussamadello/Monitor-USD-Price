@@ -629,6 +629,19 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok(/<span class="sr-r">Suporte<\/span>/.test(html) && /<span class="sr-r">Resistência<\/span>/.test(html),
     "com os dois lados rotulados");
   ok(!/<dt>Níveis manuais<\/dt>/.test(html), "a linha 'Níveis manuais' saiu das colunas");
+  {
+    // A menos de 0,1% da borda, "encostado" no lugar de "+0,0%".
+    const cfgC = PARES_TESTE.find((c) => !c.semCartao);
+    const dC = relatorioParaJSON(r1.texto, r1.zonas);
+    const lo = Math.min(...cfgC.niveis.faixas.map((f) => f[0]));
+    dC.diario[cfgC.label].preco_atual = lo * (1 - 0.0005);
+    const srC = (toHTML(r1.texto, dC).match(/<div class="sr [\s\S]*?<button/) || [""])[0];
+    ok(/<small>encostado<\/small>/.test(srC) && !/[+−]0,0%/.test(srC),
+      "a 0,05% da borda o cartao diz 'encostado', nao '+0,0%'");
+    dC.diario[cfgC.label].preco_atual = lo * (1 - 0.002);
+    const srL = (toHTML(r1.texto, dC).match(/<div class="sr [\s\S]*?<button/) || [""])[0];
+    ok(/\+0,2%/.test(srL) && !/encostado/.test(srL), "a 0,2% continua saindo a porcentagem");
+  }
   ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
     "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
 

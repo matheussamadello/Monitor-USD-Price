@@ -5757,9 +5757,14 @@ function pgNiveisProximos(cfg, dia) {
       return `<span class="sr-i"><span class="sr-r">${rotulo}</span><b class="fraco">nenhum nível manual</b></span>`;
     const pct = ((borda(n) - preco) / preco) * 100;
     const estado = n.pontual ? ESTADOS_NIVEL_PAINEL[estados[`nivel_${n.label}_estado`]] : null;
+    // Abaixo de 0,1% a porcentagem com uma casa saia "+0,0%", que parece
+    // erro. Nessa distancia o preco esta, na pratica, na borda.
+    const dist = Math.abs(pct) < 0.1
+      ? "encostado"
+      : `${pct < 0 ? "−" : "+"}${pgNum(Math.abs(pct), 1)}%`;
     return (
       `<span class="sr-i"><span class="sr-r">${rotulo}</span><b>${pgEsc(nome(n))}</b>` +
-      `<small>${pct < 0 ? "−" : "+"}${pgNum(Math.abs(pct), 1)}%` +
+      `<small>${dist}` +
       `${estado ? ` · ${pgEsc(estado)}` : ""}</small></span>`
     );
   };
