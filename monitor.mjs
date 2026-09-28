@@ -2196,6 +2196,38 @@ export function situacaoNiveis(niveis, preco, atr) {
   };
 }
 
+// Suporte e resistencia MAIS PROXIMOS da cotacao, entre TODOS os niveis
+// manuais: faixas, niveis pontuais e a resistencia macro. O papel sai da
+// POSICAO, nao do nome na configuracao: a "resistencia" de 550 do XMR,
+// depois de rompida, fica abaixo do preco e passa a servir de suporte.
+//
+// E' leitura do painel. niveis_manuais_situacao continua no relatorio e
+// mede outra coisa -- se as faixas ainda cercam o fechamento, para a
+// manutencao --, e so olha faixas: a linha de 550, a 2% do preco, nao
+// entrava, e o cartao dizia "monitorar" apontando uma faixa a 7%.
+export function niveisProximos(niveis, preco) {
+  if (!niveis || !(preco > 0)) return null;
+  const todos = (niveis.faixas || []).map(([inferior, superior, label]) =>
+    ({ inferior, superior, label, pontual: false }));
+  for (const [nivel, label] of [
+    [niveis.resistencia, niveis.resistenciaLabel],
+    [niveis.suporte, niveis.suporteLabel],
+  ])
+    if (typeof nivel === "number")
+      todos.push({ inferior: nivel, superior: nivel, label, pontual: true });
+  const mac = niveis.resistenciaMacro;
+  if (mac && typeof mac.inferior === "number")
+    todos.push({ inferior: mac.inferior, superior: mac.superior, label: mac.label, pontual: false });
+  const maisPerto = (lista, dist) => lista.sort((a, b) => dist(a) - dist(b))[0] || null;
+  return {
+    suporte: maisPerto(todos.filter((n) => n.superior < preco), (n) => preco - n.superior),
+    resistencia: maisPerto(todos.filter((n) => n.inferior > preco), (n) => n.inferior - preco),
+    // Faixa com o preco dentro. Nivel pontual so "contem" o preco se for
+    // exatamente igual, e ai tambem conta.
+    dentro: todos.find((n) => n.inferior <= preco && preco <= n.superior) || null,
+  };
+}
+
 function niveisDoPar(cfg) {
   const out = [];
   const nv = cfg.niveis;
@@ -4701,6 +4733,16 @@ html[data-tema="claro"] .btn-tema .sol{display:block}
   justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--linha)}
 .par h2{margin:0;font:600 15px/1 var(--mono);letter-spacing:.05em;color:var(--acento)}
 .preco{font:600 24px/1 var(--mono);color:var(--txt-forte)}
+.sr{display:flex;flex-wrap:wrap;gap:8px 26px;align-items:baseline;
+  padding:11px 18px;border-bottom:1px solid var(--linha);font-size:13px}
+.sr-i{display:inline-flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.sr-r{color:var(--fraco)}
+.sr b{font:600 13px/1.4 var(--mono);color:var(--txt-forte)}
+.sr b.fraco{font-weight:400;color:var(--fraco)}
+.sr small{font:11px/1.4 var(--mono);color:var(--fraco)}
+/* Abre para BAIXO: em cima esta o cabecalho, e o cartao corta o que
+   passa da borda (overflow:hidden). */
+.sr.estrutura-ajuda .ajt{top:100%;bottom:auto;margin-top:6px;margin-bottom:0}
 .tfs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--linha)}
 .tf{background:var(--painel);padding:16px 18px}
 .tf h3{margin:0 0 13px;font:600 11px/1 var(--mono);letter-spacing:.14em;
@@ -5033,7 +5075,6 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
       : `${cruzou ? "cruzou " : ""}${acima ? "acima" : "abaixo"}<small>${pgNum(Math.abs(distPct), 2)}%</small>`;
 
   const tend = b.estrutura_tendencia || "--";
-  const sit = b.niveis_manuais_situacao || "--";
   const rsi = b.rsi_fechado;
   const diPlus = b.di_plus_fechado;
   const diMinus = b.di_minus_fechado;
@@ -5059,9 +5100,11 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
     tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco",
     pgAjuda({ rotulo: `Estrutura dos últimos pivôs confirmados: ${tend}` }, `aj-estrutura-${id}`,
       pgExplicacaoEstruturaRecente(tend, titulo))));
-  L.push(pgLinha("Níveis manuais",
-    `${pgEsc(sit)}<small>${pgEsc(b.niveis_manuais_faixa_mais_proxima || "")}</small>`,
-    sit === "atual" ? "alta" : sit === "monitorar" ? "atencao" : sit === "obsoleto" ? "baixa" : "fraco"));
+  // "Niveis manuais: monitorar faixa_498_503" saiu daqui. Era a situacao
+  // de manutencao das faixas, repetida nos dois timeframes, e nao dizia o
+  // que se quer saber de relance: onde esta o suporte e a resistencia.
+  // Isso agora fica uma vez por cartao, logo abaixo da cotacao
+  // (pgNiveisProximos).
   // ATR NAO APARECE NO CARTAO. Ele continua sendo calculado e usado --
   // dimensiona a largura das zonas automaticas, mede a obsolescencia dos
   // niveis manuais e e' a unidade das margens do prompt (0,25 ATR na
@@ -5687,6 +5730,52 @@ function pgLeitura(cfg, dados) {
   );
 }
 
+const ESTADOS_NIVEL_PAINEL = {
+  rompido: "rompido",
+  em_reteste: "em reteste",
+  reteste_confirmado: "reteste confirmado",
+  rompimento_falhou: "rompimento falhou",
+  recuperado: "recuperado",
+};
+
+// Uma vez por cartao, contra a COTACAO do cabecalho, e nao em cada
+// timeframe: os niveis manuais sao os mesmos nos dois, e contra o preco
+// vivo as duas colunas diriam a mesma coisa. O estado do nivel pontual
+// (rompido, em reteste...) e' o do fechamento diario, o timeframe de
+// timing.
+function pgNiveisProximos(cfg, dia) {
+  const preco = dia && dia.preco_atual;
+  const p = niveisProximos(cfg.niveis, preco);
+  if (!p) return "";
+  const estados = (dia && dia.niveis_manuais) || {};
+  const nome = (n) =>
+    n.pontual
+      ? pgValor(n.inferior, cfg.dec)
+      : `${pgValor(n.inferior, cfg.dec)}–${pgValor(n.superior, cfg.dec)}`;
+  const item = (rotulo, n, borda) => {
+    if (!n)
+      return `<span class="sr-i"><span class="sr-r">${rotulo}</span><b class="fraco">nenhum nível manual</b></span>`;
+    const pct = ((borda(n) - preco) / preco) * 100;
+    const estado = n.pontual ? ESTADOS_NIVEL_PAINEL[estados[`nivel_${n.label}_estado`]] : null;
+    return (
+      `<span class="sr-i"><span class="sr-r">${rotulo}</span><b>${pgEsc(nome(n))}</b>` +
+      `<small>${pct < 0 ? "−" : "+"}${pgNum(Math.abs(pct), 1)}%` +
+      `${estado ? ` · ${pgEsc(estado)}` : ""}</small></span>`
+    );
+  };
+  const dentro = p.dentro
+    ? `<span class="sr-i"><span class="sr-r">Preço dentro de</span><b>${pgEsc(nome(p.dentro))}</b></span>`
+    : "";
+  const ajuda = pgAjuda({ rotulo: "Suporte e resistência" }, `aj-sr-${cfg.key}`,
+    "Níveis manuais mais próximos abaixo e acima da cotação: faixas e linhas " +
+    "como a de 550. O papel vem da posição: linha rompida para cima vira suporte. " +
+    "O estado (rompido, em reteste) é o do fechamento diário.");
+  return (
+    `<div class="sr estrutura-ajuda">${item("Suporte", p.suporte, (n) => n.superior)}${dentro}` +
+    `${item("Resistência", p.resistencia, (n) => n.inferior)}${ajuda}</div>`
+  );
+}
+
 function pgCartao(cfg, dados, estruturaVisual) {
   const dia = (dados.diario || {})[cfg.label];
   const sem = (dados.semanal || {})[cfg.label];
@@ -5711,6 +5800,7 @@ function pgCartao(cfg, dados, estruturaVisual) {
     `<article class="par" data-par="${pgEsc(cfg.label)}">` +
     `<header><h2>${pgEsc(cfg.label)}</h2>` +
     `<div class="preco">${preco}</div></header>` +
+    pgNiveisProximos(cfg, dia) +
     `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`], `${cfg.key}-diario`)}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`], `${cfg.key}-semanal`)}</div>` +
     grafico +
     `</article>`

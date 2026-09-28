@@ -15,7 +15,7 @@
 // e' como o relatorio as passa. O que se prende aqui e' a REGRA; a
 // calibragem de cada par fica na configuracao.
 // ------------------------------------------------------------
-import { atualizarEstadoNivel, chaveNivel } from "./monitor.mjs";
+import { atualizarEstadoNivel, chaveNivel, niveisProximos } from "./monitor.mjs";
 
 let falhas = 0, checagens = 0;
 const ok = (c, m) => {
@@ -156,6 +156,34 @@ console.log("\n== chave do nivel ==");
   ok(a !== b, "o mesmo nivel em timeframes diferentes tem chaves diferentes");
   ok(a.includes("usd") && a.includes("diario") && a.includes("80000"),
     `a chave carrega par, timeframe e nivel (${a})`);
+}
+
+console.log("\n== painel: suporte e resistencia manuais mais proximos da cotacao ==");
+{
+  // Configuracao do XMR/USD em 2026-09-28: a "resistencia" pontual de 550
+  // fica a 2% do preco; a faixa mais proxima, a 7%.
+  const xmr = {
+    faixas: [[498, 503, "faixa_498_503"], [463, 473, "faixa_463_473"]],
+    resistencia: 550, resistenciaLabel: "550", suporte: 500, suporteLabel: "500",
+    resistenciaMacro: { inferior: 797, superior: 803, label: "macro" },
+  };
+  const p = niveisProximos(xmr, 538.54);
+  ok(p.resistencia.label === "550" && p.resistencia.pontual,
+    "o nivel pontual entra: 550 e' a resistencia mais proxima, nao a macro de 797");
+  ok(p.suporte.label === "faixa_498_503" && p.dentro === null,
+    "suporte e' a faixa 498-503, medida pela borda de cima (503 esta mais perto que o ponto 500)");
+  const acima = niveisProximos(xmr, 560);
+  ok(acima.suporte.label === "550" && acima.resistencia.label === "macro",
+    "o papel vem da posicao: com o preco acima, a 'resistencia' de 550 vira suporte e a macro vira resistencia");
+  const dentro = niveisProximos(xmr, 501);
+  ok(dentro.dentro.label === "faixa_498_503" && dentro.suporte.label === "500" &&
+     dentro.resistencia.label === "550",
+    "preco dentro da faixa: ela sai como 'dentro', e o ponto 500 dentro dela ainda e' o suporte mais proximo");
+  const semNada = niveisProximos({ faixas: [[100, 110, "a"]], resistencia: null, suporte: null }, 50);
+  ok(semNada.suporte === null && semNada.resistencia.label === "a",
+    "sem nivel abaixo, o suporte fica vazio em vez de inventar um");
+  ok(niveisProximos(xmr, null) === null && niveisProximos(null, 500) === null,
+    "sem preco ou sem configuracao, nao ha leitura");
 }
 
 console.log(

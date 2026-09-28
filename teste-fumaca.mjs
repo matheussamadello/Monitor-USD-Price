@@ -621,6 +621,14 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
   ok((pre.match(/^[a-z_0-9]+: /gm) || []).length > 50, "as linhas campo:valor continuam legiveis no fonte");
   ok(!/NaN|undefined/.test(html), "sem NaN/undefined na pagina");
   ok(/<article class="par"/.test(html), "os cartoes de par foram gerados");
+  // Suporte e resistencia manuais mais proximos, uma vez por cartao, no
+  // lugar da linha "Niveis manuais: monitorar" que se repetia nas colunas.
+  const cartoes = (html.match(/<article class="par"/g) || []).length;
+  ok((html.match(/<div class="sr estrutura-ajuda">/g) || []).length === cartoes,
+    "cada cartao traz a faixa de suporte e resistencia mais proximos");
+  ok(/<span class="sr-r">Suporte<\/span>/.test(html) && /<span class="sr-r">Resistência<\/span>/.test(html),
+    "com os dois lados rotulados");
+  ok(!/<dt>Níveis manuais<\/dt>/.test(html), "a linha 'Níveis manuais' saiu das colunas");
   ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
     "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
 
@@ -1374,8 +1382,8 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
 
   const pag = toHTML(r1.texto, relatorioParaJSON(r1.texto, r1.zonas));
   const comCartao = PARES_TESTE.filter((c) => !c.semCartao);
-  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 8,
-    "um (?) por contexto, estrutura recente, sequência ampliada e sua classificação");
+  ok((pag.match(/class="aj"/g) || []).length === comCartao.length * 9,
+    "um (?) por contexto, suporte e resistência, estrutura recente, sequência ampliada e sua classificação");
   ok((pag.match(/aria-describedby="aj-[^"]+-(?:longo|curto)"/g) || []).length === comCartao.length * 2,
     "as ajudas dos contextos longo e curto continuam presentes");
 
@@ -1383,7 +1391,7 @@ console.log("\n== (?) de cada rotulo: a explicacao sem custo de espaco ==");
   // leria a explicacao errada -- e o CSS ainda funcionaria, entao so um
   // teste pega isso.
   const ids = pag.match(/id="aj-[^"]+"/g) || [];
-  ok(ids.length === comCartao.length * 8 && new Set(ids).size === ids.length,
+  ok(ids.length === comCartao.length * 9 && new Set(ids).size === ids.length,
     "cada (?) aponta para um id unico");
   for (const id of ids) {
     const alvo = id.slice(4, -1);
