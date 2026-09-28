@@ -13,7 +13,14 @@ try {
  Date.now=()=>cap.instante;
  let r=await m.build(ff,structuredClone(cap.estado));
  assert.ok(!r.texto.includes('FALHA:'));
- assert.deepEqual(r.gatilhos,ref.gatilhos_antes,'geometria nao altera gatilhos na mesma entrada');
+ // Faixas manuais acrescentadas DEPOIS da captura disparam o proprio aviso
+ // de entrada na mesma entrada gravada. Sao listadas uma a uma; o resto
+ // dos gatilhos continua tendo de bater com a captura.
+ //   2026-09-28: BTC 83750-84550 e 86250-86550; XMR/USD 558-568.
+ const FAIXAS_POSTERIORES=['faixa_83750_84550','faixa_86250_86550','faixa_558_568'];
+ const posterior=g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f));
+ assert.ok(r.gatilhos.filter(posterior).every(g=>/entrou na regiao/.test(g.msg)),'faixa nova so acrescenta o aviso de entrada');
+ assert.deepEqual(r.gatilhos.filter(g=>!posterior(g)),ref.gatilhos_antes,'geometria nao altera gatilhos na mesma entrada');
  for(const p of ref.pares){
   const cfg=m.PARES_TESTE.find(c=>c.label===p.par),k=cfg.key+'|'+p.tf;
   assert.deepEqual(r.zonas[k].map(medida),p.depois,'score, toques e rejeicoes reais reproduziveis');
