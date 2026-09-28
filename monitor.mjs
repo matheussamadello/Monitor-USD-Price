@@ -3214,12 +3214,18 @@ export function atualizarCiclo(z, anterior, ctx) {
     if (z.score >= ZONA_SCORE_ATIVA && semToque <= par.semToqueEnfraquece) {
       z.status = "ativa";
       z.velasEnfraquecida = 0;
-    } else if (
-      z.velasEnfraquecida >= par.enfraquecidaRemove ||
-      z.score < ZONA_SCORE_REMOVE
-    ) {
+    } else if (z.score < ZONA_SCORE_REMOVE) {
       z.status = "remover";
     }
+    // A carencia (enfraquecidaRemove) NAO vale aqui, so para ficha orfa
+    // (reconciliarAnteriores). Esta zona foi desenhada AGORA pelos pivos:
+    // remover a ficha nao apaga a regiao, e na vela seguinte o mesmo
+    // cluster voltava com id novo e contadores zerados. Nos tres
+    // monitores, lotes de zonas antigas sumiam por uma vela a cada 16
+    // (5 no semanal) e voltavam renomeadas; faixa manual corroborada so
+    // por uma delas oscilava no alinhamento sem o mercado ter feito nada.
+    // A zona sai quando os pivos deixam de desenha-la -- vira orfa e
+    // cumpre a carencia -- ou quando o score cai abaixo do piso.
   }
   return z;
 }
@@ -4049,6 +4055,10 @@ export function readPair(cfg, d, tf, opts = {}) {
   );
   // Conjunto INTEIRO de zonas vivas, nao o recorte publicado: ver o
   // comentario em calcularZonas.
+  // O lado e' medido contra o ULTIMO FECHAMENTO, nao contra o preco
+  // vivo: o radar e' de manutencao e usa so velas fechadas. O rotulo
+  // diz isso; com "do preco", uma zona que o preco vivo ja tinha
+  // alcancado saia "acima do preco" no painel, ao lado da cotacao.
   const candidatas = zonasCandidatas(
     zonasRes.zonasVivas || zonasAutomaticas, cfg.niveis, closes[i], tf.key, atr[i]
   );
@@ -4060,7 +4070,7 @@ export function readPair(cfg, d, tf, opts = {}) {
               (c) =>
                 `${num(c.inferior, D)}-${num(c.superior, D)} score=${c.score} ` +
                 `toques=${c.toques}${
-                  c.lado === "no preco" ? " (no preco)" : c.lado ? ` (${c.lado} do preco)` : ""
+                  c.lado === "no fechamento" ? " (no fechamento)" : c.lado ? ` (${c.lado} do fechamento)` : ""
                 }`
             )
             .join(" | ")
@@ -5194,7 +5204,7 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey, atr = null) {
             ? "acima"
             : L.superior < precoRef
             ? "abaixo"
-            : "no preco"
+            : "no fechamento"
           : null,
     });
   }

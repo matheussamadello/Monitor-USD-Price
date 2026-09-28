@@ -258,6 +258,16 @@ teste('serie aleatoria vela a vela: ciclo coerente, IDs unicos, teto e reexecuca
       }
       const vivas = new Set(r.zonasVivas.map((z) => z.id));
       assert.ok(r.zonas.every((z) => vivas.has(z.id)), 'publicadas sao vivas');
+      // Zona removida nao volta na vela seguinte com id novo. Pela carencia
+      // a zona que os pivos ainda desenhavam saia e renascia renomeada;
+      // agora a carencia so vale para ficha orfa. Resta o piso de score.
+      const idsAnt = new Set(ant.map((z) => z.id));
+      const sob = (a, b) => Math.max(0, Math.min(a.superior, b.superior) - Math.max(a.inferior, b.inferior)) /
+        Math.min(a.superior - a.inferior, b.superior - b.inferior);
+      for (const rem of ant.filter((z) => z.status === 'remover' && z.score >= 15))
+        assert.ok(!r.zonasEstado.some((z) => !idsAnt.has(z.id) &&
+          sob(z.limites_estruturais, rem.limites_estruturais) >= 0.9),
+          `${tf.key} ${rem.id} removida com score ${rem.score} renasceu com id novo (vela ${n})`);
       // Reexecucao na mesma vela: nada muda, exceto a ficha `remover` sem
       // dona, que so ficava guardada ate a vela seguinte e sai antes.
       const r2 = m.calcularZonas(cfg, tf, d, ctx(r.zonasEstado, r.proximoId));
@@ -269,5 +279,18 @@ teste('serie aleatoria vela a vela: ciclo coerente, IDs unicos, teto e reexecuca
       ant = r.zonasEstado; prox = r.proximoId;
     }
   }
+});
+teste('carencia enfraquecida vale para ficha orfa, nao para zona desenhada agora', () => {
+  const ctx = (vela, sem) => ({ tfKey: 'diario', ultimaVelaFechada: vela, velasDesdeUltimoToque: sem, confluenciaSemanal: false });
+  const ant = { status: 'enfraquecida', velasEnfraquecida: 40, velasComScoreAlto: 0, ultimaVelaAvaliada: 100 };
+  // 40 velas enfraquecida, 300 sem toque: os pivos ainda desenham a regiao.
+  assert.equal(m.atualizarCiclo({ score: 55 }, ant, ctx(101, 300)).status, 'enfraquecida');
+  assert.equal(m.atualizarCiclo({ score: 55 }, ant, ctx(101, 300)).velasEnfraquecida, 41);
+  assert.equal(m.atualizarCiclo({ score: 14 }, ant, ctx(101, 300)).status, 'remover', 'o piso de score continua valendo');
+  assert.equal(m.atualizarCiclo({ score: 55 }, ant, ctx(101, 5)).status, 'ativa', 'e o toque novo continua reativando');
+  // A ficha que os pivos nao desenham mais cumpre a carencia de 15 velas.
+  const orfa = { id: 'x|diario|z1', status: 'enfraquecida', velasEnfraquecida: 14, ultimaVelaAvaliada: 100,
+    limites_estruturais: { inferior: 1, superior: 2 } };
+  assert.equal(m.reconciliarAnteriores([orfa], [], 'diario', 101)[0].status, 'remover');
 });
 console.log(`  ${grupos} grupos de testes de zonas passaram`);

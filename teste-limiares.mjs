@@ -381,11 +381,20 @@ console.log("\n== radar: zona colada numa faixa ja esta representada ==");
     "no relatorio, faixa colada 0,05 acima da candidata a tira do radar");
   ok(linhaRadar([[96.5, 97, "longe"]]) === livre,
     "e faixa a 0,7 ATR nao mexe nela");
+  // O lado e' contra o ULTIMO FECHAMENTO, e o rotulo diz isso: "do preco"
+  // fazia o painel dizer "acima do preco" de uma zona que a cotacao viva,
+  // mostrada ao lado, ja tinha alcancado.
+  ok(/ \((acima|abaixo) do fechamento|no fechamento\)$/.test(livre),
+    `o relatorio diz o lado em relacao ao ultimo fechamento (${livre})`);
+  const zf = { limites_estruturais: { inferior: 95, superior: 105 }, score: 80, numero_toques: 6, status: "ativa" };
+  ok(zonasCandidatas([zf], { faixas: [] }, 100, "diario", 10)[0].lado === "no fechamento" &&
+     zonasCandidatas([zf], { faixas: [] }, 90, "diario", 10)[0].lado === "acima",
+    "zona com o fechamento dentro sai 'no fechamento'; fora, sai o lado");
 }
 
 console.log("\n== painel: as mesmas verificacoes do prompt sobre o radar ==");
 {
-  const lidas = lerCandidatasRadar("78101.29-78336.71 score=71 toques=9 (abaixo do preco) | 5.0725-5.0896 score=94 toques=10 (abaixo do preco)");
+  const lidas = lerCandidatasRadar("78101.29-78336.71 score=71 toques=9 (abaixo do fechamento) | 5.0725-5.0896 score=94 toques=10 (abaixo do fechamento)");
   ok(lidas.length === 2 && lidas[0].inferior === 78101.29 && lidas[0].superior === 78336.71 &&
      lidas[0].score === 71 && lidas[0].toques === 9 && lidas[1].score === 94,
     "a linha do radar e' lida de volta em limites, score e toques");
