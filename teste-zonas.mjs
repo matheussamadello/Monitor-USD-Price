@@ -173,10 +173,17 @@ teste('filhos novos continuam sujeitos a duas velas e evidencia independente', (
 });
 teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', () => {
   const ref = JSON.parse(readFileSync(new URL('./reajuste-faixas-manuais-2026-09-25.json', import.meta.url)));
+  // Revisoes manuais POSTERIORES ao reajuste que moveram um nivel pontual
+  // de proposito. Registradas aqui uma a uma: fora desta lista, o nivel
+  // continua preso ao valor do reajuste.
+  //   2026-09-28 XMR/BTC: suporte 0.00584 -> 0.0064 (nunca tinha aberto
+  //   registro; passou a vigiar o piso das minimas de 09-14 a 09-27).
+  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0064 } };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
-    assert.equal(cfg.niveis.suporte, r.suporte_pontual);
-    assert.equal(cfg.niveis.resistencia, r.resistencia_pontual);
+    const rev = PONTUAIS_REVISTOS[r.par] || {};
+    assert.equal(cfg.niveis.suporte, rev.suporte ?? r.suporte_pontual);
+    assert.equal(cfg.niveis.resistencia, rev.resistencia ?? r.resistencia_pontual);
     // O reajuste de 2026-09-25 continua valendo faixa a faixa. Promocoes
     // posteriores do radar ACRESCENTAM faixas e nao podem mexer nas
     // reajustadas, entao a correspondencia com o audit passou a ser por
