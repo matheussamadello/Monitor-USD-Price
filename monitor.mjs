@@ -757,7 +757,12 @@ function montarSerie(linhas, {
 // Le a resposta do Yahoo e devolve as linhas validadas, ainda sem montar
 // a serie. Separado de parseYahoo para o parser hibrido reaproveitar a
 // mesma validacao na parte antiga do historico.
-function linhasYahoo(texto) {
+// `tolerante`: com as horas disponiveis, esta serie so cobre o historico
+// anterior a elas, e o preco atual vem das horas. Ai uma vela incompleta
+// ou incoerente -- inclusive a mais recente -- e' descartada e anotada,
+// em vez de derrubar o par inteiro. Sem as horas a regra dura volta a
+// valer, porque a cotacao atual sai daqui.
+function linhasYahoo(texto, { tolerante = false } = {}) {
   const json = JSON.parse(texto);
   const erro = json && json.chart && json.chart.error;
   if (erro) throw new Error("Yahoo: " + (erro.description || erro.code || "erro"));
@@ -788,14 +793,17 @@ function linhasYahoo(texto) {
     // Sessao ausente pode vir toda nula; candle parcialmente ausente
     // e' resposta incompleta, nunca preco zero. Rejeita para acionar fallback.
     if (precos.every((v) => v === null || v === undefined)) continue;
-    if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0))
-      throw new Error("Yahoo: candle com OHLC incompleto ou inválido");
+    if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0)) {
+      if (!tolerante) throw new Error("Yahoo: candle com OHLC incompleto ou inválido");
+      descartadas.push(fmtDia(dias[i]));
+      continue;
+    }
     const [open, high, low, close] = precos;
     if (low > high || open < low || open > high || close < low || close > high) {
       // A fonte tem outliers historicos isolados. Nao inventa extremos
       // para encaixar o corpo nem derruba anos validos por uma barra antiga.
       // A cotacao mais recente, por outro lado, nunca pode ser escondida.
-      if (i === ultimoIndice) throw new Error("Yahoo: candle mais recente com OHLC inconsistente");
+      if (i === ultimoIndice && !tolerante) throw new Error("Yahoo: candle mais recente com OHLC inconsistente");
       descartadas.push(fmtDia(dias[i]));
       continue;
     }
@@ -930,7 +938,7 @@ export function parseYahooHibrido(textos, tf) {
   if (!semHoras && montadas.length < 2) semHoras = "horas insuficientes";
   const corte = semHoras ? Infinity : montadas[1].time;
 
-  const { linhas, descartadas } = linhasYahoo(textoLongo);
+  const { linhas, descartadas } = linhasYahoo(textoLongo, { tolerante: !semHoras });
   const antigas = new Map();
   for (const l of linhas) {
     if (l.high === l.low) continue;
@@ -963,9 +971,14 @@ export function parseYahooHibrido(textos, tf) {
     ignorarFimDeSemana: true,
     fimPeriodo: (row) => row.time + duracao,
   });
+  // So as descartadas que fazem falta: dentro da janela publicada e antes
+  // das horas. Um dia que as horas cobrem nao se perdeu.
+  const ini = serie.times.length ? fmtDia(serie.times[0]) : "";
+  const ate = Number.isFinite(corte) ? fmtDia(corte) : "9999";
+  const perdidas = descartadas.filter((dia) => dia >= ini && dia < ate);
   const avisos = [];
-  if (descartadas.length)
-    avisos.push(`Yahoo: candles historicos com OHLC inconsistente descartados (${descartadas.length}): ${descartadas.join(", ")}`);
+  if (perdidas.length)
+    avisos.push(`Yahoo: candles historicos com OHLC inconsistente descartados (${perdidas.length}): ${perdidas.join(", ")}`);
   if (horasFora)
     avisos.push(`Yahoo 1h: ${horasFora} velas de 1 hora com OHLC incompleto ou inconsistente descartadas`);
   if (semHoras)
@@ -2962,6 +2975,12 @@ export function pontuarZona(zona, ctx) {
 // como desempate. Exigir mesmo tipo faria uma zona ganhar ID novo so
 // porque o preco intradiario cruzou para o outro lado — e o papel e'
 // atributo, nunca identidade.
+function mesmosLimites(a, b) {
+  if (!a || !b) return false;
+  const tol = 1e-9 * Math.max(Math.abs(a.inferior), Math.abs(a.superior), 1);
+  return Math.abs(a.inferior - b.inferior) <= tol && Math.abs(a.superior - b.superior) <= tol;
+}
+
 export function casarZonas(anteriores, novas, atrAtual) {
   const candidatos = [];
   for (const nova of novas) {
@@ -2978,15 +2997,25 @@ export function casarZonas(anteriores, novas, atrAtual) {
           nova,
           sob,
           dist,
+          exata: mesmosLimites(ant.limites_estruturais, nova.limites_estruturais),
           mesmoTipo: ant.tipo === nova.tipo,
         });
       }
     }
   }
 
-  // maior sobreposicao, depois menor distancia, tipo so no desempate
+  // Limites estruturais IDENTICOS vem antes de tudo: e' o mesmo conjunto
+  // de pivos, portanto a mesma regiao. Sem isso, duas zonas aninhadas
+  // (uma dentro da outra, sobreposicao 1,0 com as duas fichas) eram
+  // desempatadas pela distancia ao centro SUAVIZADO da ficha -- que nao e'
+  // o centro da zona -- e um retry na mesma vela trocava os IDs: cada uma
+  // passava a carregar status, contadores e historico de papel da outra.
+  // Achado por teste de propriedade; no estado real havia pares de zonas
+  // vivas com sobreposicao de 0,89 a 1,0.
+  // Depois: maior sobreposicao, menor distancia, tipo so no desempate.
   candidatos.sort(
     (a, b) =>
+      (b.exata === a.exata ? 0 : b.exata ? 1 : -1) ||
       b.sob - a.sob ||
       a.dist - b.dist ||
       (a.mesmoTipo === b.mesmoTipo ? 0 : a.mesmoTipo ? -1 : 1)
@@ -5607,7 +5636,7 @@ export function motivoObservacaoRadar(c, faixas, atr) {
   if (abaixo.length && acima.length) {
     const vao = Math.min(...acima) - Math.max(...abaixo);
     if (vao < RADAR_VAO_VIZINHAS_MIN_ATR * atr)
-      return `entre faixas a ${fixo(vao / atr, 2)} ATR uma da outra`;
+      return `entre faixas a ${fixo(vao / atr, 2).replace(".", ",")} ATR uma da outra`;
   }
   return null;
 }

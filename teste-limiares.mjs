@@ -192,6 +192,22 @@ console.log("\n== casamento de zonas: distancia e sobreposicao ==");
     "40% de sobreposicao (acima de 35%) casa mesmo com os centros longe");
   ok(!casou(zona("z1", 100, 110), zona("n", 107.5, 117.5), 1),
     "25% de sobreposicao nao casa");
+
+  // ZONAS ANINHADAS num retry. Caso real do teste de propriedade: A
+  // (5,338-5,401) contem B (5,360-5,400). Na vela nova z461 ficou com A e
+  // z489 com B; as fichas guardam os limites de cada uma e o centro
+  // SUAVIZADO. No retry a sobreposicao empata em 1,0 nos quatro pares, e o
+  // centro suavizado de z489 (5,373) fica mais perto do centro de A
+  // (5,3695) -- os IDs se trocavam. Limites identicos decidem primeiro.
+  const ficha = (id, lo, hi, centro) => ({ ...zona(id, lo, hi), centro });
+  const A = zona("A", 5.338, 5.401), B = zona("B", 5.360, 5.400);
+  const pares = casarZonas([ficha("z461", 5.338, 5.401, 5.353), ficha("z489", 5.360, 5.400, 5.373)], [A, B], 0.212);
+  const de = (nova) => pares.find((p) => p.nova === nova)?.ant.id;
+  ok(de(A) === "z461" && de(B) === "z489",
+    `retry com zonas aninhadas mantem cada ID na sua zona (A=${de(A)}, B=${de(B)})`);
+  // Sem limite identico (vela nova, geometria mudou), vale o criterio de sempre.
+  const pares2 = casarZonas([ficha("z1", 100, 110, 105)], [zona("n", 100.5, 110.5)], 1);
+  ok(pares2.length === 1 && pares2[0].ant.id === "z1", "sem limite identico, sobreposicao e distancia seguem valendo");
 }
 
 console.log("\n== confluencia entre faixa manual e zona observada ==");

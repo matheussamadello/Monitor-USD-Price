@@ -899,6 +899,24 @@ if (typeof m.parseYahooHibrido === "function") await teste("USD/BRL montado das 
     assert.equal(w.closes[k], semana.at(-1).c, "e fecha no ultimo de sexta");
     assert.equal(w.live.time, epoch("2026-09-21T00:00:00Z"));
 
+    // Com as horas, a serie longa so cobre o historico: vela ruim nela --
+    // mesmo a mais recente, mesmo incompleta -- e' descartada, nao derruba
+    // o par. E o aviso so cita o que faz falta: antes das horas e dentro
+    // da janela publicada.
+    const estragada = longo.map((l) => ({ ...l }));
+    estragada.at(-1).c = estragada.at(-1).h + 1;                 // mais recente incoerente
+    const velhaRuim = estragada.findIndex((l) => l.t === epoch("2025-06-04T00:00:00Z") - H);
+    estragada[velhaRuim].o = null;                               // antiga incompleta
+    const coberta = estragada.findIndex((l) => l.t === epoch("2026-09-10T00:00:00Z") - H);
+    estragada[coberta].l = estragada[coberta].h + 1;             // dia que as horas cobrem
+    const tol = m.parseYahooHibrido([resp(horas), resp(estragada)], diario);
+    assert.equal(tol.closes[tol.times.indexOf(qua)], s.closes[i], "vela ruim na serie longa nao mexe no que vem das horas");
+    assert.match(tol.avisosDados.join(" "), /descartados \(1\): 2025-06-04/,
+      "o aviso cita so a data que faz falta");
+    const semHorasRuim = [null, resp(estragada)]; semHorasRuim.falhas = ["HTTP 503"];
+    assert.throws(() => m.parseYahooHibrido(semHorasRuim, diario), /mais recente|incompleto/,
+      "sem as horas a regra dura volta: a cotacao atual sairia dessa serie");
+
     // Sem as horas: a serie longa reparada, com aviso.
     const falhas = [null, resp(longo)]; falhas.falhas = ["HTTP 503"];
     const sem = m.parseYahooHibrido(falhas, diario);
