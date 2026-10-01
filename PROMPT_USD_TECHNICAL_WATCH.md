@@ -56,6 +56,8 @@ Monitore o relatório técnico de USD a cada execução usando como fonte princi
 
 Só processe um `timestamp` **estritamente mais novo** que o maior timestamp já processado. Um timestamp novo sozinho **NÃO gera alerta**. Considere o maior timestamp já processado como baseline e somente mudanças posteriores realmente novas podem gerar alerta.
 
+Um timestamp recente não garante dados de mercado válidos. Se um bloco publicar `falha`, não use sua memória preservada para confirmar eventos novos; aplique o tratamento de indisponibilidade já definido abaixo. Os demais blocos válidos continuam utilizáveis.
+
 Se JSON e HTML falharem totalmente por **4 execuções consecutivas**, envie um único alerta curto de indisponibilidade. Não repita esse alerta a cada nova falha. Zere a contagem assim que alguma fonte voltar a funcionar. Se um alerta operacional do fallback já estiver ativo para a mesma indisponibilidade, não envie um segundo alerta redundante.
 
 ### Quem lê estes alertas
@@ -1068,7 +1070,7 @@ O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 
 ### USD/BRL
 
-`dados_avisos`, quando presente, informa datas de candles históricos inválidos que foram descartados. É contexto de qualidade da fonte, não evento de mercado nem motivo de alerta isolado. O monitor não inventa os preços ausentes; dados incompletos ou candle mais recente inconsistente fazem a fonte falhar.
+`dados_avisos`, quando presente, informa datas de candles históricos inválidos que foram descartados. É contexto de qualidade da fonte, não evento de mercado nem motivo de alerta isolado. Esse aviso também identifica o fallback histórico aproximado pela abertura seguinte quando faltam as horas. Lacunas detectadas na cobertura recente e o último fechamento sem reparo possível fazem a fonte falhar.
 
 - Fora do pregão não há vela em formação. Leia `vela_atual_em_formacao` antes de descrever qualquer coisa como "atual".
 - `vela_atual_em_formacao: nao` significa que não há vela em formação; não significa dia estável. Com `nao`, o bloco `candle_atual_*` vem em branco (`--`) de propósito — a barra está em `ultimo_fechamento_*`, e só lá.

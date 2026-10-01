@@ -402,7 +402,9 @@ await teste("USD inclui o ultimo pregao encerrado sem duplicar a vela", async ()
     }, { rsi: null, adx: null, adxAnt: null });
     assert.ok(!a.some((x) => /intradiario/.test(x)), "sombra de pregao encerrado nao e' toque intradiario novo");
   });
-  await noInstante("2026-09-14T12:00:00Z", async () => {
+  // Dentro da tolerancia da virada semanal; ao meio-dia a ausencia da
+  // semana nova agora e' corretamente tratada como fonte desatualizada.
+  await noInstante("2026-09-14T01:00:00Z", async () => {
     const fonte = mockFetch();
     const semSemanaNova = async (url) => {
       const res = await fonte(url);
@@ -831,7 +833,9 @@ if (typeof m.parseYahoo === "function") await teste("Yahoo rejeita OHLC parcial/
     { nome: "primaria", url: () => "primeira", parse: m.parseYahoo },
     { nome: "reserva", url: () => "segunda", parse: m.parseYahoo },
   ] };
-  const r = await m.buscarSerie(async url => ({ ok: true, text: async () => resposta(url === "primeira" ? ruim : q) }), cfg, tf);
+  // Fixture historica, mas fonte fresca em relacao ao relogio do teste.
+  const instante = new Date((times.at(-1) + DIA + 1800) * 1000).toISOString();
+  const r = await noInstante(instante, () => m.buscarSerie(async url => ({ ok: true, text: async () => resposta(url === "primeira" ? ruim : q) }), cfg, tf));
   assert.equal(r.ok, true); assert.equal(r.fonte, "reserva");
   assert.ok(r.parsed.lows.every(x => x === 4.9));
   const falha = await m.buscarSerie(async () => ({ ok: true, text: async () => resposta(ruim) }), cfg, tf);
