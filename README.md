@@ -1252,7 +1252,7 @@ O monitor pode rodar várias vezes sobre a mesma vela fechada. As regras abaixo 
 - As sínteses consideram a direção do nível. Um reteste de uma perda de suporte não confirma entrada compradora; recuperar um suporte perdido não representa falha de um rompimento de alta.
 - O centro das zonas é suavizado uma vez por nova vela fechada. Uma ficha de remoção é mantida até a próxima vela para impedir que um retry recrie a zona com outro ID. Distância e posição em relação ao preço atual continuam podendo variar.
 - O volume da última vela fechada confirma apenas rompimentos ou perdas daquela mesma vela. Toques e rompimentos intradiários não recebem confirmação pelo volume do dia anterior.
-- `analisar-historico.mjs` conta uma observação por par, timeframe, vela e condição de fechamento, incluindo a referência. Snapshots repetidos não aumentam a amostra; condições intradiárias, mistas ou desconhecidas não usam retroativamente o fechamento anterior como preço de entrada.
+- `analisar-historico.mjs` conta uma observação por par, timeframe, vela e condição de fechamento, incluindo a referência. Snapshots repetidos não aumentam a amostra; condições intradiárias, mistas ou desconhecidas não usam retroativamente o fechamento anterior como preço de entrada. Quando a mesma vela foi gravada mais de uma vez com fechamentos diferentes, a série de preços usa o **último** registro, que é o mais corrigido (no USD/BRL, a primeira gravação podia sair antes de a última cotação do dia chegar).
 
 Execute `node teste-fumaca.mjs` para rodar a suíte existente e as regressões de `teste-regressoes.mjs`, sem rede. Para executar somente as reproduções dos defeitos, use `node teste-regressoes.mjs`. O workflow existente já roda o teste de fumaça antes de gerar o relatório.
 

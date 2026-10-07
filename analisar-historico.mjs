@@ -53,13 +53,17 @@ try {
 const entradas = linhas.map((l) => JSON.parse(l));
 
 // Uma serie de precos por par e timeframe, indexada pela vela fechada.
-// Varias execucoes podem ter escrito a mesma vela; a primeira vale.
+// Varias execucoes podem ter escrito a mesma vela; a ULTIMA vale. Esta
+// serie mede o que o preco fez depois, e o fechamento mais novo e' o mais
+// corrigido: no USD/BRL, a primeira gravacao de 2026-09-28 (5,2215) saiu
+// antes de a ultima cotacao do dia chegar; a seguinte ja trazia 5,2226.
+// As condicoes nao mudam: cada uma conta uma vez por vela.
 const series = new Map();
 for (const e of entradas) {
   const k = `${e.par}|${e.tf}`;
   if (!series.has(k)) series.set(k, new Map());
   const m = series.get(k);
-  if (e.vela && typeof e.fech === "number" && !m.has(e.vela)) m.set(e.vela, e.fech);
+  if (e.vela && typeof e.fech === "number") m.set(e.vela, e.fech);
 }
 const ordenadas = new Map();
 for (const [k, m] of series) {
