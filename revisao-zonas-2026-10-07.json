@@ -1,0 +1,384 @@
+{
+  "revisado_em": "2026-10-07T09:48:03.648Z",
+  "relatorio_main": "2026-10-07 09:12 UTC",
+  "fontes": [
+    {
+      "url": "https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1d&limit=1000",
+      "status": 200,
+      "sha256": "bc97554a1d1cca635dd9880d9ead553c0bfeee45bcdfbd39d3a6dabac47ec1cc"
+    },
+    {
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/USDBRL%3DX?interval=1h&range=730d",
+      "status": 200,
+      "sha256": "8f26b17298b7d33b7f598e7739c5e7107d961c34702ef68c2edd56111fb82d37"
+    },
+    {
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/USDBRL%3DX?interval=1d&range=5y",
+      "status": 200,
+      "sha256": "c623b20e646864274c802ba2e5642bd9802e5a9675e6c1c8b7f7193a2532c504"
+    },
+    {
+      "url": "https://data-api.binance.vision/api/v3/klines?symbol=USDTBRL&interval=1w&limit=1000",
+      "status": 200,
+      "sha256": "2621c9863faac653dabc7e1c637c18fb8c746fd438a633eea61ac5c49c46849e"
+    },
+    {
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/USDBRL%3DX?interval=1wk&range=10y",
+      "status": 200,
+      "sha256": "b90ef32e78550f8a0a792262a40599a6b54ed0d249b2729e76e4f2f9b82d0b8c"
+    }
+  ],
+  "criterios": "Somente diario, ativa, score >=70, pelo menos 5 episodios, sem faixa equivalente/colada (<0,2 ATR). Pivo unico (largura <=0,12 ATR) exige score >=80; nao fragmentar entre faixas vizinhas a menos de 1 ATR. Limites estruturais fixos; teto de calibracao 0,5 ATR.",
+  "correcoes_novas": [
+    "Bloco semanal com falha preserva memoria, mas nao confirma nem pontua zonas diarias.",
+    "Sem pivos na serie valida, as fichas antigas passam pela reconciliacao e pela carencia de orfas."
+  ],
+  "correcoes_pendentes_da_revisao_anterior": [
+    "Idade maxima da fonte em relacao ao relogio.",
+    "Contexto atual e idade em velas das zonas orfas.",
+    "Cobertura recente do Yahoo, prioridade das horas no segundo host e rejeicao do ultimo fechamento sem reparo."
+  ],
+  "pares": [
+    {
+      "par": "USDT/BRL",
+      "preco_na_coleta": 5.0099,
+      "atr_diario": 0.0557,
+      "radar_antes": "5.2178-5.2222 score=79 toques=6 (acima do fechamento)",
+      "candidatos": [
+        {
+          "id": "usdt|diario|z49",
+          "tipo_confirmado": "resistencia",
+          "status": "ativa",
+          "score": 79,
+          "toques": 6,
+          "rejeicoes": 4,
+          "velas_desde_ultimo_toque": 1,
+          "limites_estruturais": {
+            "inferior": 5.217771386980729,
+            "superior": 5.22222861301927
+          },
+          "timeframes_confirmando": [
+            "diario",
+            "semanal"
+          ],
+          "motivo_observacao": "pivô único com score abaixo de 80",
+          "decisao": "observar"
+        }
+      ],
+      "novas_regioes_sem_maturidade": [
+        {
+          "id": "usdt|diario|z64",
+          "limites_estruturais": {
+            "inferior": 5.0010989208967676,
+            "superior": 5.004901079103233
+          },
+          "tipo": "suporte",
+          "status": "ativa",
+          "score": 54,
+          "toques": 2,
+          "rejeicoes": 1,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        },
+        {
+          "id": "usdt|diario|z36",
+          "limites_estruturais": {
+            "inferior": 5.028861311936148,
+            "superior": 5.033738688063852
+          },
+          "tipo": "suporte",
+          "status": "ativa",
+          "score": 49,
+          "toques": 2,
+          "rejeicoes": 1,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        },
+        {
+          "id": "usdt|diario|z48",
+          "limites_estruturais": {
+            "inferior": 5.037221444456099,
+            "superior": 5.041978555543901
+          },
+          "tipo": "suporte",
+          "status": "ativa",
+          "score": 61,
+          "toques": 4,
+          "rejeicoes": 1,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        },
+        {
+          "id": "usdt|diario|z80",
+          "limites_estruturais": {
+            "inferior": 4.942940938280826,
+            "superior": 4.959559061719174
+          },
+          "tipo": "suporte",
+          "status": "ativa",
+          "score": 51,
+          "toques": 4,
+          "rejeicoes": 1,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        }
+      ]
+    },
+    {
+      "par": "USD/BRL",
+      "preco_na_coleta": 4.9703,
+      "atr_diario": 0.0696,
+      "radar_antes": "4.9284-4.9521 score=83 toques=5 (abaixo do fechamento)",
+      "candidatos": [
+        {
+          "id": "usd|diario|z55",
+          "tipo_confirmado": "suporte",
+          "status": "ativa",
+          "score": 83,
+          "toques": 5,
+          "rejeicoes": 3,
+          "velas_desde_ultimo_toque": 0,
+          "limites_estruturais": {
+            "inferior": 4.928413987060997,
+            "superior": 4.9520858527217175
+          },
+          "timeframes_confirmando": [
+            "diario"
+          ],
+          "motivo_observacao": null,
+          "decisao": "promover"
+        }
+      ],
+      "novas_regioes_sem_maturidade": [
+        {
+          "id": "usd|diario|z32",
+          "limites_estruturais": {
+            "inferior": 4.916373006813457,
+            "superior": 4.919826753623555
+          },
+          "tipo": "suporte",
+          "status": "ativa",
+          "score": 61,
+          "toques": 3,
+          "rejeicoes": 2,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        },
+        {
+          "id": "usd|diario|z45",
+          "limites_estruturais": {
+            "inferior": 5.19902434630436,
+            "superior": 5.232675406503257
+          },
+          "tipo": "resistencia",
+          "status": "ativa",
+          "score": 92,
+          "toques": 4,
+          "rejeicoes": 4,
+          "decisao": "nao promover: criterios de maturidade nao atendidos"
+        }
+      ]
+    }
+  ],
+  "promocao": {
+    "par": "USD/BRL",
+    "faixa": [
+      4.9284,
+      4.9521,
+      "regiao_suporte_4_9284_4_9521"
+    ],
+    "zona": "usd|diario|z55",
+    "score_automatico": 83,
+    "limites_estruturais_originais": {
+      "inferior": 4.928413987060997,
+      "superior": 4.9520858527217175
+    },
+    "pivos": [
+      {
+        "time": 1704412800,
+        "preco": 4.940400123596191,
+        "tipo": "topo",
+        "confirmado_em": 1705017600
+      },
+      {
+        "time": 1709769600,
+        "preco": 4.930500030517578,
+        "tipo": "fundo",
+        "confirmado_em": 1710374400
+      },
+      {
+        "time": 1710979200,
+        "preco": 4.949999809265137,
+        "tipo": "fundo",
+        "confirmado_em": 1711584000
+      },
+      {
+        "time": 1776902400,
+        "preco": 4.938700199127197,
+        "tipo": "fundo",
+        "confirmado_em": 1777507200
+      }
+    ],
+    "confirmacao_semanal": false,
+    "qualidade_faixa_exata": {
+      "score": 76,
+      "score_bruto": 76,
+      "fator_penalidade": 1,
+      "penalidades": [],
+      "numero_toques": 5,
+      "numero_rejeicoes": 3,
+      "forca_reacao_atr": 1.53,
+      "score_sem_bonus_semanal": 76,
+      "episodios_concluidos": 4,
+      "episodios_abertos": 1,
+      "toques_ultimas_90_velas": 1,
+      "rejeicoes_ultimas_90_velas": 0,
+      "velas_desde_ultimo_toque": 0,
+      "ultimo_toque": "2026-10-06",
+      "volume_aplicavel": false,
+      "volume_relativo_mediano": null,
+      "confirmacao_semanal": [],
+      "role_reversals": [],
+      "episodios": [
+        {
+          "inicioIdx": 14,
+          "inicio": 1705536000,
+          "fimIdx": 39,
+          "fim": 1708560000,
+          "lado": "dentro",
+          "velas": 19,
+          "rejeitado": false,
+          "excursaoAtr": 1.290005450276284,
+          "volume_relativo": null,
+          "saidaIdx": 40
+        },
+        {
+          "inicioIdx": 42,
+          "inicio": 1708992000,
+          "fimIdx": 49,
+          "fim": 1709769600,
+          "lado": "acima",
+          "velas": 7,
+          "rejeitado": true,
+          "excursaoAtr": 2.54211995306285,
+          "volume_relativo": null,
+          "saidaIdx": 54
+        },
+        {
+          "inicioIdx": 59,
+          "inicio": 1710979200,
+          "fimIdx": 59,
+          "fim": 1710979200,
+          "lado": "acima",
+          "velas": 1,
+          "rejeitado": true,
+          "excursaoAtr": 1.5534157467184906,
+          "volume_relativo": null,
+          "saidaIdx": 60
+        },
+        {
+          "inicioIdx": 596,
+          "inicio": 1776384000,
+          "fimIdx": 614,
+          "fim": 1778630400,
+          "lado": "acima",
+          "velas": 11,
+          "rejeitado": true,
+          "excursaoAtr": 2.284453141275101,
+          "volume_relativo": null,
+          "saidaIdx": 616
+        },
+        {
+          "inicioIdx": 717,
+          "inicio": 1791158400,
+          "fimIdx": 718,
+          "fim": 1791244800,
+          "lado": "acima",
+          "velas": 2,
+          "rejeitado": false,
+          "excursaoAtr": 0,
+          "volume_relativo": null,
+          "aberto": true
+        }
+      ]
+    },
+    "qualidade_pos_confirmacao": {
+      "score": 76,
+      "score_bruto": 76,
+      "fator_penalidade": 1,
+      "penalidades": [],
+      "numero_toques": 5,
+      "numero_rejeicoes": 3,
+      "forca_reacao_atr": 1.53,
+      "score_sem_bonus_semanal": 76,
+      "episodios_concluidos": 4,
+      "episodios_abertos": 1,
+      "toques_ultimas_90_velas": 1,
+      "rejeicoes_ultimas_90_velas": 0,
+      "velas_desde_ultimo_toque": 0,
+      "ultimo_toque": "2026-10-06",
+      "volume_aplicavel": false,
+      "volume_relativo_mediano": null,
+      "confirmacao_semanal": [],
+      "role_reversals": [],
+      "episodios": [
+        {
+          "inicioIdx": 14,
+          "inicio": 1705536000,
+          "fimIdx": 39,
+          "fim": 1708560000,
+          "lado": "dentro",
+          "velas": 19,
+          "rejeitado": false,
+          "excursaoAtr": 1.290005450276284,
+          "volume_relativo": null,
+          "saidaIdx": 40
+        },
+        {
+          "inicioIdx": 42,
+          "inicio": 1708992000,
+          "fimIdx": 49,
+          "fim": 1709769600,
+          "lado": "acima",
+          "velas": 7,
+          "rejeitado": true,
+          "excursaoAtr": 2.54211995306285,
+          "volume_relativo": null,
+          "saidaIdx": 54
+        },
+        {
+          "inicioIdx": 59,
+          "inicio": 1710979200,
+          "fimIdx": 59,
+          "fim": 1710979200,
+          "lado": "acima",
+          "velas": 1,
+          "rejeitado": true,
+          "excursaoAtr": 1.5534157467184906,
+          "volume_relativo": null,
+          "saidaIdx": 60
+        },
+        {
+          "inicioIdx": 596,
+          "inicio": 1776384000,
+          "fimIdx": 614,
+          "fim": 1778630400,
+          "lado": "acima",
+          "velas": 11,
+          "rejeitado": true,
+          "excursaoAtr": 2.284453141275101,
+          "volume_relativo": null,
+          "saidaIdx": 616
+        },
+        {
+          "inicioIdx": 717,
+          "inicio": 1791158400,
+          "fimIdx": 718,
+          "fim": 1791244800,
+          "lado": "acima",
+          "velas": 2,
+          "rejeitado": false,
+          "excursaoAtr": 0,
+          "volume_relativo": null,
+          "aberto": true
+        }
+      ]
+    },
+    "ressalva": "O ultimo episodio esta aberto; 1 toque e 0 rejeicoes nas ultimas 90 velas. O historico anterior as horas usa fechamento aproximado pela abertura seguinte, mantido e sinalizado pela fonte. Promocao e manutencao, nao sinal de mercado."
+  }
+}

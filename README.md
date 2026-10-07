@@ -205,6 +205,8 @@ A coleta rejeita uma série congelada mesmo quando o relatório ganhou um timest
 
 Zonas mantidas temporariamente sem novos pivôs (`orfa: true`) atualizam distância, posição em relação ao preço e limites operacionais com a cotação e o ATR atuais. A idade desde o último toque continua em número de velas e sobrevive à gravação e retomada do estado.
 
+Na revisão de 2026-10-07, o diário deixou de usar zonas semanais de um bloco com `falha` como confirmação e bônus de score. A memória semanal fica preservada para retomada. Uma série válida sem pivôs também passa pela reconciliação: as fichas antigas atualizam o contexto e cumprem a carência de órfãs, em vez de permanecerem ativas indefinidamente.
+
 ## Indicadores e leituras calculadas
 
 ### RSI
@@ -509,6 +511,7 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | 5,068–5,0805 | `regiao_suporte_5_068_5_0805` | 5,06960201, 5,0790782 |
 | 5,049–5,0545 | `regiao_suporte_5_049_5_0545` | 5,05053997, 5,05066204, 5,0532999 |
 | 4,9945–5,0005 | `regiao_suporte_4_9945_5_0005` | 4,99590015, 4,99780607, 4,99849987, 4,99900007 |
+| 4,9284–4,9521 | `regiao_suporte_4_9284_4_9521` | Promovida em 2026-10-07: pivôs de 4,9404, 4,9305, 4,9500 e 4,9387 |
 
 Resistência pontual: **5,3**. Suporte pontual: **5,13**.
 
@@ -1189,6 +1192,7 @@ const NIVEIS_USD = {
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
     [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
     [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
+    [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -1264,3 +1268,9 @@ O histórico registra `ema89_confirmacao` e `ema89_evento_id`; a análise histó
 ### Regressões de largura das zonas
 
 `node teste-zonas.mjs` verifica compactação, divisão com evidência, ausência de divisão artificial, limites diário/semanal, fusão, tolerância operacional, score/toques/rejeições, role reversal, migração de fichas antigas e as faixas manuais desta calibração. É executado por `teste-fumaca.mjs`.
+
+### Promoção de zona em 2026-10-07
+
+A região de USD/BRL em R$ 4,9284–4,9521 passou do radar para faixa manual com os limites estruturais congelados. A zona diária `usd|diario|z55` tinha score 83, cinco episódios e três rejeições; a conferência independente na faixa exata manteve cinco episódios e três rejeições, com score 76 e sem bônus semanal. São quatro episódios concluídos e um aberto: nas últimas 90 velas há um toque e nenhuma rejeição confirmada. Isso é manutenção de referência, sem afirmar que o suporte segurou no toque atual. A evidência está em `revisao-zonas-2026-10-07.json` e a série reproduzível, em `fixture-promocao-usd-2026-10-07.json`.
+
+A região de USDT/BRL em R$ 5,2178–5,2222 continuou em observação: é um núcleo de pivô único com score 79, abaixo dos 80 exigidos nesse caso. As outras regiões novas não passaram nos filtros ou já estavam representadas.

@@ -56,7 +56,7 @@ Monitore o relatório técnico de USD a cada execução usando como fonte princi
 
 Só processe um `timestamp` **estritamente mais novo** que o maior timestamp já processado. Um timestamp novo sozinho **NÃO gera alerta**. Considere o maior timestamp já processado como baseline e somente mudanças posteriores realmente novas podem gerar alerta.
 
-Um timestamp recente não garante dados de mercado válidos. Se um bloco publicar `falha`, não use sua memória preservada para confirmar eventos novos; aplique o tratamento de indisponibilidade já definido abaixo. Os demais blocos válidos continuam utilizáveis.
+Um timestamp recente não garante dados de mercado válidos. Se um bloco publicar `falha`, não use sua memória preservada para confirmar eventos novos; aplique o tratamento de indisponibilidade já definido abaixo. Os demais blocos válidos continuam utilizáveis. Quando o semanal falhar, as zonas do diário não recebem confirmação semanal da memória preservada.
 
 Se JSON e HTML falharem totalmente por **4 execuções consecutivas**, envie um único alerta curto de indisponibilidade. Não repita esse alerta a cada nova falha. Zere a contagem assim que alguma fonte voltar a funcionar. Se um alerta operacional do fallback já estiver ativo para a mesma indisponibilidade, não envie um segundo alerta redundante.
 
@@ -188,6 +188,7 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 5,068–5,0805 — `regiao_suporte_5_068_5_0805`;
 - R$ 5,049–5,0545 — `regiao_suporte_5_049_5_0545`;
 - R$ 4,9945–5,0005 — `regiao_suporte_4_9945_5_0005`;
+- R$ 4,9284–4,9521 — `regiao_suporte_4_9284_4_9521`;
 - resistência pontual de referência em torno de R$ 5,30;
 - suporte pontual de referência em torno de R$ 5,13.
 
@@ -1063,6 +1064,8 @@ Regras:
 4. Com `trilho_premio_comparavel: nao`, não cite o percentual como um prêmio simultâneo válido. Isso normalmente ocorre quando o USD/BRL está fechado e o USDT/BRL continua negociando. Use `trilho_premio_defasagem_dias` para contextualizar se necessário.
 
 ---
+
+A faixa USD/BRL de R$ 4,9284–4,9521 foi promovida em 2026-10-07 com os limites estruturais da zona diária `usd|diario|z55`: score 83, cinco episódios e três rejeições, sem confirmação semanal. A conferência na faixa fixa deu score 76. O último episódio ainda está aberto e não confirmou rejeição; a promoção é manutenção da configuração, sem constituir sinal novo de compra ou rompimento. As faixas existentes e os níveis pontuais continuam com os mesmos valores.
 
 ## Fim de semana e feriado
 

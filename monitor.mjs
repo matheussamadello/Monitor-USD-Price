@@ -128,6 +128,12 @@ const NIVEIS_USD = {
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
     [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
     [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
+    // Promovida em 2026-10-07: usd|diario|z55, score 83, 5 episodios
+    // (4 concluidos, 1 aberto), 3 rejeicoes; sem confirmacao semanal.
+    // Limites estruturais congelados, arredondados para fora a 4 casas.
+    // Faixa exata: score 76, 5 episodios, 3 rejeicoes (auditoria independente).
+    // Evidencia: revisao-zonas-2026-10-07.json. Nao cria ciclo pontual.
+    [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -3361,11 +3367,9 @@ export function calcularZonas(cfg, tf, d, ctx) {
   const ultimaVelaFechada = times[times.length - 1];
 
   const pv = pivosComAtr(highs, lows, closes, times, ctx.pivos, atr);
-  if (!pv.topos.length && !pv.fundos.length) {
-    // Sem pivos nesta consulta: nao ha o que recalcular, mas as zonas
-    // ja conhecidas nao podem ser apagadas por isso.
-    return { zonas: [], zonasEstado: anteriores, proximoId: ctx.proximoId };
-  }
+  // Sem pivos, o pipeline continua com zero zonas novas. As fichas
+  // anteriores passam por reconciliarAnteriores: mantem a identidade,
+  // atualizam contexto e envelhecem pela mesma carencia das demais orfas.
 
   const montar = (clusters, origem) =>
     clusters
@@ -4607,8 +4611,8 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
         const chaveZ = `${cfg.key}|${tf.key}`;
         if (zonasAnt[chaveZ]) {
           zonasNovas[chaveZ] = zonasAnt[chaveZ];
-          // confluencia continua usando o estado preservado
-          if (tf.key === "semanal") zonasSemanaisPorPar[cfg.key] = zonasAnt[chaveZ];
+          // Memoria serve a retomada, nao a confirmacao atual. Se o
+          // semanal falhou, o diario nao recebe seu bonus de confluencia.
         }
         // Nada e' publicado numa execucao que falhou: o bloco ja informa
         // FALHA, e exibir zonas antigas as apresentaria como se

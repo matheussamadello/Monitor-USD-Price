@@ -1836,7 +1836,9 @@ console.log("\n== calibragem deste par ==");
 // relatorio tiver mudado, e ai a contagem abaixo nem chega a imprimir.
 await import("./teste-estrutura-visual.mjs");
 await import("./teste-qualidade-dados.mjs");
+await import("./teste-revisao-zonas.mjs");
 await import("./teste-fontes-usd.mjs");
+await import("./teste-promocao-zonas.mjs");
 
 console.log("\n== retrato do relatorio ==");
 await import("./teste-retrato.mjs");
