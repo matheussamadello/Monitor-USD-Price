@@ -128,6 +128,12 @@ const NIVEIS_USD = {
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
     [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
     [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
+    // Promovida em 2026-10-07: usd|diario|z55, score 83, 5 episodios
+    // (4 concluidos, 1 aberto), 3 rejeicoes; sem confirmacao semanal.
+    // Limites estruturais congelados, arredondados para fora a 4 casas.
+    // Faixa exata: score 76, 5 episodios, 3 rejeicoes (auditoria independente).
+    // Evidencia: revisao-zonas-2026-10-07.json. Nao cria ciclo pontual.
+    [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -470,11 +476,15 @@ const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
   nome: `yahoo/${host}`,
   url: (cfg, tf) => {
     const base = `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cfg.par)}`;
-    return [
+    const consultas = [
       // Opcional: sem as horas, a vela sai da serie longa reparada.
       { url: `${base}?interval=${YAHOO_HORARIO.interval}&range=${YAHOO_HORARIO.range}`, opcional: true },
       `${base}?interval=${tf.intervalos.yahoo}&range=${tf.yahooRange}`,
     ];
+    // O semanal precisa saber quais dias tiveram pregao para detectar
+    // uma sessao inteira ausente nas horas sem inventar negocio em feriado.
+    if (tf.key === "semanal") consultas.push(`${base}?interval=1d&range=5y`);
+    return consultas;
   },
   parse: parseYahooHibrido,
 }));
@@ -885,8 +895,14 @@ function horasYahoo(texto) {
   if (!r || !Array.isArray(r.timestamp)) throw new Error("Yahoo 1h: resposta sem series");
   const q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
   const horas = [];
+  const cobertura = new Map();
+  const negociadas = new Map();
+  const invalidas = new Set();
   let descartadas = 0;
   for (let i = 0; i < r.timestamp.length; i++) {
+    const t = Number(r.timestamp[i]);
+    const dia = sessaoCambio(t);
+    if (dia === null) continue;
     const precos = [q.open?.[i], q.high?.[i], q.low?.[i], q.close?.[i]];
     if (precos.every((v) => v === null || v === undefined)) continue;
     const [open, high, low, close] = precos;
@@ -895,15 +911,22 @@ function horasYahoo(texto) {
     if (!precos.every((v) => typeof v === "number" && Number.isFinite(v) && v > 0) ||
         low > high || open < low || open > high || close < low || close > high) {
       descartadas++;
+      invalidas.add(dia);
       continue;
     }
+    // A cotacao plana nao entra no OHLC, mas prova que a resposta cobre
+    // esta hora. Isso evita exigir negocio nas horas paradas da fonte.
+    if (!cobertura.has(dia)) cobertura.set(dia, new Set());
+    cobertura.get(dia).add(Math.floor((t - dia) / 3600));
     // Hora sem amplitude e' cotacao repetida, nao negocio: fica fora,
     // pelo mesmo motivo do filtro de amplitude zero de montarSerie.
     if (high === low) continue;
+    if (!negociadas.has(dia)) negociadas.set(dia, new Set());
+    negociadas.get(dia).add(Math.floor((t - dia) / 3600));
     horas.push({ t: Number(r.timestamp[i]), open, high, low, close });
   }
   if (!horas.length) throw new Error("Yahoo 1h: nenhuma vela valida");
-  return { horas: horas.sort((a, b) => a.t - b.t), descartadas };
+  return { horas: horas.sort((a, b) => a.t - b.t), descartadas, cobertura, negociadas, invalidas };
 }
 
 export function parseYahooHibrido(textos, tf) {
@@ -917,10 +940,11 @@ export function parseYahooHibrido(textos, tf) {
   // valida), a serie inteira sai da longa reparada. Continua muito melhor
   // que o fechamento quebrado, e o aviso diz que foi assim.
   let horas = [], horasFora = 0, semHoras = null;
+  let cobertura = new Map(), negociadas = new Map(), invalidas = new Set();
   if (textoHorario === null || textoHorario === undefined) {
     semHoras = (textos.falhas && textos.falhas[0]) || "sem resposta";
   } else {
-    try { ({ horas, descartadas: horasFora } = horasYahoo(textoHorario)); }
+    try { ({ horas, descartadas: horasFora, cobertura, negociadas, invalidas } = horasYahoo(textoHorario)); }
     catch (err) { semHoras = err.message; }
   }
   const porPeriodo = new Map();
@@ -939,6 +963,44 @@ export function parseYahooHibrido(textos, tf) {
   const corte = semHoras ? Infinity : montadas[1].time;
 
   const { linhas, descartadas } = linhasYahoo(textoLongo, { tolerante: !semHoras });
+  if (!semHoras) {
+    const agora = Date.now() / 1000;
+    const ultimaFechada = montadas.filter(m => m.fim <= agora).at(-1)?.time;
+    const inicio = ultimaFechada ?? montadas.at(-1).time;
+    const dias = [...cobertura.keys()].sort((a, b) => a - b);
+    // Na janela que pode confirmar um evento, descarte de uma hora nao
+    // pode transformar o resto do dia/semana em candle completo.
+    for (const dia of invalidas)
+      if (dia >= inicio) throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (OHLC invalido)`);
+    // Confere o nucleo continuo negociado nas cinco sessoes anteriores.
+    // Nao exige 24 horas: a fonte tem observacoes esparsas de madrugada.
+    // Uma hora plana recebida tambem satisfaz a cobertura, sem entrar no
+    // OHLC. E' uma guarda de lacunas, nao um calendario oficial de sessoes.
+    for (const dia of dias.filter(t => t >= inicio && t + 86400 <= agora)) {
+      const referencias = dias.filter(t => t < dia && t >= dia - 14 * 86400 && negociadas.has(t)).slice(-5);
+      if (referencias.length < 3) throw new Error("Yahoo 1h: cobertura recente sem sessoes suficientes para conferir");
+      const comuns = [...negociadas.get(referencias[0])]
+        .filter(h => referencias.every(t => negociadas.get(t).has(h))).sort((a, b) => a - b);
+      const trechos = [];
+      for (const h of comuns) {
+        if (!trechos.length || trechos.at(-1).at(-1) !== h - 1) trechos.push([]);
+        trechos.at(-1).push(h);
+      }
+      const maior = Math.max(0, ...trechos.map(t => t.length));
+      const esperadas = trechos.filter(t => t.length === maior).flat();
+      if (!esperadas.length || esperadas.some(h => !cobertura.get(dia).has(h)))
+        throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
+    }
+    // A serie diaria longa tambem comprova a existencia de um pregao
+    // que pode ter sumido INTEIRO da resposta horaria. Feriado sem vela
+    // negociada na fonte nao cria uma exigencia de horas artificiais.
+    const sessoes = semanal && textos[2]
+      ? linhasYahoo(textos[2], { tolerante: true }).linhas : semanal ? [] : linhas;
+    for (const l of sessoes)
+      if (l.time >= inicio && l.time >= corte && l.time + 86400 <= agora &&
+          l.high > l.low && !cobertura.has(l.time))
+        throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(l.time)} (sessao ausente)`);
+  }
   const antigas = new Map();
   for (const l of linhas) {
     if (l.high === l.low) continue;
@@ -953,10 +1015,12 @@ export function parseYahooHibrido(textos, tf) {
   const velhas = [...antigas.values()].sort((a, b) => a.time - b.time);
   const primeiraMontada = montadas.find((m) => m.time >= corte);
   const reparadas = velhas.map((l, i) => {
-    // Sem vela seguinte -- so acontece sem as horas, na vela mais nova --
-    // o fechamento da fonte fica: e' a cotacao viva, que o Yahoo mantem
-    // certa enquanto a vela esta aberta.
+    // Sem sucessora, o close bruto so e' utilizavel enquanto a barra
+    // esta aberta. Depois disso nao ha reparo comprovado: tenta o outro
+    // host, em vez de gravar um rompimento com o fechamento defeituoso.
     const seguinte = i + 1 < velhas.length ? velhas[i + 1] : primeiraMontada;
+    if (!seguinte && Date.now() / 1000 >= l.time + duracao)
+      throw new Error("Yahoo: ultimo fechamento sem horas e sem abertura seguinte para reparo");
     const close = seguinte ? seguinte.open : l.close;
     const out = { time: l.time, open: l.open, high: Math.max(l.high, close), low: Math.min(l.low, close), close };
     // Vela antiga ja terminou; a mais nova da serie longa segue o
@@ -983,7 +1047,7 @@ export function parseYahooHibrido(textos, tf) {
     avisos.push(`Yahoo 1h: ${horasFora} velas de 1 hora com OHLC incompleto ou inconsistente descartadas`);
   if (semHoras)
     avisos.push(`Yahoo 1h indisponivel (${semHoras}): velas montadas da serie ${semanal ? "semanal" : "diaria"} com o fechamento reparado pela abertura seguinte`);
-  return { ...serie, avisosDados: avisos };
+  return { ...serie, degradada: !!semHoras, avisosDados: avisos };
 }
 
 export function parseBinance(texto, tf) {
@@ -1028,6 +1092,7 @@ export function parseMercadoBitcoin(texto, tf) {
 // comeca do zero.
 export async function buscarSerie(fetchImpl, cfg, tf, opts = {}) {
   const erros = [];
+  let degradada = null;
   for (const fonte of cfg.fontes) {
     try {
       // Uma fonte pode precisar de mais de uma consulta (o cambio pede as
@@ -1054,12 +1119,18 @@ export async function buscarSerie(fetchImpl, cfg, tf, opts = {}) {
       }
       const parsed = fonte.parse(Array.isArray(alvo) ? textos : textos[0], tf);
       validarAtualidadeSerie(cfg, tf, parsed, opts);
-      return { ok: true, parsed, fonte: fonte.nome };
+      validarIdadeSerie(cfg, tf, parsed);
+      const resultado = { ok: true, parsed, fonte: fonte.nome };
+      // O segundo host pode ter as horas que faltaram no primeiro.
+      // Guarda o fallback reparado, mas so o usa se nenhum host trouxer
+      // a serie horaria valida. Erros de cobertura nunca viram fallback.
+      if (parsed.degradada) { degradada ||= resultado; continue; }
+      return resultado;
     } catch (err) {
       erros.push(`${fonte.nome}: ${err.message}`);
     }
   }
-  return { ok: false, erro: erros.join(" | ") };
+  return degradada || { ok: false, erro: erros.join(" | ") };
 }
 
 function fmtUTC(epochSeconds) {
@@ -3133,7 +3204,7 @@ export function fundirZonasOpostas(zonas, tfKey = "diario", atrAtual = null) {
 // Agora a ficha coberta fica DORMENTE: continua no estado, para poder
 // ser reencontrada, mas nao e' publicada nem conta como confluencia
 // semanal. A duplicata que o descarte evitava continua nao existindo.
-export function reconciliarAnteriores(anteriores, zonasCalculadas, tfKey, ultimaVelaFechada, atrAtual = null) {
+export function reconciliarAnteriores(anteriores, zonasCalculadas, tfKey, ultimaVelaFechada, atrAtual = null, contexto = {}) {
   const par = PARAMS_TF[tfKey] || PARAMS_TF.diario;
   const calculadas = zonasCalculadas || [];
   const idsCalculados = new Set(calculadas.map((z) => z.id));
@@ -3156,6 +3227,19 @@ export function reconciliarAnteriores(anteriores, zonasCalculadas, tfKey, ultima
     }
     orfa.ultimaVelaAvaliada = ultimaVelaFechada;
     orfa.orfa = true;
+    const { precoAtual, times = [] } = contexto;
+    if (Number.isFinite(precoAtual) && orfa.centro > 0) {
+      orfa.limites_operacionais = limitesOperacionais(orfa.centro, atrAtual);
+      orfa.distancia_preco_atual_pct = ((precoAtual - orfa.centro) / orfa.centro) * 100;
+      orfa.estado_atual = precoAtual < orfa.limites_operacionais.inferior ? "abaixo"
+        : precoAtual > orfa.limites_operacionais.superior ? "acima" : "em_teste";
+    }
+    const toque = times.indexOf(orfa.ultimo_toque);
+    const avaliada = times.indexOf(ant.ultimaVelaAvaliada);
+    const idade = ant.velasDesdeUltimoToque ?? ant.velas_desde_ultimo_toque;
+    orfa.velasDesdeUltimoToque = toque >= 0 ? times.length - 1 - toque
+      : Number.isFinite(idade) && avaliada >= 0 ? idade + times.length - 1 - avaliada
+      : idade ?? null;
     // Ficha legada larga demais fica dormente durante a carencia:
     // mantem memoria, mas nao recoloca a zona gigante na tela ou no score.
     const largaDemais = atrAtual > 0 &&
@@ -3283,11 +3367,9 @@ export function calcularZonas(cfg, tf, d, ctx) {
   const ultimaVelaFechada = times[times.length - 1];
 
   const pv = pivosComAtr(highs, lows, closes, times, ctx.pivos, atr);
-  if (!pv.topos.length && !pv.fundos.length) {
-    // Sem pivos nesta consulta: nao ha o que recalcular, mas as zonas
-    // ja conhecidas nao podem ser apagadas por isso.
-    return { zonas: [], zonasEstado: anteriores, proximoId: ctx.proximoId };
-  }
+  // Sem pivos, o pipeline continua com zero zonas novas. As fichas
+  // anteriores passam por reconciliarAnteriores: mantem a identidade,
+  // atualizam contexto e envelhecem pela mesma carencia das demais orfas.
 
   const montar = (clusters, origem) =>
     clusters
@@ -3502,7 +3584,7 @@ export function calcularZonas(cfg, tf, d, ctx) {
 
   // Fichas sem dona nesta execucao: dormem, nao sao rasgadas.
   zonas.push(
-    ...reconciliarAnteriores(anteriores, [...zonas], tf.key, ultimaVelaFechada, atrAtual)
+    ...reconciliarAnteriores(anteriores, [...zonas], tf.key, ultimaVelaFechada, atrAtual, { precoAtual, times })
   );
 
   // ---- duas colecoes distintas ----
@@ -3559,6 +3641,7 @@ export function calcularZonas(cfg, tf, d, ctx) {
 function limparZona(z) {
   return {
     id: z.id,
+    ...(z.orfa ? { orfa: true } : {}),
     tipo: z.tipo,
     tipo_confirmado: z.tipo_confirmado || z.tipo,
     ultimo_role_reversal_em: z.ultimo_role_reversal_em ?? null,
@@ -3576,7 +3659,7 @@ function limparZona(z) {
     forca_reacao_atr: z.forca_reacao_atr,
     primeiro_toque: z.primeiro_toque,
     ultimo_toque: z.ultimo_toque,
-    velas_desde_ultimo_toque: z.velasDesdeUltimoToque,
+    velas_desde_ultimo_toque: z.velasDesdeUltimoToque ?? z.velas_desde_ultimo_toque ?? null,
     timeframes_confirmando: z.timeframes_confirmando || [],
     role_reversal: !!z.role_reversal,
     cruzamento_confirmado: !!z.cruzamento_confirmado,
@@ -3652,6 +3735,28 @@ function detalheDiv(x, times, dec, timeViva) {
 // a maquina de estado. Testar so a maquina nao alcanca esses numeros --
 // era por isso que mudar RETEST_TOLERANCIA_ATR de 0,25 para 0,40 nao
 // quebrava nenhum teste.
+// A hora de geracao nao prova que a fonte avancou. Esta verificacao
+// roda na entrada dos dados; readPair continua utilizavel em replays.
+export function validarIdadeSerie(cfg, tf, d, agora = Date.now() / 1000) {
+  const time = d.live?.time;
+  if (!Number.isFinite(time)) throw new Error("serie sem data da ultima barra");
+  const cambio = cfg.par?.endsWith("=X");
+  let limite = time + tf.segundos;
+  if (cambio) {
+    // Sem calendario oficial de feriados, tolera tres dias uteis apos
+    // o periodo. Nao confunde fim de semana/feriado curto com fonte parada.
+    // E' um teto conservador de saude da fonte, nao horario de fechamento.
+    if (tf.key === "semanal") limite = time + 5 * 86400;
+    let uteis = 0;
+    while (uteis < 3) {
+      limite += 86400;
+      if (![0, 6].includes(new Date(limite * 1000).getUTCDay())) uteis++;
+    }
+  }
+  if (agora > limite + 90 * 60)
+    throw new Error(`serie sem atualizacao: ultima barra ${fmtDia(time)} excedeu o prazo da fonte`);
+}
+
 // Uma resposta atrasada nao pode recalcular indicadores e zonas de uma
 // vela anterior nem alimentar gatilhos como se fosse uma leitura nova.
 // As memorias especificas cobrem tambem estados antigos sem o carimbo.
@@ -4506,8 +4611,8 @@ export async function build(fetchImpl = fetch, estadoAnterior = {}) {
         const chaveZ = `${cfg.key}|${tf.key}`;
         if (zonasAnt[chaveZ]) {
           zonasNovas[chaveZ] = zonasAnt[chaveZ];
-          // confluencia continua usando o estado preservado
-          if (tf.key === "semanal") zonasSemanaisPorPar[cfg.key] = zonasAnt[chaveZ];
+          // Memoria serve a retomada, nao a confirmacao atual. Se o
+          // semanal falhou, o diario nao recebe seu bonus de confluencia.
         }
         // Nada e' publicado numa execucao que falhou: o bloco ja informa
         // FALHA, e exibir zonas antigas as apresentaria como se

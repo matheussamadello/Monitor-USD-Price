@@ -38,7 +38,7 @@ Os preços são publicados com **4 casas decimais**. Não é preciosismo: o USD/
 
 ## Fonte de dados e timeframes
 
-Câmbio não tem uma "bolsa oficial" com endpoint público equivalente ao da Kraken. O monitor usa **OHLC do Yahoo Finance** (`USDBRL=X`), buscado em cascata por dois hosts da provedora — `query1` e depois `query2` —, valendo o primeiro que responder.
+Câmbio não tem uma "bolsa oficial" com endpoint público equivalente ao da Kraken. O monitor usa **OHLC do Yahoo Finance** (`USDBRL=X`), buscado em cascata por dois hosts da provedora — `query1` e depois `query2` —, priorizando o primeiro com a série horária válida.
 
 O cabeçalho do relatório sempre diz qual elo respondeu, para cada par e cada timeframe, e qual era a cascata inteira — na ordem em que os pares saem no relatório, USDT/BRL primeiro:
 
@@ -74,7 +74,9 @@ Na prática, RSI, EMA89, ADX, padrões de candle, corpo e sombras, rompimentos e
 
 A vela diária fecha na virada do dia UTC e a semanal na virada de sexta para sábado UTC. O que for mais antigo que as horas vem da série longa com o **fechamento reparado pela abertura da vela seguinte** — o dado certo mais próximo, com erro mediano de 0,0021 no mesmo diagnóstico — e máxima/mínima alargadas para contê-lo.
 
-**Se a consulta de 1 hora falhar**, o par não cai: a série inteira sai da longa reparada e `dados_avisos` diz `Yahoo 1h indisponivel (...)`. É muito melhor que o fechamento quebrado e bem pior que as horas, e por isso aparece escrito.
+**Se a consulta de 1 hora falhar**, o monitor tenta o outro host antes de aceitar a série longa reparada. Esse fallback continua sinalizado em `dados_avisos` (`Yahoo 1h indisponivel (...)`) e é uma aproximação histórica pela abertura seguinte. Se a última vela já encerrou e não tem horas nem abertura seguinte para o reparo, a fonte falha: o fechamento bruto defeituoso não é confirmado.
+
+Na última vela fechada e no período em formação, horas inválidas e lacunas de sessões encerradas provocam fallback de host ou falha do bloco. A cobertura usa o maior trecho contínuo de horas negociadas em comum nas cinco sessões anteriores (mínimo de três), aceitando horas planas recebidas e tolerando observações esparsas fora desse trecho. Uma sessão inteira ausente é conferida contra o diário; por isso o semanal faz uma consulta diária adicional. É uma guarda conservadora de lacunas, sem calendário oficial de feriados ou garantia de detectar toda omissão possível.
 
 **Efeito na primeira execução.** Comparando o código anterior e o novo sobre as mesmas respostas, no runner: USDT/BRL **idêntico**, gatilhos idênticos; no USD/BRL mudaram os indicadores, as velas, os pivôs e as zonas. Exemplos: o diário de 24/09 passou a fechar em 5,1912 (era 5,1643), o ATR14 diário foi de 0,0553 para 0,0504, e o semanal passou de `lateral_contracao` (LH_HL) para `alta` (HH_HL). O estado persistido (níveis, zonas, EMA89 semanal) não foi reconstruído: segue a partir do que estava salvo, e as velas novas já entram certas. `docs/historico.jsonl` guarda os fechamentos antigos do USD/BRL como eram; análises históricas do USD/BRL anteriores a 2026-09-26 carregam o defeito.
 
@@ -196,6 +198,14 @@ Aqui, ao contrário da série de USD/BRL, existe uma segunda provedora de verdad
 2. **Mercado Bitcoin** (`api.mercadobitcoin.net`) — 3,5 anos de histórico diário com volume real.
 
 O trilho é **auxiliar e falha sozinho**: se as duas caírem, a seção sai com `trilho_disponivel: nao` e o motivo de cada uma, e o relatório do par analisado continua inteiro.
+
+## Qualidade dos dados e continuidade
+
+A coleta rejeita uma série congelada mesmo quando o relatório ganhou um timestamp novo: em cripto, a última barra deve estar dentro de seu período mais 90 minutos de tolerância. No câmbio, o limite conservador é de três dias úteis após o período, mais 90 minutos, para tolerar fins de semana e feriados curtos; não substitui um calendário oficial. O bloco publica `falha` e preserva a memória de níveis, zonas e EMA89 até a fonte voltar.
+
+Zonas mantidas temporariamente sem novos pivôs (`orfa: true`) atualizam distância, posição em relação ao preço e limites operacionais com a cotação e o ATR atuais. A idade desde o último toque continua em número de velas e sobrevive à gravação e retomada do estado.
+
+Na revisão de 2026-10-07, o diário deixou de usar zonas semanais de um bloco com `falha` como confirmação e bônus de score. A memória semanal fica preservada para retomada. Uma série válida sem pivôs também passa pela reconciliação: as fichas antigas atualizam o contexto e cumprem a carência de órfãs, em vez de permanecerem ativas indefinidamente.
 
 ## Indicadores e leituras calculadas
 
@@ -501,6 +511,7 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | 5,068–5,0805 | `regiao_suporte_5_068_5_0805` | 5,06960201, 5,0790782 |
 | 5,049–5,0545 | `regiao_suporte_5_049_5_0545` | 5,05053997, 5,05066204, 5,0532999 |
 | 4,9945–5,0005 | `regiao_suporte_4_9945_5_0005` | 4,99590015, 4,99780607, 4,99849987, 4,99900007 |
+| 4,9284–4,9521 | `regiao_suporte_4_9284_4_9521` | Promovida em 2026-10-07: pivôs de 4,9404, 4,9305, 4,9500 e 4,9387 |
 
 Resistência pontual: **5,3**. Suporte pontual: **5,13**.
 
@@ -1181,6 +1192,7 @@ const NIVEIS_USD = {
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
     [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
     [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
+    [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
   resistencia: 5.30,
   resistenciaLabel: "5_30",
@@ -1256,3 +1268,9 @@ O histórico registra `ema89_confirmacao` e `ema89_evento_id`; a análise histó
 ### Regressões de largura das zonas
 
 `node teste-zonas.mjs` verifica compactação, divisão com evidência, ausência de divisão artificial, limites diário/semanal, fusão, tolerância operacional, score/toques/rejeições, role reversal, migração de fichas antigas e as faixas manuais desta calibração. É executado por `teste-fumaca.mjs`.
+
+### Promoção de zona em 2026-10-07
+
+A região de USD/BRL em R$ 4,9284–4,9521 passou do radar para faixa manual com os limites estruturais congelados. A zona diária `usd|diario|z55` tinha score 83, cinco episódios e três rejeições; a conferência independente na faixa exata manteve cinco episódios e três rejeições, com score 76 e sem bônus semanal. São quatro episódios concluídos e um aberto: nas últimas 90 velas há um toque e nenhuma rejeição confirmada. Isso é manutenção de referência, sem afirmar que o suporte segurou no toque atual. A evidência está em `revisao-zonas-2026-10-07.json` e a série reproduzível, em `fixture-promocao-usd-2026-10-07.json`.
+
+A região de USDT/BRL em R$ 5,2178–5,2222 continuou em observação: é um núcleo de pivô único com score 79, abaixo dos 80 exigidos nesse caso. As outras regiões novas não passaram nos filtros ou já estavam representadas.
