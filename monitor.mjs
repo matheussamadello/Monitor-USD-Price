@@ -555,11 +555,31 @@ const NIVEIS_USDT = {
     // usdt|diario|z65 e usdt|diario|z3, arredondados para fora na 4a casa.
     [5.12, 5.137, "faixa_5_12_5_137"],
     [5.0725, 5.0896, "faixa_5_0725_5_0896"],
+    // Acrescentadas em 2026-10-07 por revisao manual, depois da queda de
+    // 05/10 (5,21 -> 4,99), que deixou o preco abaixo de todas as faixas.
+    // Contagens sobre as velas diarias da Binance desde 2024-01; larguras
+    // de 0,019, dentro do teto da calibracao (0,5 x 0,0384).
+    //   5.025-5.044  6 pivos diarios (topos de 5,034 a 5,044 em 2024 e
+    //                5,0396 em 2026-04-24) e 2 semanais; segurou 13 vezes
+    //                vindo de cima e 12 vindo de baixo.
+    //   4.946-4.965  4 pivos diarios (fundos de 2024 e 4,9571 em abr/2026)
+    //                e 2 semanais, mais a minima de 4,961 em 06/10; segurou
+    //                19 vezes como suporte e foi cruzada 2.
+    //   4.874-4.893  o fundo de 2026: 4,8766 (pivo diario e semanal, 05/05)
+    //                e 4,892 (12/05); segurou 7 vezes, nunca cruzada.
+    [5.025, 5.044, "faixa_5_025_5_044"],
+    [4.946, 4.965, "faixa_4_946_4_965"],
+    [4.874, 4.893, "faixa_4_874_4_893"],
   ],
-  resistencia: 5.31,
-  resistenciaLabel: "5_31",
-  suporte: 5.15,
-  suporteLabel: "5_15",
+  // Movidas em 2026-10-07. A resistencia de 5,31 ficava 6% acima do preco e
+  // nunca abriu registro; o suporte de 5,15 foi rompido para baixo e o
+  // preco se afastou (ciclo encerrado). As novas vigiam as duas decisoes
+  // de agora: recuperar 5,08 (dentro de 5,0725-5,0896, o suporte mais forte
+  // ate 05/10, agora teto) ou perder 4,95 (dentro de 4,946-4,965).
+  resistencia: 5.08,
+  resistenciaLabel: "5_08",
+  suporte: 4.95,
+  suporteLabel: "4_95",
 };
 
 // A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia

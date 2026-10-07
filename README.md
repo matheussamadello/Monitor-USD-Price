@@ -490,8 +490,13 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 | 5,1525–5,162 | `regiao_suporte_5_1525_5_162` | 5,1539, 5,1587, 5,161 |
 | 5,12–5,137 | `faixa_5_12_5_137` | 5,122, 5,135 (e 5,123, 5,137 de 2024) |
 | 5,0725–5,0896 | `faixa_5_0725_5_0896` | 5,0745, 5,0768, 5,0813, 5,0852, 5,0856, 5,0876 (e 5,079 de 2024) |
+| 5,025–5,044 | `faixa_5_025_5_044` | 5,031, 5,0313, 5,034, 5,0396, 5,042, 5,044 |
+| 4,946–4,965 | `faixa_4_946_4_965` | 4,955, 4,9571, 4,962, 4,965 |
+| 4,874–4,893 | `faixa_4_874_4_893` | 4,8766, 4,892 |
 
-Resistência pontual: **5,31**. Suporte pontual: **5,15**.
+Resistência pontual: **5,08** (era 5,31). Suporte pontual: **4,95** (era 5,15).
+
+**Revisão manual de 2026-10-07.** Em 05/10 o USDT/BRL caiu de 5,21 para 4,99 num dia — o USD/BRL caiu junto, então foi movimento real — e o preço ficou abaixo de todas as faixas: o cartão mostrava "Suporte: nenhum nível manual". A região abaixo de 5,07 já foi muito negociada em 2024 e entre abril e junho de 2026, e as contagens sobre as velas diárias da Binance desde janeiro de 2024 deram três faixas: **5,025–5,044** (6 pivôs diários e 2 semanais; segurou 13 vezes vindo de cima e 12 vindo de baixo), **4,946–4,965** (4 pivôs diários e 2 semanais, mais a mínima de 4,961 em 06/10; segurou 19 vezes como suporte, cruzada 2) e **4,874–4,893** (o fundo de 2026: 4,8766 e 4,892; segurou 7 vezes, nunca cruzada). As três têm 0,019 de largura, dentro do teto da calibração (metade do ATR diário de 25/09, 0,0384). As linhas pontuais também mudaram: a resistência de 5,31 ficava 6% acima e nunca tinha aberto registro, e o suporte de 5,15 foi rompido para baixo com o preço já afastado, ciclo encerrado. Agora a resistência fica em **5,08**, dentro de 5,0725–5,0896 (o suporte mais forte até 05/10, que virou teto), e o suporte em **4,95**, dentro de 4,946–4,965: o monitor vigia as duas decisões de agora, recuperar 5,08 ou perder 4,95. As linhas novas começam sem registro.
 
 As duas últimas foram **promovidas em 2026-09-26** a partir do radar, com os limites estruturais das zonas arredondados para fora na quarta casa:
 

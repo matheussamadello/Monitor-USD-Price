@@ -178,7 +178,9 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
   // continua preso ao valor do reajuste.
   //   2026-09-28 XMR/BTC: suporte 0.00584 -> 0.0064 (nunca tinha aberto
   //   registro; passou a vigiar o piso das minimas de 09-14 a 09-27).
-  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0064 } };
+  //   2026-10-07 USDT/BRL: resistencia 5.31 -> 5.08 e suporte 5.15 -> 4.95
+  //   (a queda de 05/10 deixou o preco abaixo de todas as faixas).
+  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0064 }, 'USDT/BRL': { suporte: 4.95, resistencia: 5.08 } };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     const rev = PONTUAIS_REVISTOS[r.par] || {};

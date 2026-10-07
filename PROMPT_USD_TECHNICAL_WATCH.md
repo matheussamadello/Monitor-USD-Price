@@ -201,8 +201,13 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 5,1525–5,162 — `regiao_suporte_5_1525_5_162`;
 - R$ 5,12–5,137 — `faixa_5_12_5_137`;
 - R$ 5,0725–5,0896 — `faixa_5_0725_5_0896`;
-- resistência pontual de referência em torno de R$ 5,31;
-- suporte pontual de referência em torno de R$ 5,15.
+- R$ 5,025–5,044 — `faixa_5_025_5_044`;
+- R$ 4,946–4,965 — `faixa_4_946_4_965`;
+- R$ 4,874–4,893 — `faixa_4_874_4_893`;
+- resistência pontual de referência em torno de R$ 5,08 (era 5,31 até 2026-10-07);
+- suporte pontual de referência em torno de R$ 4,95 (era 5,15 até 2026-10-07).
+
+As três últimas faixas e as duas linhas novas são da revisão manual de 2026-10-07, depois da queda de 05/10 que deixou o preço abaixo de todas as faixas. As linhas novas começam como `sem_registro`: não há rompimento anterior a considerar nelas, e a mudança é de configuração, não de mercado — não alerte por ela.
 
 São leituras de uma configuração atual, não valores eternos. Se o JSON publicar outra configuração, **prevalece o JSON**.
 
@@ -527,7 +532,7 @@ Use a resistência manual principal publicada em `niveis_manuais` do par analisa
 Na configuração atual, as referências pontuais conhecidas são aproximadamente:
 
 - **USD/BRL:** R$ 5,30;
-- **USDT/BRL:** R$ 5,31.
+- **USDT/BRL:** R$ 5,08, dentro da faixa R$ 5,0725–5,0896.
 
 Se o JSON publicar outra configuração, prevalece o JSON.
 
@@ -703,7 +708,7 @@ A perda da região de suporte manual principal do par também pode evoluir para 
 Na configuração atual, as referências pontuais inferiores conhecidas são aproximadamente:
 
 - **USD/BRL:** R$ 5,13, com faixa relacionada R$ 5,05–5,12;
-- **USDT/BRL:** R$ 5,15, com faixa relacionada R$ 5,12–5,16.
+- **USDT/BRL:** R$ 4,95, com faixa relacionada R$ 4,946–4,965.
 
 Leia sempre a configuração atual do JSON. Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.
 

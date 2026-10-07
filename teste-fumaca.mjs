@@ -266,7 +266,10 @@ const r1 = await cenario("fonte primaria (Yahoo)", {}, (r) => {
   ok(/trades_vela_atual: \d/.test(usdtDia), "USDT/BRL: numero de negocios publicado");
   ok(/rsi_fechado: \d/.test(usdtDia) && /adx_fechado: \d/.test(usdtDia),
     "USDT/BRL: RSI e ADX calculados");
-  ok(/nivel_5_31_estado: /.test(usdtDia) && /nivel_5_15_estado: /.test(usdtDia),
+  // Rotulos lidos da configuracao: as linhas mudam em revisoes manuais.
+  const nvUsdt = PARES_TESTE.find((p) => p.key === "usdt").niveis;
+  ok(usdtDia.includes(`nivel_${nvUsdt.resistenciaLabel}_estado: `) &&
+     usdtDia.includes(`nivel_${nvUsdt.suporteLabel}_estado: `),
     "USDT/BRL: maquina de niveis com os niveis DELE");
   ok(/zonas_automaticas_total: \d|zonas_automaticas: nenhuma/.test(usdtDia),
     "USDT/BRL: zonas automaticas calculadas");

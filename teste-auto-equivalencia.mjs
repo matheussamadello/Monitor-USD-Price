@@ -17,9 +17,15 @@ try {
  // de entrada na mesma entrada gravada. Sao listadas uma a uma; o resto
  // dos gatilhos continua tendo de bater com a captura.
  //   2026-09-28: BTC 83750-84550 e 86250-86550; XMR/USD 558-568.
- const FAIXAS_POSTERIORES=['faixa_83750_84550','faixa_86250_86550','faixa_558_568'];
- const posterior=g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f));
- assert.ok(r.gatilhos.filter(posterior).every(g=>/entrou na regiao/.test(g.msg)),'faixa nova so acrescenta o aviso de entrada');
+ //   2026-10-07: USDT/BRL 5.025-5.044, 4.946-4.965, 4.874-4.893.
+ const FAIXAS_POSTERIORES=['faixa_83750_84550','faixa_86250_86550','faixa_558_568',
+  'faixa_5_025_5_044','faixa_4_946_4_965','faixa_4_874_4_893'];
+ // Linhas pontuais movidas depois da captura: a linha nova nao tem registro
+ // no estado gravado e a maquina a avalia na vela gravada.
+ //   2026-10-07: USDT/BRL resistencia 5.31 -> 5.08, suporte 5.15 -> 4.95.
+ const LINHAS_POSTERIORES=['usdt_rompe_5_08','usdt_perde_4_95'];
+ const posterior=g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f))||LINHAS_POSTERIORES.includes(g.id);
+ assert.ok(r.gatilhos.filter(g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f))).every(g=>/entrou na regiao/.test(g.msg)),'faixa nova so acrescenta o aviso de entrada');
  assert.deepEqual(r.gatilhos.filter(g=>!posterior(g)),ref.gatilhos_antes,'geometria nao altera gatilhos na mesma entrada');
  for(const p of ref.pares){
   const cfg=m.PARES_TESTE.find(c=>c.label===p.par),k=cfg.key+'|'+p.tf;
