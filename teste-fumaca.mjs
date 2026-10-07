@@ -1610,12 +1610,13 @@ console.log("\n== zona que sumiu do calculo: a ficha dorme, nao e' rasgada ==");
   ok(fora.length === 1 && fora[0].absorvida === false,
     "zona que nenhuma calculada cobre e' orfa comum, nao dormente");
 
-  // A carencia expira. No semanal sao 4 velas.
-  const quase = zona("z5", 10, 12, { status: "enfraquecida", velasEnfraquecida: 3 });
+  // A carencia expira. No semanal sao 4 velas, contadas como ORFA: a
+  // ficha ja dormia (orfa: true) e esta e' a quarta vela.
+  const quase = zona("z5", 10, 12, { orfa: true, status: "enfraquecida", velasEnfraquecida: 3 });
   ok(reconciliarAnteriores([quase], larga, "semanal", 200)[0].status === "remover",
     "passada a carencia, a ficha dormente e' descartada de vez");
   // E a contagem so anda quando a vela fechada muda.
-  const mesmaVela = zona("z6", 10, 12, { status: "enfraquecida", velasEnfraquecida: 1 });
+  const mesmaVela = zona("z6", 10, 12, { orfa: true, status: "enfraquecida", velasEnfraquecida: 1 });
   ok(reconciliarAnteriores([mesmaVela], larga, "semanal", 100)[0].velasEnfraquecida === 1,
     "reexecucao na mesma vela nao envelhece a ficha");
 

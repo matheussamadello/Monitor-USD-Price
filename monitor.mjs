@@ -877,6 +877,22 @@ export function parseYahoo(texto, tf) {
 // maxima/minima alargadas para conte-lo.
 const YAHOO_HORARIO = { interval: "1h", range: "730d" };
 
+// CARENCIA DO FECHAMENTO. A ultima cotacao do dia chega atrasada nas
+// horas do Yahoo: em 2026-10-06 a hora das 21h UTC fechou em 4,9703 e a
+// das 22h, um unico negocio a 4,9825, so apareceu depois das 01h47 do dia
+// seguinte. A execucao dessa hora publicou o dia como FECHADO em 4,9703;
+// a das 09h12, em 4,9825. Desde 2026-09-26, 3 de 14 fechamentos diarios
+// mudaram assim depois de publicados, sempre de madrugada (a ultima
+// revisao vista, as 04h31). Fechamento que muda depois de publicado pode
+// ter confirmado um rompimento que nao houve.
+//
+// Entao a vela montada das horas so fecha quando o pregao seguinte tem
+// negocio (ela deixa de ser a ultima linha) ou 12h depois da virada UTC,
+// o que vier primeiro. Num dia util o primeiro negocio aparece por volta
+// das 09h UTC; na sexta, a carencia fecha a semana no sabado ao meio-dia.
+// Ate la a vela aparece como em formacao, com os valores que ja tem.
+const YAHOO_CARENCIA_FECHAMENTO = 12 * 3600;
+
 // Dia UTC da hora; sabado e domingo nao sao pregao. O Yahoo repete a
 // ultima cotacao no fim de semana (ver ignorarFimDeSemana em montarSerie),
 // e no diagnostico a primeira hora da segunda veio entre 00h e 03h UTC:
@@ -953,7 +969,8 @@ export function parseYahooHibrido(textos, tf) {
     if (dia === null) continue;
     const k = chave(dia);
     const a = porPeriodo.get(k);
-    if (!a) porPeriodo.set(k, { time: k, open: h.open, high: h.high, low: h.low, close: h.close, fim: k + duracao });
+    if (!a) porPeriodo.set(k, { time: k, open: h.open, high: h.high, low: h.low, close: h.close,
+      fim: k + duracao + YAHOO_CARENCIA_FECHAMENTO });
     else { a.high = Math.max(a.high, h.high); a.low = Math.min(a.low, h.low); a.close = h.close; }
   }
   const montadas = [...porPeriodo.values()].sort((a, b) => a.time - b.time);
@@ -3220,6 +3237,13 @@ export function reconciliarAnteriores(anteriores, zonasCalculadas, tfKey, ultima
       orfa.status = "enfraquecida";
       orfa.velasEnfraquecida = 0;
     } else if (orfa.status === "enfraquecida") {
+      // A carencia conta velas como ORFA. Zona desenhada pelos pivos nao
+      // expira enquanto e' desenhada, e o contador dela segue somando: com
+      // ele herdado, a zona que perdia o casamento por UMA vela (dois
+      // desenhos disputando a mesma ficha num reagrupamento) saia na hora
+      // e voltava na vela seguinte com id novo. Achado pelo teste de
+      // propriedade: 19 a 61 renascimentos por semente.
+      if (!ant.orfa) orfa.velasEnfraquecida = 0;
       if (!Number.isFinite(ant.ultimaVelaAvaliada) || ultimaVelaFechada > ant.ultimaVelaAvaliada) {
         orfa.velasEnfraquecida = (orfa.velasEnfraquecida || 0) + 1;
       }

@@ -296,8 +296,19 @@ teste('carencia enfraquecida vale para ficha orfa, nao para zona desenhada agora
   assert.equal(m.atualizarCiclo({ score: 14 }, ant, ctx(101, 300)).status, 'remover', 'o piso de score continua valendo');
   assert.equal(m.atualizarCiclo({ score: 55 }, ant, ctx(101, 5)).status, 'ativa', 'e o toque novo continua reativando');
   // A ficha que os pivos nao desenham mais cumpre a carencia de 15 velas.
-  const orfa = { id: 'x|diario|z1', status: 'enfraquecida', velasEnfraquecida: 14, ultimaVelaAvaliada: 100,
+  const orfa = { id: 'x|diario|z1', orfa: true, status: 'enfraquecida', velasEnfraquecida: 14, ultimaVelaAvaliada: 100,
     limites_estruturais: { inferior: 1, superior: 2 } };
   assert.equal(m.reconciliarAnteriores([orfa], [], 'diario', 101)[0].status, 'remover');
+  // A carencia conta velas como ORFA. A zona desenhada vinha somando (40)
+  // e, com o contador herdado, a primeira vela sem casamento ja a removia;
+  // o mesmo desenho voltava na vela seguinte com id novo.
+  const recem = { ...orfa, orfa: undefined, velasEnfraquecida: 40 };
+  const r1 = m.reconciliarAnteriores([recem], [], 'diario', 101)[0];
+  assert.equal(r1.status, 'enfraquecida', 'recem-orfa nao sai na hora');
+  assert.equal(r1.velasEnfraquecida, 1, 'conta a partir de quando ficou orfa');
+  assert.equal(m.reconciliarAnteriores([r1], [], 'diario', 101)[0].velasEnfraquecida, 1, 'reexecucao da mesma vela nao conta de novo');
+  let f = r1;
+  for (let v = 102; v <= 115; v++) f = m.reconciliarAnteriores([f], [], 'diario', v)[0];
+  assert.equal(f.status, 'remover', '15 velas como orfa e ela sai');
 });
 console.log(`  ${grupos} grupos de testes de zonas passaram`);

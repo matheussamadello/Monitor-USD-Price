@@ -928,6 +928,28 @@ if (typeof m.parseYahooHibrido === "function") await teste("USD/BRL montado das 
       "sem horas, o fechamento e' a abertura seguinte");
     assert.match(sem.avisosDados.join(" "), /Yahoo 1h indisponivel \(HTTP 503\)/);
   });
+
+  // CARENCIA DO FECHAMENTO. A ultima cotacao do dia chega atrasada: em
+  // 2026-10-06 a hora das 22h UTC (4,9825) so apareceu depois das 01h47,
+  // e o dia saiu fechado em 4,9703 -- o fechamento da hora das 21h.
+  const qui = epoch("2026-09-24T00:00:00Z");
+  await noInstante("2026-09-25T01:47:00Z", async () => {
+    const s = m.parseYahooHibrido([resp(horas), resp(longo)], diario);
+    assert.equal(s.live.time, qui, "de madrugada, sem negocio do dia seguinte, quinta segue em formacao");
+    assert.equal(s.times.at(-1), qui - DIA, "e nao entra nas fechadas com um fechamento que ainda pode mudar");
+    const w = m.parseYahooHibrido([resp(horas), resp(longo)], semanal);
+    assert.equal(w.live.time, epoch("2026-09-21T00:00:00Z"), "o semanal nao muda: a semana nem terminou");
+  });
+  await noInstante("2026-09-25T12:01:00Z", async () => {
+    const s = m.parseYahooHibrido([resp(horas), resp(longo)], diario);
+    assert.equal(s.times.at(-1), qui, "12h depois da virada, mesmo sem negocio novo, quinta fecha");
+  });
+  const comSexta = [...horas, { t: epoch("2026-09-25T09:00:00Z"), o: 5.2, h: 5.21, l: 5.19, c: 5.205 }];
+  await noInstante("2026-09-25T09:30:00Z", async () => {
+    const s = m.parseYahooHibrido([resp(comSexta), resp(longo)], diario);
+    assert.equal(s.times.at(-1), qui, "o primeiro negocio de sexta fecha a quinta antes da carencia");
+    assert.equal(s.live.time, qui + DIA, "e a sexta passa a ser a vela em formacao");
+  });
 });
 
 if (typeof m.parseYahoo === "function") await teste("barra de fim de semana nao derruba a resposta do cambio", () => {

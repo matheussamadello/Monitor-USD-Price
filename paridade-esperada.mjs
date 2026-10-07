@@ -146,6 +146,7 @@ export const PRESENCA_ESPERADA = {
   horasYahoo: ["Monitor-USD-Price"],
   sessaoCambio: ["Monitor-USD-Price"],
   YAHOO_HORARIO: ["Monitor-USD-Price"],
+  YAHOO_CARENCIA_FECHAMENTO: ["Monitor-USD-Price"],
   parseBinance: ["Monitor-USD-Price"],
   parseMercadoBitcoin: ["Monitor-USD-Price"],
   montarSerie: ["Monitor-USD-Price"],
