@@ -5230,7 +5230,7 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
 
   const L = [];
   L.push(pgLinha("Último fechamento",
-    `${pgNum(fech, dec)}<small>${pgEsc(b.ultimo_fechamento_data || "")}</small>`));
+    `${pgNum(fech, dec)}<small>${pgEsc(pgDataFechamento(b.ultimo_fechamento_data, titulo))}</small>`));
   L.push(pgLinha("EMA89 (fechado)", emaTxt, acima === null ? "" : acima ? "alta" : "baixa"));
   L.push(pgLinha(`RSI(${b.rsi_length || 14})`, pgNum(rsi, 1),
     typeof rsi === "number" && (rsi >= 70 || rsi <= 30) ? "atencao" : ""));
@@ -5565,7 +5565,11 @@ export function leituraLonga(sem, dec = 2) {
     : "sem tendência firme";
   // Ordem da lista de prioridade do prompt: niveis primeiro, media
   // longa depois, e os indicadores por ultimo.
-  const razao = [niveis, onde, forcaRsi, comoVai].filter(Boolean).join(", ");
+  // "fechou a semana": a frase dos niveis mede o fechamento SEMANAL, nao
+  // a cotacao. Sem isso, depois de uma semana de queda o painel dizia
+  // "encostando na faixa de 5,191 a 5,1965" com o USDT a 5,04, logo acima
+  // da faixa de suporte e resistencia, que usa a cotacao.
+  const razao = [niveis && `fechou a semana ${niveis}`, onde, forcaRsi, comoVai].filter(Boolean).join(", ");
 
   if (!longe) {
     return { classe: "neutro", rotulo: "na média longa", razao, chave: "na_media" };
@@ -5664,10 +5668,17 @@ export function leituraCurta(dia, cfg) {
     for (const nv of niveisDoPar(cfg)) {
       const evento = (dia.niveis_mudancas_nesta_vela || []).includes(`${estado}_${nv.label}`);
       if (dia[`nivel_${nv.label}_estado`] !== estado && !evento) continue;
+      // O papel vem da POSICAO do fechamento, como na faixa de suporte e
+      // resistencia do cartao. Pelo nome da configuracao, o painel dizia
+      // "resistencia de 550" na leitura e "Suporte 550" logo abaixo, com o
+      // XMR fechando acima da linha que ele mesmo tinha rompido.
+      const papel = typeof fech === "number"
+        ? (fech >= nv.nivel ? "suporte" : "resistência")
+        : (nv.direcao === "alta" ? "resistência" : "suporte");
       achado = {
         chave: estado,
         rotulo: texto,
-        alvo: `${nv.direcao === "alta" ? "resistência" : "suporte"} de ${pgValor(nv.nivel, dec)}`,
+        alvo: `${papel} de ${pgValor(nv.nivel, dec)}`,
       };
       break;
     }
@@ -5728,8 +5739,8 @@ export const EXPLICACOES = {
   sem_leitura:
     "O bloco deste timeframe não veio nesta execução, então não há o que ler.",
   na_media:
-    "O fechamento está colado na média das últimas 89 semanas: nem esticado " +
-    "para cima, nem descontado para baixo.",
+    "O fechamento semanal está perto da média das últimas 89 semanas, a menos " +
+    "de uma oscilação semanal típica: nem esticado para cima, nem descontado para baixo.",
   barato:
     "O fechamento está bem abaixo da média das últimas 89 semanas, e nada " +
     "indica queda em andamento.",
@@ -5771,7 +5782,9 @@ export const EXPLICACOES = {
     "O fechamento diário trouxe sinais de perda de força, sem nenhum evento " +
     "nos níveis pontuais manuais.",
   sem_evento:
-    "Nada aconteceu no fechamento diário que mereça destaque.",
+    "No fechamento diário, nenhum nível pontual manual mudou de estado, a média " +
+    "não foi cruzada e a tendência não mostra perda de força. Outros sinais do " +
+    "dia, como divergências, aparecem nas etiquetas do cartão.",
 };
 
 // O (?) so sai quando ha o que explicar: um botao que abre vazio e' pior
@@ -5897,10 +5910,13 @@ function pgNiveisProximos(cfg, dia) {
   const p = niveisProximos(cfg.niveis, preco);
   if (!p) return "";
   const estados = (dia && dia.niveis_manuais) || {};
-  const nome = (n) =>
-    n.pontual
-      ? pgValor(n.inferior, cfg.dec)
-      : `${pgValor(n.inferior, cfg.dec)}–${pgValor(n.superior, cfg.dec)}`;
+  // As duas pontas com as mesmas casas, como na leitura longa: a mesma
+  // faixa saia "0,0066–0,00672" aqui e "0,00660 a 0,00672" logo acima.
+  const nome = (n) => {
+    if (n.pontual) return pgValor(n.inferior, cfg.dec);
+    const d = Math.max(casasUteis(n.inferior, cfg.dec), casasUteis(n.superior, cfg.dec));
+    return `${pgNum(n.inferior, d)}–${pgNum(n.superior, d)}`;
+  };
   const item = (rotulo, n, borda) => {
     if (!n)
       return `<span class="sr-i"><span class="sr-r">${rotulo}</span><b class="fraco">nenhum nível manual</b></span>`;
@@ -5920,14 +5936,29 @@ function pgNiveisProximos(cfg, dia) {
   const dentro = p.dentro
     ? `<span class="sr-i"><span class="sr-r">Preço dentro de</span><b>${pgEsc(nome(p.dentro))}</b></span>`
     : "";
+  // O exemplo e' a linha DESTE par: "como a de 550" aparecia tambem no
+  // cartao do BTC e no do USDT/BRL.
+  const linha = typeof cfg.niveis.resistencia === "number"
+    ? ` como a de ${pgValor(cfg.niveis.resistencia, cfg.dec)}` : " pontuais";
   const ajuda = pgAjuda({ rotulo: "Suporte e resistência" }, `aj-sr-${cfg.key}`,
-    "Níveis manuais mais próximos abaixo e acima da cotação: faixas e linhas " +
-    "como a de 550. O papel vem da posição: linha rompida para cima vira suporte. " +
+    `Níveis manuais mais próximos abaixo e acima da cotação: faixas e linhas${linha}. ` +
+    "O papel vem da posição: linha rompida para cima vira suporte. " +
     "O estado (rompido, em reteste) é o do fechamento diário.");
   return (
     `<div class="sr estrutura-ajuda">${item("Suporte", p.suporte, (n) => n.superior)}${dentro}` +
     `${item("Resistência", p.resistencia, (n) => n.inferior)}${ajuda}</div>`
   );
+}
+
+// A vela semanal e' carimbada no INICIO da semana. Ao lado de um valor
+// identico ao fechamento diario de ontem, "2026-10-01" fazia o fechamento
+// semanal parecer uma semana mais velho do que e'. Todas as semanas com
+// cartao (Kraken, de quinta a quarta; Binance, de segunda a domingo) tem
+// sete dias corridos.
+export function pgDataFechamento(data, titulo) {
+  if (titulo !== "Semanal" || !/^\d{4}-\d{2}-\d{2}$/.test(data || "")) return data || "";
+  const fim = new Date(Date.parse(`${data}T00:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10);
+  return `semana até ${fim}`;
 }
 
 function pgCartao(cfg, dados, estruturaVisual) {

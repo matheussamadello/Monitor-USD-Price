@@ -645,6 +645,20 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
     const srL = (toHTML(r1.texto, dC).match(/<div class="sr [\s\S]*?<button/) || [""])[0];
     ok(/\+0,2%/.test(srL) && !/encostado/.test(srL), "a 0,2% continua saindo a porcentagem");
   }
+  {
+    // Coerencia visual (2026-10-08).
+    ok(monitor.pgDataFechamento("2026-10-01", "Semanal") === "semana até 2026-10-07" &&
+       monitor.pgDataFechamento("2026-10-07", "Diário") === "2026-10-07",
+      "a vela semanal mostra ate quando vai a semana; a diaria, o proprio dia");
+    const cfgC = PARES_TESTE.find((c) => !c.semCartao);
+    const srT = (html.match(/id="aj-sr-[^"]+" role="tooltip">([^<]*)</) || [])[1] || "";
+    ok(srT && (cfgC.niveis.resistencia === 550 || !/como a de 550/.test(srT)),
+      `a ajuda de suporte e resistencia cita a linha do proprio par (${srT.slice(0, 90)})`);
+    const faixasStrip = [...html.matchAll(/<div class="sr [\s\S]*?<button/g)].map((m) => m[0].replace(/<[^>]+>/g, " "))
+      .flatMap((t) => [...t.matchAll(/(\d[\d.]*(?:,(\d+))?)–(\d[\d.]*(?:,(\d+))?)/g)]);
+    ok(faixasStrip.length > 0 && faixasStrip.every((m) => (m[2] || "").length === (m[4] || "").length),
+      "na faixa de suporte e resistencia, as duas pontas de cada faixa tem as mesmas casas");
+  }
   ok(html.indexOf("<pre>") > html.indexOf('<section class="pares">'),
     "o resumo vem antes do relatorio, e o relatorio fecha a pagina");
 
@@ -1285,8 +1299,16 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     "reteste confirmado e' o estado mais decisivo e aparece no rotulo");
   ok(/reteste em curso/.test(comEstado("em_reteste").rotulo), "reteste em curso idem");
   ok(/rompimento falhou/.test(comEstado("rompimento_falhou").rotulo), "rompimento falhou idem");
-  ok(/resistência/.test(comEstado("em_reteste").razao),
-    "a razao diz de QUAL nivel se trata, e se e' resistencia ou suporte");
+  // O papel vem da posicao do fechamento, como na faixa de suporte e
+  // resistencia do cartao: a mesma linha e' resistencia com o fechamento
+  // abaixo e suporte com ele acima.
+  const R = nv.resistencia;
+  const abaixoR = leituraCurta(base({ [`nivel_${nv.resistenciaLabel}_estado`]: "em_reteste",
+    ultimo_fechamento_close: R * 0.99 }), cfg).razao;
+  const acimaR = leituraCurta(base({ [`nivel_${nv.resistenciaLabel}_estado`]: "em_reteste",
+    ultimo_fechamento_close: R * 1.01 }), cfg).razao;
+  ok(/^resistência de /.test(abaixoR) && /^suporte de /.test(acimaR),
+    `a razao diz de QUAL nivel se trata e o papel pelo lado do fechamento (${abaixoR} | ${acimaR})`);
 
   // Ordem de relevancia: com dois niveis em estados diferentes, vence o
   // mais decisivo, nao o primeiro da lista de niveis.
