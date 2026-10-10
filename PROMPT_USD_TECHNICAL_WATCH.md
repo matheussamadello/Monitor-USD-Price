@@ -183,6 +183,7 @@ Na configuração atual do projeto, as referências conhecidas são:
 
 - R$ 5,3315–5,341 — `faixa_5_3315_5_341`;
 - R$ 5,2525–5,2675 — `faixa_5_2525_5_2675`;
+- R$ 5,1966–5,2242 — `faixa_5_1966_5_2242`;
 - R$ 5,168–5,181 — `faixa_5_168_5_181`;
 - R$ 5,129–5,1395 — `faixa_5_129_5_1395`;
 - R$ 5,068–5,0805 — `regiao_suporte_5_068_5_0805`;
@@ -191,6 +192,8 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 4,9284–4,9521 — `regiao_suporte_4_9284_4_9521`;
 - resistência pontual de referência em torno de R$ 5,30;
 - suporte pontual de referência em torno de R$ 5,13.
+
+A faixa R$ 5,1966–5,2242 foi promovida em 2026-10-10 após o alerta de manutenção: zona diária ativa, score 77, 10 toques, 6 rejeições e confirmação semanal. A inclusão é manutenção de configuração, não movimento novo do mercado, e não cria ciclo próprio de rompimento e reteste. A região já está representada pelas faixas manuais: não repita a recomendação de inclusão.
 
 #### USDT/BRL
 

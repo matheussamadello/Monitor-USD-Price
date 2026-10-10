@@ -123,6 +123,10 @@ const NIVEIS_USD = {
     // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
     [5.3315, 5.341, "faixa_5_3315_5_341"],
     [5.2525, 5.2675, "faixa_5_2525_5_2675"],
+    // Promovida em 2026-10-10: usd|diario|z73, score 77, 10 episodios,
+    // 6 rejeicoes e confirmacao semanal. Limites publicados no alerta.
+    // Evidencia: promocao-faixa-usd-2026-10-10.json.
+    [5.1966, 5.2242, "faixa_5_1966_5_2242"],
     [5.168, 5.181, "faixa_5_168_5_181"],
     [5.129, 5.1395, "faixa_5_129_5_1395"],
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],

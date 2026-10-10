@@ -26,3 +26,24 @@ assert.ok(medida.score>=70);assert.equal(medida.episodios_concluidos,4);assert.e
 assert.deepEqual(medida.confirmacao_semanal,[],'nao inventa confluencia semanal');
 assert.equal(medida.toques_ultimas_90_velas,1);assert.equal(medida.rejeicoes_ultimas_90_velas,0,'toque recente ainda nao confirmou rejeicao');
 console.log('  ok     promocao USD/BRL: pivos reais, qualidade da faixa fixa e ausencia de duplicacao');
+
+// Promocao solicitada pelo alerta de manutencao de 2026-10-10.
+const revisao=JSON.parse(readFileSync(new URL('./promocao-faixa-usd-2026-10-10.json',import.meta.url)));
+const nova=cfg.niveis.faixas.filter(x=>x[2]===revisao.faixa[2]);
+assert.deepEqual(nova,[revisao.faixa],'a faixa do alerta existe uma unica vez');
+assert.deepEqual({...cfg.niveis,faixas:cfg.niveis.faixas.filter(x=>x[2]!==revisao.faixa[2])},
+  revisao.configuracao_anterior,'preserva todas as faixas e linhas anteriores');
+for(const c of revisao.capturas){
+  assert.equal(c.zona.status,'ativa');assert.equal(c.zona.score,77);
+  assert.equal(c.zona.numero_toques,10);assert.equal(c.zona.numero_rejeicoes,6);
+  assert.ok(c.zona.timeframes_confirmando.includes('semanal'));
+  assert.deepEqual([c.zona.limites_estruturais.inferior,c.zona.limites_estruturais.superior]
+    .map(x=>Number(x.toFixed(4))),revisao.faixa.slice(0,2),'limites publicados no alerta');
+  assert.ok(revisao.faixa[1]-revisao.faixa[0]<=.5*c.atr14,'largura dentro do teto');
+  assert.equal(m.motivoObservacaoRadar({...c.zona.limites_estruturais,score:c.zona.score},
+    revisao.configuracao_anterior.faixas,c.atr14),null,'passa pelos filtros adicionais');
+  assert.equal(m.zonasCandidatas([c.zona],revisao.configuracao_anterior,c.fechamento,'diario',c.atr14).length,1);
+  assert.deepEqual(m.zonasCandidatas([c.zona],cfg.niveis,c.fechamento,'diario',c.atr14),[],
+    'regiao promovida nao recomenda nova inclusao');
+}
+console.log('  ok     promocao de 2026-10-10: evidencia do alerta, faixas anteriores e radar preservados');

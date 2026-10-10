@@ -511,6 +511,7 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | --- | --- | --- |
 | 5,3315–5,341 | `faixa_5_3315_5_341` | 5,33284521, 5,33850002, 5,33970022 |
 | 5,2525–5,2675 | `faixa_5_2525_5_2675` | 5,25400019, 5,25812817, 5,26617479 |
+| 5,1966–5,2242 | `faixa_5_1966_5_2242` | Promovida em 2026-10-10: zona diária `usd\|diario\|z73`, score 77, 10 toques e 6 rejeições |
 | 5,168–5,181 | `faixa_5_168_5_181` | 5,16900015, 5,16989994, 5,17980003 |
 | 5,129–5,1395 | `faixa_5_129_5_1395` | 5,13075018, 5,13780689 |
 | 5,068–5,0805 | `regiao_suporte_5_068_5_0805` | 5,06960201, 5,0790782 |
@@ -519,6 +520,8 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | 4,9284–4,9521 | `regiao_suporte_4_9284_4_9521` | Promovida em 2026-10-07: pivôs de 4,9404, 4,9305, 4,9500 e 4,9387 |
 
 Resistência pontual: **5,3**. Suporte pontual: **5,13**.
+
+**Promoção de 2026-10-10.** A faixa **5,1966–5,2242** foi incluída após o alerta de manutenção das 13h07 UTC e a conferência do relatório das 18h50 UTC. A zona automática permanecia ativa, com score 77, 10 episódios de toque, 6 rejeições e confirmação diária e semanal. A largura é cerca de 0,43 ATR diário, entre as referências existentes de 5,168–5,181 e 5,2525–5,2675. Os limites seguem os valores publicados no alerta, com quatro casas decimais. É uma referência de resistência enquanto o preço estiver abaixo da faixa; seu papel acompanha a posição do preço. A inclusão preserva as demais faixas e os níveis pontuais, não cria ciclo próprio de rompimento e reteste e não é sinal de compra ou venda. A [evidência da promoção](promocao-faixa-usd-2026-10-10.json) registra a zona e a configuração anterior.
 
 Os [resultados do reajuste](REAJUSTE_FAIXAS_2026-09-25.md) e a [evidência com pivôs, janelas e medidas](reajuste-faixas-manuais-2026-09-25.json) documentam os limites atuais. A [auditoria anterior](AUDITORIA_FAIXAS_2026-09-25.md) e a [calibração mais estreita](revisao-faixas-manuais-2026-09-25.json) permanecem como registros históricos.
 
