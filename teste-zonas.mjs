@@ -181,6 +181,10 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
   //   2026-10-07 USDT/BRL: resistencia 5.31 -> 5.08 e suporte 5.15 -> 4.95
   //   (a queda de 05/10 deixou o preco abaixo de todas as faixas).
   const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0064 }, 'USDT/BRL': { suporte: 4.95, resistencia: 5.08 } };
+  // Promocoes posteriores usam o ATR fechado da propria calibracao,
+  // sem alterar a referencia de setembro das faixas ja existentes.
+  // Alerta de 2026-10-26: promocao-faixas-usdt-2026-10-26.json, ATR 0,084.
+  const ATR_PROMOCOES = { 'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084 } };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     const rev = PONTUAIS_REVISTOS[r.par] || {};
@@ -208,7 +212,8 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
     // configurada, inclusive as promovidas depois do reajuste.
     for (const [lo, hi, label] of cfg.niveis.faixas) {
       assert.ok(lo < hi);
-      assert.ok(hi - lo <= .5 * r.atr_diario_referencia + 1e-10);
+      const atrCalibracao = ATR_PROMOCOES[r.par]?.[label] ?? r.atr_diario_referencia;
+      assert.ok(hi - lo <= .5 * atrCalibracao + 1e-10, `largura da faixa ${label} no ATR da calibracao`);
       const ind = {rsi:null,adx:null,diPlus:null,diMinus:null,divergencias:[],estruturaEventos:[],enfraquecimento:[],padroes:[],mudancasNivel:[]};
       const alertas = preco => m.alertasTecnicos(cfg, {live:{close:preco,high:preco,low:preco},opens:[preco],closes:[preco]}, ind);
       for(const preco of [lo,(lo+hi)/2,hi]) assert.ok(alertas(preco).includes(label));

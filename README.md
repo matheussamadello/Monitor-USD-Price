@@ -483,6 +483,8 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 
 | Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
+| 5,4775–5,5122 | `faixa_5_4775_5_5122` | Promovida após o alerta de 2026-10-26: zona diária `usdt\|diario\|z67`, score 71, 13 toques e 7 rejeições |
+| 5,3890–5,4255 | `faixa_5_3890_5_4255` | Promovida após o alerta de 2026-10-26: zona diária `usdt\|diario\|z66`, score 74, 15 toques e 9 rejeições |
 | 5,338–5,3465 | `faixa_5_338_5_3465` | 5,34, 5,3415, 5,3448 |
 | 5,2935–5,3015 | `faixa_5_2935_5_3015` | 5,295, 5,3001 |
 | 5,274–5,2858 | `faixa_5_274_5_2858` | 5,2755, 5,28 |
@@ -495,6 +497,8 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 | 4,874–4,893 | `faixa_4_874_4_893` | 4,8766, 4,892 |
 
 Resistência pontual: **5,08** (era 5,31). Suporte pontual: **4,95** (era 5,15).
+
+**Promoção após o alerta de 2026-10-26, 21h03 Brasília (27/10, 00h03 UTC).** As faixas **5,3890–5,4255** e **5,4775–5,5122** ampliam as referências acima da antiga faixa superior de 5,338–5,3465. As duas zonas diárias permaneciam ativas no relatório das 01h42 UTC: respectivamente score 74, 15 toques e 9 rejeições; score 71, 13 toques e 7 rejeições. As larguras equivalem a cerca de 0,43 e 0,41 ATR diário, dentro do teto de 0,5 ATR da calibração atual (ATR 0,084). Os limites seguem o alerta, com quatro casas decimais. A inclusão preserva todas as faixas e linhas pontuais existentes, inclusive as do USD/BRL, e não cria ciclo próprio de rompimento e reteste nem sinal de compra ou venda. A [evidência da promoção](promocao-faixas-usdt-2026-10-26.json) registra o alerta, as zonas e a configuração anterior.
 
 **Revisão manual de 2026-10-07.** Em 05/10 o USDT/BRL caiu de 5,21 para 4,99 num dia — o USD/BRL caiu junto, então foi movimento real — e o preço ficou abaixo de todas as faixas: o cartão mostrava "Suporte: nenhum nível manual". A região abaixo de 5,07 já foi muito negociada em 2024 e entre abril e junho de 2026, e as contagens sobre as velas diárias da Binance desde janeiro de 2024 deram três faixas: **5,025–5,044** (6 pivôs diários e 2 semanais; segurou 13 vezes vindo de cima e 12 vindo de baixo), **4,946–4,965** (4 pivôs diários e 2 semanais, mais a mínima de 4,961 em 06/10; segurou 19 vezes como suporte, cruzada 2) e **4,874–4,893** (o fundo de 2026: 4,8766 e 4,892; segurou 7 vezes, nunca cruzada). As três têm 0,019 de largura, dentro do teto da calibração (metade do ATR diário de 25/09, 0,0384). As linhas pontuais também mudaram: a resistência de 5,31 ficava 6% acima e nunca tinha aberto registro, e o suporte de 5,15 foi rompido para baixo com o preço já afastado, ciclo encerrado. Agora a resistência fica em **5,08**, dentro de 5,0725–5,0896 (o suporte mais forte até 05/10, que virou teto), e o suporte em **4,95**, dentro de 4,946–4,965: o monitor vigia as duas decisões de agora, recuperar 5,08 ou perder 4,95. As linhas novas começam sem registro. Até o fechamento semanal de 2026-10-11, o bloco semanal mostra `rompimento_confirmado_5_08`, porque o último fechamento semanal (5,2132, de antes da queda) fica acima da linha nova; e o alinhamento diário sai `parcial` (9 de 10), porque a zona diária do fundo de maio, que corroboraria 4,874–4,893, já decaiu — no semanal ela existe. Os dois efeitos são da configuração, não do mercado, e estão registrados no prompt.
 

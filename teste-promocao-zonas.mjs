@@ -47,3 +47,28 @@ for(const c of revisao.capturas){
     'regiao promovida nao recomenda nova inclusao');
 }
 console.log('  ok     promocao de 2026-10-10: evidencia do alerta, faixas anteriores e radar preservados');
+
+// Duas resistencias de USDT/BRL, autorizadas pelo alerta de 26/10 Brasilia.
+const usdtRev=JSON.parse(readFileSync(new URL('./promocao-faixas-usdt-2026-10-26.json',import.meta.url)));
+const usdt=m.PARES_TESTE.find(p=>p.key==='usdt'),labels=new Set(usdtRev.faixas.map(f=>f[2]));
+assert.deepEqual(usdt.niveis.faixas.filter(f=>labels.has(f[2])),usdtRev.faixas,'faixas exatas, sem duplicacao');
+assert.deepEqual({...usdt.niveis,faixas:usdt.niveis.faixas.filter(f=>!labels.has(f[2]))},
+  usdtRev.configuracao_anterior,'preserva faixas e linhas pontuais anteriores do USDT/BRL');
+assert.deepEqual(cfg.niveis,usdtRev.configuracao_usd_preservada,'nao mistura configuracoes dos dois pares');
+const esperado={ 'usdt|diario|z66': [74,15,9], 'usdt|diario|z67': [71,13,7] };
+for(const c of usdtRev.capturas){
+  assert.equal(c.zonas.length,2);assert.equal(c.fechamento,5.3842);assert.equal(c.atr14,.084);
+  assert.equal(m.zonasCandidatas(c.zonas,usdtRev.configuracao_anterior,c.fechamento,'diario',c.atr14).length,2);
+  for(const z of c.zonas){
+    assert.equal(z.status,'ativa');
+    assert.deepEqual([z.score,z.numero_toques,z.numero_rejeicoes],esperado[z.id]);
+    const limites=[z.limites_estruturais.inferior,z.limites_estruturais.superior].map(x=>Number(x.toFixed(4)));
+    const faixa=usdtRev.faixas.find(f=>f[0]===limites[0]&&f[1]===limites[1]);assert.ok(faixa);
+    assert.ok(faixa[1]-faixa[0]<=.5*c.atr14,'teto de largura na data da promocao');
+    assert.ok(usdtRev.configuracao_anterior.faixas.every(f=>faixa[0]>f[1]),'amplia referencias acima das anteriores');
+    assert.equal(m.motivoObservacaoRadar({...z.limites_estruturais,score:z.score},usdtRev.configuracao_anterior.faixas,c.atr14),null);
+  }
+  assert.deepEqual(m.zonasCandidatas(c.zonas,usdt.niveis,c.fechamento,'diario',c.atr14),[],
+    'nenhuma das regioes promovidas recomenda inclusao novamente');
+}
+console.log('  ok     promocao USDT/BRL de 26/10: duas resistencias, calibracao, isolamento e radar');

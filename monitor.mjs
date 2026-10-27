@@ -548,6 +548,13 @@ const FONTES_CRIPTO = [
 // ------------------------------------------------------------
 const NIVEIS_USDT = {
   faixas: [
+    // Promovidas apos o alerta de 26/10/2026, 21h03 Brasilia (27/10 UTC).
+    // usdt|diario|z67: score 71, 13 episodios e 7 rejeicoes.
+    // usdt|diario|z66: score 74, 15 episodios e 9 rejeicoes.
+    // Limites publicados no alerta; ATR da calibracao atual: 0,084.
+    // Evidencia: promocao-faixas-usdt-2026-10-26.json.
+    [5.4775, 5.5122, "faixa_5_4775_5_5122"],
+    [5.3890, 5.4255, "faixa_5_3890_5_4255"],
     // Faixas fixas revistas por pivos/reacoes em 2026-09-25; teto de 0,5 ATR na calibracao.
     // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
     [5.338, 5.3465, "faixa_5_338_5_3465"],
