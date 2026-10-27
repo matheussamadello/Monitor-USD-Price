@@ -7,7 +7,7 @@ const f=JSON.parse(readFileSync(new URL('./fixture-promocao-usd-2026-10-07.json'
 const cfg=m.PARES_TESTE.find(p=>p.key==='usd'),faixa=cfg.niveis.faixas.find(x=>x[2]===f.faixa[2]);
 const usd27=JSON.parse(readFileSync(new URL('./promocao-faixas-usd-2026-10-27.json',import.meta.url)));
 const labelsUSD27=new Set(usd27.faixas.map(f=>f[2]));
-// A revisao de 27/10 acrescenta duas faixas: as capturas anteriores
+// A revisao de 27/10 acrescenta tres faixas: as capturas anteriores
 // continuam verificando todos os limites e linhas que ja existiam.
 const usdAntes27={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>!labelsUSD27.has(f[2]))};
 assert.deepEqual(faixa,f.faixa);
@@ -78,7 +78,7 @@ for(const c of usdtRev.capturas){
 }
 console.log('  ok     promocao USDT/BRL de 26/10: duas resistencias, calibracao, isolamento e radar');
 
-assert.deepEqual(cfg.niveis.faixas.filter(f=>labelsUSD27.has(f[2])),usd27.faixas,'duas faixas exatas, sem duplicacao');
+assert.deepEqual(cfg.niveis.faixas.filter(f=>labelsUSD27.has(f[2])),usd27.faixas,'tres faixas exatas, sem duplicacao');
 assert.deepEqual(usdAntes27,usd27.configuracao_anterior,'preserva nove faixas e niveis pontuais anteriores');
 assert.deepEqual(usdt.niveis,usd27.configuracao_usdt_preservada,'preserva todas as referencias do USDT/BRL');
 assert.ok(!cfg.niveis.faixas.some(f=>f[0]===usd27.regiao_nao_promovida.inferior&&f[1]===usd27.regiao_nao_promovida.superior));
@@ -104,4 +104,17 @@ for(const c of usd27.capturas){
   assert.deepEqual(m.zonasCandidatas(c.zonas,cfg.niveis,c.fechamento,'diario',c.atr14),[],
     'regioes promovidas e sobreposta nao repetem recomendacao');
 }
-console.log('  ok     promocao USD/BRL de 27/10: duas faixas, sobreposicao, preservacao e radar');
+const adicional=usd27.conferencia_adicional,zAd=adicional.zona_promovida;
+assert.equal(zAd.status,'ativa');
+assert.deepEqual([zAd.score,zAd.numero_toques,zAd.numero_rejeicoes],[72,10,6]);
+const fAd=usd27.faixas.find(f=>f[2]==='faixa_5_4980_5_5306');
+assert.deepEqual([zAd.limites_estruturais.inferior,zAd.limites_estruturais.superior].map(x=>Number(x.toFixed(4))),fAd.slice(0,2));
+assert.ok(fAd[1]-fAd[0]<=.5*adicional.atr14);
+const semAd={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>f[2]!==fAd[2])};
+assert.equal(m.motivoObservacaoRadar({...zAd.limites_estruturais,score:zAd.score},semAd.faixas,adicional.atr14),null);
+assert.equal(m.zonasCandidatas([zAd],semAd,adicional.fechamento,'diario',adicional.atr14).length,1);
+assert.deepEqual(m.zonasCandidatas([zAd],cfg.niveis,adicional.fechamento,'diario',adicional.atr14),[]);
+const obs=adicional.zona_em_observacao;
+assert.equal(obs.score,70);
+assert.match(m.motivoObservacaoRadar({...obs.limites_estruturais,score:obs.score},cfg.niveis.faixas,adicional.atr14),/pivô único/);
+console.log('  ok     promocao USD/BRL de 27/10: tres faixas, sobreposicao, observacao e radar');

@@ -9,6 +9,11 @@
       "faixa_5_5780_5_6066"
     ],
     [
+      5.498,
+      5.5306,
+      "faixa_5_4980_5_5306"
+    ],
+    [
       5.366,
       5.3973,
       "faixa_5_3660_5_3973"
@@ -420,5 +425,102 @@
         }
       ]
     }
-  ]
+  ],
+  "conferencia_adicional": {
+    "commit": "08ca1b0e99fd99abf3fec9ae25946f469e6ff9a7",
+    "relatorio_em": "2026-10-27 18:23 UTC",
+    "atr14": 0.0987,
+    "fechamento": 5.3716,
+    "radar": "5.4980-5.5306 score=72 toques=10 (acima do fechamento) | 5.4624-5.4684 score=70 toques=8 (acima do fechamento)",
+    "motivo": "A inclusao das referencias prioritarias liberou vagas no radar limitado a tres recomendacoes. z65 tambem passa pelos filtros e e distinta das faixas vizinhas.",
+    "zona_promovida": {
+      "id": "usd|diario|z65",
+      "tipo": "resistencia",
+      "tipo_confirmado": "resistencia",
+      "ultimo_role_reversal_em": 1755648000,
+      "status": "ativa",
+      "estado_atual": "abaixo",
+      "centro": 5.51256940481651,
+      "limites_estruturais": {
+        "inferior": 5.498002547220249,
+        "superior": 5.530597191854458
+      },
+      "limites_operacionais": {
+        "inferior": 5.48790356033926,
+        "superior": 5.537235249293761
+      },
+      "score": 72,
+      "score_bruto": 84,
+      "fator_penalidade": 0.85,
+      "penalidades": [
+        "rompida_2x_sem_reacao"
+      ],
+      "numero_toques": 10,
+      "numero_rejeicoes": 6,
+      "forca_reacao_atr": 1.72,
+      "primeiro_toque": 1725580800,
+      "ultimo_toque": 1792972800,
+      "velas_desde_ultimo_toque": 0,
+      "timeframes_confirmando": [
+        "diario"
+      ],
+      "role_reversal": true,
+      "cruzamento_confirmado": true,
+      "volume_contexto": "nao_aplicavel",
+      "volume_relativo_mediano": null,
+      "distancia_preco_atual_pct": -3.1141460162133665,
+      "confluencia_nivel_manual": false,
+      "confluencia_faixa_manual": false,
+      "confluencia_resistencia_macro": false,
+      "confluencia_manual_qualquer": false,
+      "velasComScoreAlto": 21,
+      "velasEnfraquecida": 0,
+      "ultimaVelaAvaliada": 1792972800
+    },
+    "zona_em_observacao": {
+      "id": "usd|diario|z61",
+      "tipo": "resistencia",
+      "tipo_confirmado": "resistencia",
+      "ultimo_role_reversal_em": 1760659200,
+      "status": "ativa",
+      "estado_atual": "abaixo",
+      "centro": 5.465400218963623,
+      "limites_estruturais": {
+        "inferior": 5.462393193574862,
+        "superior": 5.468407244352384
+      },
+      "limites_operacionais": {
+        "inferior": 5.4407343744863725,
+        "superior": 5.490066063440874
+      },
+      "score": 70,
+      "score_bruto": 83,
+      "fator_penalidade": 0.85,
+      "penalidades": [
+        "rompida_2x_sem_reacao"
+      ],
+      "numero_toques": 8,
+      "numero_rejeicoes": 4,
+      "forca_reacao_atr": 1.51,
+      "primeiro_toque": 1750118400,
+      "ultimo_toque": 1792972800,
+      "velas_desde_ultimo_toque": 0,
+      "timeframes_confirmando": [
+        "diario"
+      ],
+      "role_reversal": true,
+      "cruzamento_confirmado": true,
+      "volume_contexto": "nao_aplicavel",
+      "volume_relativo_mediano": null,
+      "distancia_preco_atual_pct": -2.277971780112592,
+      "confluencia_nivel_manual": false,
+      "confluencia_faixa_manual": false,
+      "confluencia_resistencia_macro": false,
+      "confluencia_manual_qualquer": false,
+      "velasComScoreAlto": 22,
+      "velasEnfraquecida": 0,
+      "ultimaVelaAvaliada": 1792972800
+    },
+    "motivo_observacao": "Pivo unico pela largura de ate 0,12 ATR, com score 70 abaixo do minimo de 80."
+  }
 }

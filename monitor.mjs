@@ -121,10 +121,13 @@ const NIVEIS_USD = {
   faixas: [
     // Promovidas em 27/10/2026 apos o alerta de 09h06 UTC.
     // usd|diario|z48: score 86, 8 episodios e 6 rejeicoes.
+    // usd|diario|z65: score 72, 10 episodios e 6 rejeicoes; revelada
+    // quando as inclusoes prioritarias liberaram vagas no radar.
     // usd|diario|z38: score 73, 14 episodios e 8 rejeicoes.
     // z27 (5.5954-5.6312) sobrepoe z48: sem faixa adicional redundante.
     // Evidencia: promocao-faixas-usd-2026-10-27.json. ATR: 0,0986.
     [5.5780, 5.6066, "faixa_5_5780_5_6066"],
+    [5.4980, 5.5306, "faixa_5_4980_5_5306"],
     [5.3660, 5.3973, "faixa_5_3660_5_3973"],
     // Faixas fixas revistas por pivos/reacoes em 2026-09-25; teto de 0,5 ATR na calibracao.
     // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
