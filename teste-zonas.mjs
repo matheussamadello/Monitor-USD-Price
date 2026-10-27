@@ -184,7 +184,11 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
   // Promocoes posteriores usam o ATR fechado da propria calibracao,
   // sem alterar a referencia de setembro das faixas ja existentes.
   // Alerta de 2026-10-26: promocao-faixas-usdt-2026-10-26.json, ATR 0,084.
-  const ATR_PROMOCOES = { 'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084 } };
+  const ATR_PROMOCOES = {
+    'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084 },
+    // Alerta de 27/10: promocao-faixas-usd-2026-10-27.json.
+    'USD/BRL': { faixa_5_5780_5_6066: 0.0986, faixa_5_3660_5_3973: 0.0986 },
+  };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
     const rev = PONTUAIS_REVISTOS[r.par] || {};

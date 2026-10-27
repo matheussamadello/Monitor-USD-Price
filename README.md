@@ -513,6 +513,8 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 
 | Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
+| 5,5780–5,6066 | `faixa_5_5780_5_6066` | Promovida em 2026-10-27: zona diária `usd\|diario\|z48`, score 86, 8 toques e 6 rejeições |
+| 5,3660–5,3973 | `faixa_5_3660_5_3973` | Promovida em 2026-10-27: zona diária `usd\|diario\|z38`, score 73, 14 toques e 8 rejeições |
 | 5,3315–5,341 | `faixa_5_3315_5_341` | 5,33284521, 5,33850002, 5,33970022 |
 | 5,2525–5,2675 | `faixa_5_2525_5_2675` | 5,25400019, 5,25812817, 5,26617479 |
 | 5,1966–5,2242 | `faixa_5_1966_5_2242` | Promovida em 2026-10-10: zona diária `usd\|diario\|z73`, score 77, 10 toques e 6 rejeições |
@@ -524,6 +526,8 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | 4,9284–4,9521 | `regiao_suporte_4_9284_4_9521` | Promovida em 2026-10-07: pivôs de 4,9404, 4,9305, 4,9500 e 4,9387 |
 
 Resistência pontual: **5,3**. Suporte pontual: **5,13**.
+
+**Promoção de 2026-10-27.** Após o alerta de manutenção das 06h06 Brasília (09h06 UTC), foram incluídas **5,3660–5,3973** e **5,5780–5,6066**, preservando as nove faixas anteriores e os níveis pontuais. A primeira é uma região de reação próxima do fechamento de 5,3716; a segunda é a referência superior de maior score, sem penalidades na zona automática. Na conferência das 16h50 UTC, as larguras correspondiam a cerca de 0,32 e 0,29 ATR diário (ATR 0,0986). Os limites seguem o alerta com quatro casas decimais. A terceira candidata, **5,5954–5,6312**, permaneceu sem faixa manual própria: sobrepõe a referência superior e a união das duas excederia o teto de 0,5 ATR. Ela continua na memória automática conforme seu ciclo de vida e fica registrada para reavaliação. A [evidência da decisão](promocao-faixas-usd-2026-10-27.json) documenta as três candidatas e a configuração anterior. A manutenção não altera as faixas do USDT/BRL nem cria ciclo próprio de rompimento e reteste ou sinal de compra e venda.
 
 **Promoção de 2026-10-10.** A faixa **5,1966–5,2242** foi incluída após o alerta de manutenção das 13h07 UTC e a conferência do relatório das 18h50 UTC. A zona automática permanecia ativa, com score 77, 10 episódios de toque, 6 rejeições e confirmação diária e semanal. A largura é cerca de 0,43 ATR diário, entre as referências existentes de 5,168–5,181 e 5,2525–5,2675. Os limites seguem os valores publicados no alerta, com quatro casas decimais. É uma referência de resistência enquanto o preço estiver abaixo da faixa; seu papel acompanha a posição do preço. A inclusão preserva as demais faixas e os níveis pontuais, não cria ciclo próprio de rompimento e reteste e não é sinal de compra ou venda. A [evidência da promoção](promocao-faixa-usd-2026-10-10.json) registra a zona e a configuração anterior.
 

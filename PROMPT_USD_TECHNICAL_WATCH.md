@@ -181,6 +181,8 @@ Na configuração atual do projeto, as referências conhecidas são:
 
 #### USD/BRL
 
+- R$ 5,5780–5,6066 — `faixa_5_5780_5_6066`;
+- R$ 5,3660–5,3973 — `faixa_5_3660_5_3973`;
 - R$ 5,3315–5,341 — `faixa_5_3315_5_341`;
 - R$ 5,2525–5,2675 — `faixa_5_2525_5_2675`;
 - R$ 5,1966–5,2242 — `faixa_5_1966_5_2242`;
@@ -192,6 +194,8 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 4,9284–4,9521 — `regiao_suporte_4_9284_4_9521`;
 - resistência pontual de referência em torno de R$ 5,30;
 - suporte pontual de referência em torno de R$ 5,13.
+
+As faixas R$ 5,3660–5,3973 e R$ 5,5780–5,6066 foram promovidas em 2026-10-27 após o alerta das 06h06 Brasília (09h06 UTC). A região R$ 5,5954–5,6312 ficou sem faixa própria por sobreposição com a referência superior de score 86; a união excederia o teto de largura da calibração. A decisão está registrada em `promocao-faixas-usd-2026-10-27.json`. As regiões promovidas já estão representadas: não repita a recomendação de inclusão. A terceira não exige inclusão automática nem repetição do mesmo aviso apenas por continuar no radar: só reavalie com evidência nova que justifique uma referência distinta. A manutenção não é sinal de mercado e não cria ciclo próprio de rompimento e reteste.
 
 A faixa R$ 5,1966–5,2242 foi promovida em 2026-10-10 após o alerta de manutenção: zona diária ativa, score 77, 10 toques, 6 rejeições e confirmação semanal. A inclusão é manutenção de configuração, não movimento novo do mercado, e não cria ciclo próprio de rompimento e reteste. A região já está representada pelas faixas manuais: não repita a recomendação de inclusão.
 
