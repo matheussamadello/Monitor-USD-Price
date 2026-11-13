@@ -1,7 +1,7 @@
 {
   "cabecalho": {
-    "timestamp": "2026-11-12 23:40 UTC",
-    "fonte": "USDT/BRL diario=binance semanal=binance | USD/BRL diario=yahoo/query1 semanal=indisponivel",
+    "timestamp": "2026-11-13 01:27 UTC",
+    "fonte": "USDT/BRL diario=binance semanal=binance | USD/BRL diario=indisponivel semanal=indisponivel",
     "fontes_em_cascata": "USDT/BRL binance -> mercadobitcoin | USD/BRL yahoo/query1 -> yahoo/query2 (vale a primeira que responder)",
     "indicadores": "RSI e DMI/ADX por Wilder/RMA com periodos por timeframe (RSI diario 21, semanal 14; DMI/ADX diario 28/42, semanal 14/21), EMA(89) exponencial",
     "volume": "USD/BRL nao_aplicavel (cambio a vista e' balcao, sem tape publico) | USDT/BRL real (negocia em corretora)",
@@ -10,39 +10,39 @@
   "diario": {
     "USDT/BRL": {
       "timeframe": "diario",
-      "preco_atual": 5.6724,
+      "preco_atual": 5.6676,
       "vela_atual_em_formacao": "sim",
-      "candle_atual_data": "2026-11-12",
-      "candle_atual_open": 5.5994,
-      "candle_atual_high": 5.6725,
-      "candle_atual_low": 5.5881,
-      "candle_atual_close_provisorio": 5.6724,
-      "candle_atual_var_pct_desde_abertura": 1.3,
-      "ema89": 5.2399,
+      "candle_atual_data": "2026-11-13",
+      "candle_atual_open": 5.6757,
+      "candle_atual_high": 5.6825,
+      "candle_atual_low": 5.6582,
+      "candle_atual_close_provisorio": 5.6676,
+      "candle_atual_var_pct_desde_abertura": -0.14,
+      "ema89": 5.2496,
       "posicao_vs_ema89": "acima",
-      "distancia_ema89_pct": 8.25,
+      "distancia_ema89_pct": 7.96,
       "rsi_length": 21,
-      "rsi_fechado": 68.36,
+      "rsi_fechado": 71.29,
       "dmi_di_length": 28,
       "dmi_adx_smoothing": 42,
-      "di_plus_fechado": 36.01,
-      "di_minus_fechado": 11.4,
-      "adx_fechado": 26.38,
-      "ultimo_fechamento_data": "2026-11-11",
-      "ultimo_fechamento_close": 5.5994,
-      "ema89_fechada_atual": 5.2399,
-      "ema89_fechada_anterior": 5.2317,
+      "di_plus_fechado": 37.83,
+      "di_minus_fechado": 10.94,
+      "adx_fechado": 27.07,
+      "ultimo_fechamento_data": "2026-11-12",
+      "ultimo_fechamento_close": 5.6756,
+      "ema89_fechada_atual": 5.2496,
+      "ema89_fechada_anterior": 5.2399,
       "ema89_cruzamento_fechado": "nenhum",
-      "distancia_ema89_fechada_atr": 3.67,
-      "atr14": 0.0979,
-      "atr14_pct": 1.75,
-      "rsi_provisorio": 71.18,
-      "di_plus_provisorio": 37.56,
-      "di_minus_provisorio": 10.98,
-      "adx_provisorio": 27.06,
-      "candle_fechado_1": "data=2026-11-11 open=5.5682 high=5.6066 low=5.5551 close=5.5994 direcao=alta corpo=0.0312 sombra_sup=0.0072 sombra_inf=0.0131 volume=50676512.8000",
-      "candle_fechado_2": "data=2026-11-10 open=5.5268 high=5.6156 low=5.5114 close=5.5682 direcao=alta corpo=0.0414 sombra_sup=0.0474 sombra_inf=0.0154 volume=83252279.1000",
-      "candle_fechado_3": "data=2026-11-09 open=5.6102 high=5.6166 low=5.5125 close=5.5269 direcao=baixa corpo=0.0833 sombra_sup=0.0064 sombra_inf=0.0144 volume=69718058.0000",
+      "distancia_ema89_fechada_atr": 4.36,
+      "atr14": 0.0977,
+      "atr14_pct": 1.72,
+      "rsi_provisorio": 70.57,
+      "di_plus_provisorio": 37.42,
+      "di_minus_provisorio": 10.82,
+      "adx_provisorio": 27.74,
+      "candle_fechado_1": "data=2026-11-12 open=5.5994 high=5.6825 low=5.5881 close=5.6756 direcao=alta corpo=0.0762 sombra_sup=0.0069 sombra_inf=0.0113 volume=72864761.9000",
+      "candle_fechado_2": "data=2026-11-11 open=5.5682 high=5.6066 low=5.5551 close=5.5994 direcao=alta corpo=0.0312 sombra_sup=0.0072 sombra_inf=0.0131 volume=50676512.8000",
+      "candle_fechado_3": "data=2026-11-10 open=5.5268 high=5.6156 low=5.5114 close=5.5682 direcao=alta corpo=0.0414 sombra_sup=0.0474 sombra_inf=0.0154 volume=83252279.1000",
       "nivel_5_08_estado": "rompido",
       "nivel_5_08_direcao": "alta",
       "nivel_5_08_preco_rompimento": 5.0812,
@@ -53,22 +53,22 @@
       "nivel_4_95_estado": "sem_registro",
       "nivel_4_95_historico": "nenhum",
       "niveis_mudancas_nesta_vela": [],
-      "niveis_manuais_situacao": "atual",
+      "niveis_manuais_situacao": "monitorar",
       "niveis_manuais_faixa_mais_proxima": "faixa_5_4775_5_5122",
-      "niveis_manuais_distancia_atr": 0.89,
+      "niveis_manuais_distancia_atr": 1.67,
       "niveis_manuais_alinhamento": "alinhado",
       "niveis_manuais_faixas_corroboradas": "12 de 12",
-      "zonas_candidatas_a_faixa": "5.5971-5.6339 score=100 toques=11 (no fechamento) | 5.6463-5.6537 score=99 toques=10 (acima do fechamento) | 5.5848-5.6142 score=93 toques=8 (no fechamento)",
-      "fracao_periodo_decorrida": 0.987,
+      "zonas_candidatas_a_faixa": "5.5971-5.6339 score=100 toques=11 (abaixo do fechamento) | 5.6463-5.6537 score=100 toques=10 (abaixo do fechamento) | 5.5848-5.6142 score=93 toques=8 (abaixo do fechamento)",
+      "fracao_periodo_decorrida": 0.061,
       "volume_parcial": "sim",
-      "volume_atual": 71445894.6,
-      "volume_ultima_fechada": 50676512.8,
-      "volume_media20": 56833443.03,
-      "volume_vs_media_pct": -10.83,
+      "volume_atual": 2918256.7,
+      "volume_ultima_fechada": 72864761.9,
+      "volume_media20": 55708266.44,
+      "volume_vs_media_pct": 30.8,
       "volume_referencia": "ultima_vela_fechada",
-      "volume_classificacao": "normal",
+      "volume_classificacao": "acima_da_media",
       "volume_tendencia_3_fechadas": "irregular",
-      "trades_vela_atual": 45677,
+      "trades_vela_atual": 3555,
       "estrutura_preco": "HH_LL",
       "estrutura_tendencia": "lateral_expansao",
       "estrutura_ultimo_topo": "HH",
@@ -82,40 +82,43 @@
       ],
       "divergencia_rsi_detalhe_1": "tipo=bullish_regular lado=fundo status=confirmada pivo_anterior=2026-10-07 preco_anterior=4.9500 rsi_anterior=38.10 pivo_atual=2026-10-25 preco_atual=4.9150 rsi_atual=60.51",
       "divergencia_rsi_provisoria": [],
-      "corpo_pct_range": 60.58,
-      "sombra_sup_pct_range": 13.98,
-      "sombra_inf_pct_range": 25.44,
-      "sombra_sup_vs_corpo": 0.23,
-      "sombra_inf_vs_corpo": 0.42,
-      "candle_atual_corpo_pct_range": 86.49,
-      "candle_atual_sombra_sup_pct_range": 0.12,
-      "candle_atual_sombra_inf_pct_range": 13.39,
-      "candle_atual_sombra_sup_vs_corpo": 0,
-      "candle_atual_sombra_inf_vs_corpo": 0.15,
-      "eventos": "nenhum cruzamento nesta vela",
+      "corpo_pct_range": 80.72,
+      "sombra_sup_pct_range": 7.31,
+      "sombra_inf_pct_range": 11.97,
+      "sombra_sup_vs_corpo": 0.09,
+      "sombra_inf_vs_corpo": 0.15,
+      "candle_atual_corpo_pct_range": 33.33,
+      "candle_atual_sombra_sup_pct_range": 27.98,
+      "candle_atual_sombra_inf_pct_range": 38.68,
+      "candle_atual_sombra_sup_vs_corpo": 0.84,
+      "candle_atual_sombra_inf_vs_corpo": 1.16,
+      "eventos": "RSI entrou em sobrecompra (>=70)",
       "mediana_corpo_20": 0.0345,
       "contexto_antes_do_trio": "alta_regiao_alta",
       "padrao_trio_contexto": "nao_aplicavel",
       "padrao_trio_confirmacao_estrutural": "neutro",
       "padrao_trio_evidencias_fraqueza": [],
       "padroes_enfraquecimento": [],
-      "tres_soldados_diagnostico": "nao_aplicavel",
+      "tres_soldados_diagnostico": "c1:corpo_range_0.40 c1:fecha_longe_da_maxima_0.55 c1:sombra_sup_1.14x_corpo",
       "padrao_candles": [],
       "padrao_em_formacao": [],
       "alertas_tecnicos": [
         "rompimento_confirmado_5_08",
+        "rsi_acima_70",
         "adx_subindo_com_di_plus_dominante",
-        "divergencia_bullish_regular_confirmada"
+        "divergencia_bullish_regular_confirmada",
+        "rompimento_com_volume_acima_da_media"
       ],
       "zonas_automaticas_total": 6,
-      "zona_auto_1": "id=usdt|diario|z45 tipo=resistencia status=ativa estado=abaixo score=84 estrutural=5.691406-5.708594 operacional=5.675515-5.724485 centro=5.700000 toques=8 rejeicoes=6 role_reversal=sim dist_pct=-0.48 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_2": "id=usdt|diario|z30 tipo=resistencia status=ativa estado=abaixo score=92 estrutural=5.722155-5.735845 operacional=5.704515-5.753485 centro=5.729000 toques=4 rejeicoes=4 role_reversal=nao dist_pct=-0.99 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_3": "id=usdt|diario|z69 tipo=resistencia status=ativa estado=abaixo score=73 estrutural=5.743682-5.752318 operacional=5.723515-5.772485 centro=5.748000 toques=9 rejeicoes=6 role_reversal=sim dist_pct=-1.32 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_4": "id=usdt|diario|z68 tipo=resistencia status=ativa estado=em_teste score=99 estrutural=5.646342-5.653658 operacional=5.625515-5.674485 centro=5.650000 toques=10 rejeicoes=8 role_reversal=sim dist_pct=0.40 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_5": "id=usdt|diario|z29 tipo=resistencia status=ativa estado=acima score=61 estrutural=5.643024-5.648976 operacional=5.621515-5.670485 centro=5.646000 toques=2 rejeicoes=1 role_reversal=nao dist_pct=0.47 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_6": "id=usdt|diario|z40 tipo=resistencia status=ativa estado=acima score=88 estrutural=5.631196-5.642804 operacional=5.612518-5.661488 centro=5.637003 toques=5 rejeicoes=3 role_reversal=nao dist_pct=0.63 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_1": "id=usdt|diario|z45 tipo=resistencia status=ativa estado=abaixo score=85 estrutural=5.691405-5.708595 operacional=5.675578-5.724422 centro=5.700000 toques=9 rejeicoes=6 role_reversal=sim dist_pct=-0.57 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_2": "id=usdt|diario|z30 tipo=resistencia status=ativa estado=abaixo score=91 estrutural=5.722155-5.735845 operacional=5.704578-5.753422 centro=5.729000 toques=4 rejeicoes=4 role_reversal=nao dist_pct=-1.07 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_3": "id=usdt|diario|z69 tipo=resistencia status=ativa estado=abaixo score=72 estrutural=5.743680-5.752320 operacional=5.723578-5.772422 centro=5.748000 toques=9 rejeicoes=6 role_reversal=sim dist_pct=-1.40 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_4": "id=usdt|diario|z68 tipo=resistencia status=ativa estado=em_teste score=100 estrutural=5.646342-5.653658 operacional=5.625578-5.674422 centro=5.650000 toques=10 rejeicoes=8 role_reversal=sim dist_pct=0.31 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_5": "id=usdt|diario|z29 tipo=resistencia status=ativa estado=em_teste score=63 estrutural=5.643024-5.648976 operacional=5.621578-5.670422 centro=5.646000 toques=2 rejeicoes=1 role_reversal=nao dist_pct=0.38 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_6": "id=usdt|diario|z40 tipo=resistencia status=ativa estado=acima score=89 estrutural=5.631196-5.642804 operacional=5.612580-5.661424 centro=5.637002 toques=5 rejeicoes=3 role_reversal=nao dist_pct=0.54 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
       "confluencia_entrada": [
         "rompimento_confirmado_por_fechamento",
+        "volume_acima_da_media_no_rompimento",
         "di_plus_dominante"
       ],
       "confluencia_pullback": [
@@ -207,25 +210,25 @@
           "estado_atual": "abaixo",
           "centro": 5.7,
           "limites_estruturais": {
-            "inferior": 5.691405790890655,
-            "superior": 5.708594209109346
+            "inferior": 5.6914053736901975,
+            "superior": 5.708594626309803
           },
           "limites_operacionais": {
-            "inferior": 5.675514863277712,
-            "superior": 5.724485136722288
+            "inferior": 5.6755780873293045,
+            "superior": 5.724421912670696
           },
-          "score": 84,
-          "score_bruto": 99,
+          "score": 85,
+          "score_bruto": 100,
           "fator_penalidade": 0.85,
           "penalidades": [
             "rompida_2x_sem_reacao"
           ],
-          "numero_toques": 8,
+          "numero_toques": 9,
           "numero_rejeicoes": 6,
-          "forca_reacao_atr": 2.2,
+          "forca_reacao_atr": 1.96,
           "primeiro_toque": 1739923200,
-          "ultimo_toque": 1794096000,
-          "velas_desde_ultimo_toque": 3,
+          "ultimo_toque": 1794441600,
+          "velas_desde_ultimo_toque": 0,
           "timeframes_confirmando": [
             "diario",
             "semanal"
@@ -233,8 +236,8 @@
           "role_reversal": true,
           "cruzamento_confirmado": true,
           "volume_contexto": "acima_da_media_na_epoca",
-          "volume_relativo_mediano": 1.39,
-          "distancia_preco_atual_pct": -0.4842105263157984,
+          "volume_relativo_mediano": 1.31,
+          "distancia_preco_atual_pct": -0.5684210526315786,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -251,9 +254,9 @@
               "tipo": "fundo"
             }
           ],
-          "velasComScoreAlto": 49,
+          "velasComScoreAlto": 50,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         },
         {
           "id": "usdt|diario|z30",
@@ -264,15 +267,15 @@
           "estado_atual": "abaixo",
           "centro": 5.728999999999999,
           "limites_estruturais": {
-            "inferior": 5.722154934955245,
-            "superior": 5.735845065044754
+            "inferior": 5.722154934338208,
+            "superior": 5.735845065661791
           },
           "limites_operacionais": {
-            "inferior": 5.704514863277711,
-            "superior": 5.753485136722287
+            "inferior": 5.7045780873293035,
+            "superior": 5.753421912670695
           },
-          "score": 92,
-          "score_bruto": 92,
+          "score": 91,
+          "score_bruto": 91,
           "fator_penalidade": 1,
           "penalidades": [],
           "numero_toques": 4,
@@ -280,7 +283,7 @@
           "forca_reacao_atr": 2.37,
           "primeiro_toque": 1747353600,
           "ultimo_toque": 1794096000,
-          "velas_desde_ultimo_toque": 3,
+          "velas_desde_ultimo_toque": 4,
           "timeframes_confirmando": [
             "diario",
             "semanal"
@@ -289,7 +292,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "acima_da_media_na_epoca",
           "volume_relativo_mediano": 1.45,
-          "distancia_preco_atual_pct": -0.9879560132658326,
+          "distancia_preco_atual_pct": -1.0717402688078028,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -311,9 +314,9 @@
               "tipo": "topo"
             }
           ],
-          "velasComScoreAlto": 57,
+          "velasComScoreAlto": 58,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         },
         {
           "id": "usdt|diario|z69",
@@ -324,15 +327,15 @@
           "estado_atual": "abaixo",
           "centro": 5.748,
           "limites_estruturais": {
-            "inferior": 5.7436822601552455,
-            "superior": 5.752317739844755
+            "inferior": 5.7436801935926844,
+            "superior": 5.752319806407316
           },
           "limites_operacionais": {
-            "inferior": 5.723514863277712,
-            "superior": 5.772485136722288
+            "inferior": 5.7235780873293045,
+            "superior": 5.772421912670696
           },
-          "score": 73,
-          "score_bruto": 86,
+          "score": 72,
+          "score_bruto": 85,
           "fator_penalidade": 0.85,
           "penalidades": [
             "rompida_2x_sem_reacao"
@@ -342,7 +345,7 @@
           "forca_reacao_atr": 2.19,
           "primeiro_toque": 1738627200,
           "ultimo_toque": 1794096000,
-          "velas_desde_ultimo_toque": 3,
+          "velas_desde_ultimo_toque": 4,
           "timeframes_confirmando": [
             "diario"
           ],
@@ -350,7 +353,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "acima_da_media_na_epoca",
           "volume_relativo_mediano": 1.34,
-          "distancia_preco_atual_pct": -1.3152400835073166,
+          "distancia_preco_atual_pct": -1.39874739039666,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -362,9 +365,9 @@
               "tipo": "fundo"
             }
           ],
-          "velasComScoreAlto": 49,
+          "velasComScoreAlto": 50,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         },
         {
           "id": "usdt|diario|z68",
@@ -375,23 +378,23 @@
           "estado_atual": "em_teste",
           "centro": 5.65,
           "limites_estruturais": {
-            "inferior": 5.646342301840341,
-            "superior": 5.65365769815966
+            "inferior": 5.64634221646997,
+            "superior": 5.653657783530031
           },
           "limites_operacionais": {
-            "inferior": 5.625514863277712,
-            "superior": 5.674485136722288
+            "inferior": 5.625578087329305,
+            "superior": 5.674421912670696
           },
-          "score": 99,
-          "score_bruto": 99,
+          "score": 100,
+          "score_bruto": 100,
           "fator_penalidade": 1,
           "penalidades": [],
           "numero_toques": 10,
           "numero_rejeicoes": 8,
           "forca_reacao_atr": 2.44,
           "primeiro_toque": 1742342400,
-          "ultimo_toque": 1794096000,
-          "velas_desde_ultimo_toque": 3,
+          "ultimo_toque": 1794441600,
+          "velas_desde_ultimo_toque": 0,
           "timeframes_confirmando": [
             "diario",
             "semanal"
@@ -400,7 +403,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "acima_da_media_na_epoca",
           "volume_relativo_mediano": 1.34,
-          "distancia_preco_atual_pct": 0.39646017699113817,
+          "distancia_preco_atual_pct": 0.31150442477875817,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -412,9 +415,9 @@
               "tipo": "fundo"
             }
           ],
-          "velasComScoreAlto": 45,
+          "velasComScoreAlto": 46,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         },
         {
           "id": "usdt|diario|z29",
@@ -422,26 +425,26 @@
           "tipo_confirmado": "resistencia",
           "ultimo_role_reversal_em": 1753056000,
           "status": "ativa",
-          "estado_atual": "acima",
+          "estado_atual": "em_teste",
           "centro": 5.646,
           "limites_estruturais": {
-            "inferior": 5.643024269892265,
-            "superior": 5.648975730107735
+            "inferior": 5.643024269892262,
+            "superior": 5.648975730107738
           },
           "limites_operacionais": {
-            "inferior": 5.621514863277712,
-            "superior": 5.670485136722288
+            "inferior": 5.621578087329304,
+            "superior": 5.670421912670696
           },
-          "score": 61,
-          "score_bruto": 61,
+          "score": 63,
+          "score_bruto": 63,
           "fator_penalidade": 1,
           "penalidades": [],
           "numero_toques": 2,
           "numero_rejeicoes": 1,
           "forca_reacao_atr": 2.94,
           "primeiro_toque": 1762646400,
-          "ultimo_toque": 1794096000,
-          "velas_desde_ultimo_toque": 3,
+          "ultimo_toque": 1794441600,
+          "velas_desde_ultimo_toque": 0,
           "timeframes_confirmando": [
             "diario",
             "semanal"
@@ -450,7 +453,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 0.79,
-          "distancia_preco_atual_pct": 0.4675876726886248,
+          "distancia_preco_atual_pct": 0.38257173219979257,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -462,9 +465,9 @@
               "tipo": "topo"
             }
           ],
-          "velasComScoreAlto": 5,
+          "velasComScoreAlto": 6,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         },
         {
           "id": "usdt|diario|z40",
@@ -473,25 +476,25 @@
           "ultimo_role_reversal_em": 1753056000,
           "status": "ativa",
           "estado_atual": "acima",
-          "centro": 5.63700288323126,
+          "centro": 5.6370020182618825,
           "limites_estruturais": {
-            "inferior": 5.6311958757380935,
-            "superior": 5.6428041242619065
+            "inferior": 5.631195875731805,
+            "superior": 5.642804124268195
           },
           "limites_operacionais": {
-            "inferior": 5.612517746508972,
-            "superior": 5.6614880199535484
+            "inferior": 5.612580105591187,
+            "superior": 5.661423930932578
           },
-          "score": 88,
-          "score_bruto": 88,
+          "score": 89,
+          "score_bruto": 89,
           "fator_penalidade": 1,
           "penalidades": [],
           "numero_toques": 5,
           "numero_rejeicoes": 3,
           "forca_reacao_atr": 2.47,
           "primeiro_toque": 1753056000,
-          "ultimo_toque": 1794268800,
-          "velas_desde_ultimo_toque": 1,
+          "ultimo_toque": 1794441600,
+          "velas_desde_ultimo_toque": 0,
           "timeframes_confirmando": [
             "diario",
             "semanal"
@@ -500,7 +503,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 1.15,
-          "distancia_preco_atual_pct": 0.6279421441141573,
+          "distancia_preco_atual_pct": 0.5428059390255865,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -517,122 +520,15 @@
               "tipo": "topo"
             }
           ],
-          "velasComScoreAlto": 49,
+          "velasComScoreAlto": 50,
           "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
+          "ultimaVelaAvaliada": 1794441600
         }
       ]
     },
     "USD/BRL": {
       "timeframe": "diario",
-      "preco_atual": 5.6453,
-      "vela_atual_em_formacao": "sim",
-      "candle_atual_data": "2026-11-12",
-      "candle_atual_open": 5.583,
-      "candle_atual_high": 5.6543,
-      "candle_atual_low": 5.5772,
-      "candle_atual_close_provisorio": 5.6453,
-      "candle_atual_var_pct_desde_abertura": 1.12,
-      "ema89": 5.1975,
-      "posicao_vs_ema89": "acima",
-      "distancia_ema89_pct": 8.62,
-      "rsi_length": 21,
-      "rsi_fechado": 69.92,
-      "dmi_di_length": 28,
-      "dmi_adx_smoothing": 42,
-      "di_plus_fechado": 35.4,
-      "di_minus_fechado": 13.67,
-      "adx_fechado": 19.55,
-      "ultimo_fechamento_data": "2026-11-11",
-      "ultimo_fechamento_close": 5.5829,
-      "ema89_fechada_atual": 5.1975,
-      "ema89_fechada_anterior": 5.1887,
-      "ema89_cruzamento_fechado": "nenhum",
-      "distancia_ema89_fechada_atr": 4.66,
-      "atr14": 0.0828,
-      "atr14_pct": 1.48,
-      "rsi_provisorio": 72.12,
-      "di_plus_provisorio": 37.09,
-      "di_minus_provisorio": 13.17,
-      "adx_provisorio": 20.22,
-      "candle_fechado_1": "data=2026-11-11 open=5.5837 high=5.5912 low=5.5501 close=5.5829 direcao=baixa corpo=0.0008 sombra_sup=0.0075 sombra_inf=0.0328",
-      "candle_fechado_2": "data=2026-11-10 open=5.5094 high=5.6130 low=5.5065 close=5.5803 direcao=alta corpo=0.0709 sombra_sup=0.0327 sombra_inf=0.0029",
-      "candle_fechado_3": "data=2026-11-09 open=5.5004 high=5.5285 low=5.4865 close=5.5085 direcao=alta corpo=0.0081 sombra_sup=0.0200 sombra_inf=0.0139",
-      "nivel_5_30_estado": "rompido",
-      "nivel_5_30_direcao": "alta",
-      "nivel_5_30_preco_rompimento": 5.3513,
-      "nivel_5_30_rompeu_em": "2026-10-27",
-      "nivel_5_30_ultimo_contato": "2026-10-28",
-      "nivel_5_30_afastado": "sim",
-      "nivel_5_30_historico": "nenhum",
-      "nivel_5_13_estado": "rompimento_falhou",
-      "nivel_5_13_direcao": "baixa",
-      "nivel_5_13_preco_rompimento": 5.0927,
-      "nivel_5_13_rompeu_em": "2026-09-03",
-      "nivel_5_13_ultimo_contato": "2026-10-26",
-      "nivel_5_13_afastado": "sim",
-      "nivel_5_13_historico": "recuperado@2026-09-22 reteste_confirmado@2026-09-23 rompimento_falhou@2026-09-24 recuperado@2026-10-05 rompimento_falhou@2026-10-26",
-      "niveis_mudancas_nesta_vela": [],
-      "niveis_manuais_situacao": "atual",
-      "niveis_manuais_faixa_mais_proxima": "faixa_5_5780_5_6066",
-      "niveis_manuais_distancia_atr": 0,
-      "niveis_manuais_alinhamento": "alinhado",
-      "niveis_manuais_faixas_corroboradas": "12 de 12",
-      "zonas_candidatas_a_faixa": "5.6263-5.6370 score=85 toques=9 (acima do fechamento) | 5.4624-5.4684 score=70 toques=8 (abaixo do fechamento)",
-      "fracao_periodo_decorrida": 0.987,
-      "volume_disponivel": "nao",
-      "estrutura_preco": "HH_HL",
-      "estrutura_tendencia": "alta",
-      "estrutura_ultimo_topo": "HH",
-      "estrutura_ultimo_fundo": "HL",
-      "estrutura_eventos": [],
-      "pivos_fractal": "5/5",
-      "pivos_topos_recentes": "2026-09-29=5.2411 2026-10-15=5.0991 2026-10-26=5.6053",
-      "pivos_fundos_recentes": "2026-09-23=5.0897 2026-10-05=4.9342 2026-10-23=4.9636",
-      "divergencia_rsi": [],
-      "divergencia_rsi_provisoria": [],
-      "corpo_pct_range": 1.95,
-      "sombra_sup_pct_range": 18.25,
-      "sombra_inf_pct_range": 79.81,
-      "sombra_sup_vs_corpo": 9.37,
-      "sombra_inf_vs_corpo": 40.99,
-      "candle_atual_corpo_pct_range": 80.8,
-      "candle_atual_sombra_sup_pct_range": 11.67,
-      "candle_atual_sombra_inf_pct_range": 7.52,
-      "candle_atual_sombra_sup_vs_corpo": 0.14,
-      "candle_atual_sombra_inf_vs_corpo": 0.09,
-      "eventos": "nenhum cruzamento nesta vela",
-      "mediana_corpo_20": 0.03095,
-      "contexto_antes_do_trio": "alta_regiao_alta",
-      "padrao_trio_contexto": "nao_aplicavel",
-      "padrao_trio_confirmacao_estrutural": "confirma",
-      "padrao_trio_evidencias_fraqueza": [],
-      "padroes_enfraquecimento": [],
-      "tres_soldados_diagnostico": "nao_aplicavel",
-      "padrao_candles": [],
-      "padrao_em_formacao": [],
-      "alertas_tecnicos": [
-        "rompimento_confirmado_5_30",
-        "adx_subindo_com_di_plus_dominante"
-      ],
-      "zonas_automaticas_total": 6,
-      "zona_auto_1": "id=usd|diario|z41 tipo=suporte status=enfraquecida estado=abaixo score=60 estrutural=5.671158-5.696342 operacional=5.663061-5.704439 centro=5.683750 toques=7 rejeicoes=5 role_reversal=sim dist_pct=-0.68 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_2": "id=usd|diario|z63 tipo=suporte status=enfraquecida estado=abaixo score=60 estrutural=5.697540-5.704260 operacional=5.680211-5.721589 centro=5.700900 toques=9 rejeicoes=7 role_reversal=sim dist_pct=-0.98 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_3": "id=usd|diario|z49 tipo=resistencia status=enfraquecida estado=abaixo score=60 estrutural=5.728528-5.765872 operacional=5.726389-5.767767 centro=5.747078 toques=10 rejeicoes=6 role_reversal=sim dist_pct=-1.77 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_4": "id=usd|diario|z62 tipo=resistencia status=ativa estado=em_teste score=85 estrutural=5.626306-5.636994 operacional=5.610961-5.652339 centro=5.631650 toques=9 rejeicoes=7 role_reversal=sim dist_pct=0.24 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_5": "id=usd|diario|z27 tipo=resistencia status=ativa estado=acima score=73 estrutural=5.595147-5.631452 operacional=5.592494-5.633872 centro=5.613183 toques=11 rejeicoes=8 role_reversal=sim dist_pct=0.57 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim",
-      "zona_auto_6": "id=usd|diario|z48 tipo=resistencia status=ativa estado=acima score=86 estrutural=5.577980-5.606620 operacional=5.571610-5.612988 centro=5.592299 toques=9 rejeicoes=7 role_reversal=sim dist_pct=0.95 confluencia_manual=nao confluencia_faixa=sim confluencia_macro=nao confluencia_qualquer=sim",
-      "confluencia_entrada": [
-        "rompimento_confirmado_por_fechamento",
-        "estrutura_de_alta_preservada",
-        "di_plus_dominante"
-      ],
-      "confluencia_pullback": [
-        "tendencia_hh_hl_preservada",
-        "di_plus_ainda_dominante"
-      ],
-      "riscos_tecnicos": [],
-      "deterioracao_tendencia": [],
+      "falha": "yahoo/query1: Yahoo 1h: cobertura incompleta em 2026-11-12 (hora ausente) | yahoo/query2: Yahoo 1h: cobertura incompleta em 2026-11-12 (hora ausente)",
       "niveis_manuais": {
         "faixas": [
           {
@@ -695,412 +591,25 @@
             "superior": 4.9521,
             "label": "regiao_suporte_4_9284_4_9521"
           }
-        ],
-        "nivel_5_30_estado": "rompido",
-        "nivel_5_30_direcao": "alta",
-        "nivel_5_30_preco_rompimento": 5.3513,
-        "nivel_5_30_rompeu_em": "2026-10-27",
-        "nivel_5_30_ultimo_contato": "2026-10-28",
-        "nivel_5_30_afastado": "sim",
-        "nivel_5_30_historico": "nenhum",
-        "nivel_5_13_estado": "rompimento_falhou",
-        "nivel_5_13_direcao": "baixa",
-        "nivel_5_13_preco_rompimento": 5.0927,
-        "nivel_5_13_rompeu_em": "2026-09-03",
-        "nivel_5_13_ultimo_contato": "2026-10-26",
-        "nivel_5_13_afastado": "sim",
-        "nivel_5_13_historico": "recuperado@2026-09-22 reteste_confirmado@2026-09-23 rompimento_falhou@2026-09-24 recuperado@2026-10-05 rompimento_falhou@2026-10-26"
+        ]
       },
-      "zonas_automaticas": [
-        {
-          "id": "usd|diario|z41",
-          "tipo": "suporte",
-          "tipo_confirmado": "suporte",
-          "ultimo_role_reversal_em": 1731024000,
-          "status": "enfraquecida",
-          "estado_atual": "abaixo",
-          "centro": 5.68374996781432,
-          "limites_estruturais": {
-            "inferior": 5.671157906136406,
-            "superior": 5.696341922202217
-          },
-          "limites_operacionais": {
-            "inferior": 5.663061105183129,
-            "superior": 5.704438830445511
-          },
-          "score": 60,
-          "score_bruto": 71,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 7,
-          "numero_rejeicoes": 5,
-          "forca_reacao_atr": 2.41,
-          "primeiro_toque": 1724976000,
-          "ultimo_toque": 1748908800,
-          "velas_desde_ultimo_toque": 372,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": -0.6764909880453881,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1724976000,
-              "preco": 5.692599773406982,
-              "tipo": "topo"
-            },
-            {
-              "time": 1726099200,
-              "preco": 5.676300048828125,
-              "tipo": "topo"
-            },
-            {
-              "time": 1739836800,
-              "preco": 5.674900054931641,
-              "tipo": "fundo"
-            }
-          ],
-          "velasComScoreAlto": 33,
-          "velasEnfraquecida": 32,
-          "ultimaVelaAvaliada": 1794355200
-        },
-        {
-          "id": "usd|diario|z63",
-          "tipo": "suporte",
-          "tipo_confirmado": "suporte",
-          "ultimo_role_reversal_em": 1731456000,
-          "status": "enfraquecida",
-          "estado_atual": "abaixo",
-          "centro": 5.700900077819824,
-          "limites_estruturais": {
-            "inferior": 5.697539782243442,
-            "superior": 5.704260373396206
-          },
-          "limites_operacionais": {
-            "inferior": 5.680211215188633,
-            "superior": 5.721588940451015
-          },
-          "score": 60,
-          "score_bruto": 71,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 9,
-          "numero_rejeicoes": 7,
-          "forca_reacao_atr": 2.45,
-          "primeiro_toque": 1719878400,
-          "ultimo_toque": 1748908800,
-          "velas_desde_ultimo_toque": 372,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": -0.9752875083203312,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1719878400,
-              "preco": 5.700900077819824,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 33,
-          "velasEnfraquecida": 32,
-          "ultimaVelaAvaliada": 1794355200
-        },
-        {
-          "id": "usd|diario|z49",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": 1748822400,
-          "status": "enfraquecida",
-          "estado_atual": "abaixo",
-          "centro": 5.747078036459133,
-          "limites_estruturais": {
-            "inferior": 5.728528093375802,
-            "superior": 5.7658719310382605
-          },
-          "limites_operacionais": {
-            "inferior": 5.7263891738279415,
-            "superior": 5.767766899090324
-          },
-          "score": 60,
-          "score_bruto": 71,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 10,
-          "numero_rejeicoes": 6,
-          "forca_reacao_atr": 2.35,
-          "primeiro_toque": 1729468800,
-          "ultimo_toque": 1748563200,
-          "velas_desde_ultimo_toque": 374,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": -1.770954288673909,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1729468800,
-              "preco": 5.734499931335449,
-              "tipo": "topo"
-            },
-            {
-              "time": 1741219200,
-              "preco": 5.73199987411499,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1746576000,
-              "preco": 5.762400150299072,
-              "tipo": "topo"
-            },
-            {
-              "time": 1747958400,
-              "preco": 5.744900226593018,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 33,
-          "velasEnfraquecida": 32,
-          "ultimaVelaAvaliada": 1794355200
-        },
-        {
-          "id": "usd|diario|z62",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": 1752105600,
-          "status": "ativa",
-          "estado_atual": "em_teste",
-          "centro": 5.631649971008301,
-          "limites_estruturais": {
-            "inferior": 5.626306200667957,
-            "superior": 5.636993741348644
-          },
-          "limites_operacionais": {
-            "inferior": 5.61096110837711,
-            "superior": 5.652338833639492
-          },
-          "score": 85,
-          "score_bruto": 85,
-          "fator_penalidade": 1,
-          "penalidades": [],
-          "numero_toques": 9,
-          "numero_rejeicoes": 7,
-          "forca_reacao_atr": 1.94,
-          "primeiro_toque": 1730937600,
-          "ultimo_toque": 1794268800,
-          "velas_desde_ultimo_toque": 1,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": 0.2423790640574692,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1730937600,
-              "preco": 5.633500099182129,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1742342400,
-              "preco": 5.6315999031066895,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1753833600,
-              "preco": 5.629799842834473,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 33,
-          "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
-        },
-        {
-          "id": "usd|diario|z27",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": 1753142400,
-          "status": "ativa",
-          "estado_atual": "acima",
-          "centro": 5.613183341421575,
-          "limites_estruturais": {
-            "inferior": 5.595147210388487,
-            "superior": 5.631452482909853
-          },
-          "limites_operacionais": {
-            "inferior": 5.592494478790384,
-            "superior": 5.633872204052766
-          },
-          "score": 73,
-          "score_bruto": 86,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 11,
-          "numero_rejeicoes": 8,
-          "forca_reacao_atr": 2.11,
-          "primeiro_toque": 1727049600,
-          "ultimo_toque": 1794268800,
-          "velas_desde_ultimo_toque": 1,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": 0.5721632115674825,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": true,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": true,
-          "membros": [
-            {
-              "time": 1727049600,
-              "preco": 5.598899841308594,
-              "tipo": "topo"
-            },
-            {
-              "time": 1792972800,
-              "preco": 5.605299949645996,
-              "tipo": "topo"
-            },
-            {
-              "time": 1766361600,
-              "preco": 5.605999946594238,
-              "tipo": "topo"
-            },
-            {
-              "time": 1753056000,
-              "preco": 5.610899925231934,
-              "tipo": "topo"
-            },
-            {
-              "time": 1752105600,
-              "preco": 5.627699851989746,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 37,
-          "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
-        },
-        {
-          "id": "usd|diario|z48",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": 1754265600,
-          "status": "ativa",
-          "estado_atual": "acima",
-          "centro": 5.592298924364842,
-          "limites_estruturais": {
-            "inferior": 5.577980191701184,
-            "superior": 5.606619684702625
-          },
-          "limites_operacionais": {
-            "inferior": 5.571610061733651,
-            "superior": 5.612987786996033
-          },
-          "score": 86,
-          "score_bruto": 86,
-          "fator_penalidade": 1,
-          "penalidades": [],
-          "numero_toques": 9,
-          "numero_rejeicoes": 7,
-          "forca_reacao_atr": 2.3,
-          "primeiro_toque": 1743638400,
-          "ultimo_toque": 1794355200,
-          "velas_desde_ultimo_toque": 0,
-          "timeframes_confirmando": [
-            "diario"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "nao_aplicavel",
-          "volume_relativo_mediano": null,
-          "distancia_preco_atual_pct": 0.9477495364788847,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": true,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": true,
-          "membros": [
-            {
-              "time": 1747180800,
-              "preco": 5.581500053405762,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1743638400,
-              "preco": 5.592199802398682,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1747872000,
-              "preco": 5.5945000648498535,
-              "tipo": "fundo"
-            },
-            {
-              "time": 1745971200,
-              "preco": 5.603099822998047,
-              "tipo": "fundo"
-            }
-          ],
-          "velasComScoreAlto": 33,
-          "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1794355200
-        }
-      ]
+      "zonas_automaticas": []
     }
   },
   "semanal": {
     "USDT/BRL": {
       "timeframe": "semanal",
-      "preco_atual": 5.6724,
+      "preco_atual": 5.6676,
       "vela_atual_em_formacao": "sim",
       "candle_atual_data": "2026-11-09",
       "candle_atual_open": 5.6102,
-      "candle_atual_high": 5.6725,
+      "candle_atual_high": 5.6825,
       "candle_atual_low": 5.5114,
-      "candle_atual_close_provisorio": 5.6724,
-      "candle_atual_var_pct_desde_abertura": 1.11,
+      "candle_atual_close_provisorio": 5.6676,
+      "candle_atual_var_pct_desde_abertura": 1.02,
       "ema89": 5.308,
       "posicao_vs_ema89": "acima",
-      "distancia_ema89_pct": 6.87,
+      "distancia_ema89_pct": 6.78,
       "rsi_length": 14,
       "rsi_fechado": 67.82,
       "dmi_di_length": 14,
@@ -1123,9 +632,9 @@
       "ema89_semanal_evento_id": null,
       "atr14": 0.1728,
       "atr14_pct": 3.08,
-      "rsi_provisorio": 69.49,
-      "di_plus_provisorio": 33.68,
-      "di_minus_provisorio": 12.32,
+      "rsi_provisorio": 69.37,
+      "di_plus_provisorio": 33.54,
+      "di_minus_provisorio": 12.27,
       "adx_provisorio": 17.18,
       "candle_fechado_1": "data=2026-11-02 open=5.4589 high=5.7850 low=5.4357 close=5.6115 direcao=alta corpo=0.1526 sombra_sup=0.1735 sombra_inf=0.0232 volume=353799320.1000",
       "candle_fechado_2": "data=2026-10-26 open=5.2291 high=5.6000 low=5.2291 close=5.4589 direcao=alta corpo=0.2298 sombra_sup=0.1411 sombra_inf=0.0000 volume=414213497.4000",
@@ -1146,20 +655,20 @@
       "niveis_manuais_alinhamento": "alinhado",
       "niveis_manuais_faixas_corroboradas": "12 de 12",
       "zonas_candidatas_a_faixa": "nenhuma",
-      "fracao_periodo_decorrida": 0.57,
+      "fracao_periodo_decorrida": 0.58,
       "volume_parcial": "sim",
-      "volume_atual": 275092744.5,
+      "volume_atual": 279429868.5,
       "volume_ultima_fechada": 353799320.1,
       "volume_media20": 439914970.39,
       "volume_vs_media_pct": -19.58,
       "volume_referencia": "ultima_vela_fechada",
       "volume_classificacao": "normal",
       "volume_tendencia_3_fechadas": "decrescente",
-      "trades_vela_atual": 187623,
-      "volume_semana_dias_fechados": 3,
-      "volume_semana_soma_dias_fechados": 203646849.9,
-      "volume_semanas_anteriores_mesmos_dias_media": 236778055.8875,
-      "volume_semana_vs_equivalente_pct": -13.99,
+      "trades_vela_atual": 192019,
+      "volume_semana_dias_fechados": 4,
+      "volume_semana_soma_dias_fechados": 276511611.8,
+      "volume_semanas_anteriores_mesmos_dias_media": 315643671.3625,
+      "volume_semana_vs_equivalente_pct": -12.4,
       "volume_semana_semanas_comparadas": 8,
       "estrutura_preco": "HH_LL",
       "estrutura_tendencia": "lateral_expansao",
@@ -1181,11 +690,11 @@
       "sombra_inf_pct_range": 6.64,
       "sombra_sup_vs_corpo": 1.14,
       "sombra_inf_vs_corpo": 0.15,
-      "candle_atual_corpo_pct_range": 38.61,
-      "candle_atual_sombra_sup_pct_range": 0.06,
-      "candle_atual_sombra_inf_pct_range": 61.33,
-      "candle_atual_sombra_sup_vs_corpo": 0,
-      "candle_atual_sombra_inf_vs_corpo": 1.59,
+      "candle_atual_corpo_pct_range": 33.55,
+      "candle_atual_sombra_sup_pct_range": 8.71,
+      "candle_atual_sombra_inf_pct_range": 57.74,
+      "candle_atual_sombra_sup_vs_corpo": 0.26,
+      "candle_atual_sombra_inf_vs_corpo": 1.72,
       "eventos_semanal": "nenhum cruzamento nesta vela",
       "mediana_corpo_20": 0.0429,
       "contexto_antes_do_trio": "regiao_baixa",
@@ -1206,12 +715,12 @@
         "perda_estrutura_alta_novo_LL"
       ],
       "zonas_automaticas_total": 6,
-      "zona_auto_1": "id=usdt|semanal|z5 tipo=resistencia status=ativa estado=em_teste score=65 estrutural=5.686359-5.703641 operacional=5.651794-5.738206 centro=5.695000 toques=3 rejeicoes=1 role_reversal=sim dist_pct=-0.40 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_2": "id=usdt|semanal|z14 tipo=resistencia status=ativa estado=abaixo score=71 estrutural=5.719376-5.736624 operacional=5.684794-5.771206 centro=5.728000 toques=6 rejeicoes=3 role_reversal=nao dist_pct=-0.97 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_3": "id=usdt|semanal|z30 tipo=resistencia status=ativa estado=abaixo score=72 estrutural=5.761359-5.778641 operacional=5.726794-5.813206 centro=5.770000 toques=7 rejeicoes=4 role_reversal=nao dist_pct=-1.69 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_4": "id=usdt|semanal|z29 tipo=resistencia status=ativa estado=em_teste score=79 estrutural=5.661359-5.678641 operacional=5.626794-5.713206 centro=5.670000 toques=10 rejeicoes=7 role_reversal=sim dist_pct=0.04 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_5": "id=usdt|semanal|z13 tipo=resistencia status=ativa estado=em_teste score=83 estrutural=5.603558-5.653442 operacional=5.597964-5.684376 centro=5.641170 toques=5 rejeicoes=4 role_reversal=nao dist_pct=0.55 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
-      "zona_auto_6": "id=usdt|semanal|z20 tipo=resistencia status=ativa estado=acima score=93 estrutural=5.591359-5.622641 operacional=5.563794-5.650206 centro=5.607000 toques=6 rejeicoes=4 role_reversal=sim dist_pct=1.17 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_1": "id=usdt|semanal|z29 tipo=resistencia status=ativa estado=em_teste score=79 estrutural=5.661359-5.678641 operacional=5.626794-5.713206 centro=5.670000 toques=10 rejeicoes=7 role_reversal=sim dist_pct=-0.04 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_2": "id=usdt|semanal|z5 tipo=resistencia status=ativa estado=em_teste score=65 estrutural=5.686359-5.703641 operacional=5.651794-5.738206 centro=5.695000 toques=3 rejeicoes=1 role_reversal=sim dist_pct=-0.48 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_3": "id=usdt|semanal|z14 tipo=resistencia status=ativa estado=abaixo score=71 estrutural=5.719376-5.736624 operacional=5.684794-5.771206 centro=5.728000 toques=6 rejeicoes=3 role_reversal=nao dist_pct=-1.05 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_4": "id=usdt|semanal|z13 tipo=resistencia status=ativa estado=em_teste score=83 estrutural=5.603558-5.653442 operacional=5.597964-5.684376 centro=5.641170 toques=5 rejeicoes=4 role_reversal=nao dist_pct=0.47 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_5": "id=usdt|semanal|z20 tipo=resistencia status=ativa estado=acima score=93 estrutural=5.591359-5.622641 operacional=5.563794-5.650206 centro=5.607000 toques=6 rejeicoes=4 role_reversal=sim dist_pct=1.08 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
+      "zona_auto_6": "id=usdt|semanal|z28 tipo=resistencia status=ativa estado=acima score=85 estrutural=5.527359-5.577641 operacional=5.520844-5.607256 centro=5.564050 toques=10 rejeicoes=7 role_reversal=sim dist_pct=1.86 confluencia_manual=nao confluencia_faixa=nao confluencia_macro=nao confluencia_qualquer=nao",
       "confluencia_entrada": [
         "rompimento_confirmado_por_fechamento",
         "di_plus_dominante"
@@ -1302,6 +811,57 @@
       },
       "zonas_automaticas": [
         {
+          "id": "usdt|semanal|z29",
+          "tipo": "resistencia",
+          "tipo_confirmado": "resistencia",
+          "ultimo_role_reversal_em": 1753660800,
+          "status": "ativa",
+          "estado_atual": "em_teste",
+          "centro": 5.67,
+          "limites_estruturais": {
+            "inferior": 5.661358847292703,
+            "superior": 5.678641152707297
+          },
+          "limites_operacionais": {
+            "inferior": 5.626794236463512,
+            "superior": 5.713205763536488
+          },
+          "score": 79,
+          "score_bruto": 93,
+          "fator_penalidade": 0.85,
+          "penalidades": [
+            "rompida_2x_sem_reacao"
+          ],
+          "numero_toques": 10,
+          "numero_rejeicoes": 7,
+          "forca_reacao_atr": 1.67,
+          "primeiro_toque": 1610323200,
+          "ultimo_toque": 1793577600,
+          "velas_desde_ultimo_toque": 0,
+          "timeframes_confirmando": [
+            "semanal"
+          ],
+          "role_reversal": true,
+          "cruzamento_confirmado": true,
+          "volume_contexto": "normal",
+          "volume_relativo_mediano": 0.91,
+          "distancia_preco_atual_pct": -0.04232804232803767,
+          "confluencia_nivel_manual": false,
+          "confluencia_faixa_manual": false,
+          "confluencia_resistencia_macro": false,
+          "confluencia_manual_qualquer": false,
+          "membros": [
+            {
+              "time": 1610323200,
+              "preco": 5.67,
+              "tipo": "topo"
+            }
+          ],
+          "velasComScoreAlto": 7,
+          "velasEnfraquecida": 0,
+          "ultimaVelaAvaliada": 1793577600
+        },
+        {
           "id": "usdt|semanal|z5",
           "tipo": "resistencia",
           "tipo_confirmado": "resistencia",
@@ -1334,7 +894,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 0.8,
-          "distancia_preco_atual_pct": -0.3968393327480354,
+          "distancia_preco_atual_pct": -0.48112379280070394,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -1385,7 +945,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 1.15,
-          "distancia_preco_atual_pct": -0.9706703910614543,
+          "distancia_preco_atual_pct": -1.0544692737430092,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -1403,108 +963,6 @@
             }
           ],
           "velasComScoreAlto": 8,
-          "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1793577600
-        },
-        {
-          "id": "usdt|semanal|z30",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": null,
-          "status": "ativa",
-          "estado_atual": "abaixo",
-          "centro": 5.77,
-          "limites_estruturais": {
-            "inferior": 5.761358847292702,
-            "superior": 5.778641152707297
-          },
-          "limites_operacionais": {
-            "inferior": 5.726794236463512,
-            "superior": 5.813205763536487
-          },
-          "score": 72,
-          "score_bruto": 84,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 7,
-          "numero_rejeicoes": 4,
-          "forca_reacao_atr": 1.63,
-          "primeiro_toque": 1634515200,
-          "ultimo_toque": 1793577600,
-          "velas_desde_ultimo_toque": 0,
-          "timeframes_confirmando": [
-            "semanal"
-          ],
-          "role_reversal": false,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "normal",
-          "volume_relativo_mediano": 1.15,
-          "distancia_preco_atual_pct": -1.6915077989601373,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1634515200,
-              "preco": 5.77,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 8,
-          "velasEnfraquecida": 0,
-          "ultimaVelaAvaliada": 1793577600
-        },
-        {
-          "id": "usdt|semanal|z29",
-          "tipo": "resistencia",
-          "tipo_confirmado": "resistencia",
-          "ultimo_role_reversal_em": 1753660800,
-          "status": "ativa",
-          "estado_atual": "em_teste",
-          "centro": 5.67,
-          "limites_estruturais": {
-            "inferior": 5.661358847292703,
-            "superior": 5.678641152707297
-          },
-          "limites_operacionais": {
-            "inferior": 5.626794236463512,
-            "superior": 5.713205763536488
-          },
-          "score": 79,
-          "score_bruto": 93,
-          "fator_penalidade": 0.85,
-          "penalidades": [
-            "rompida_2x_sem_reacao"
-          ],
-          "numero_toques": 10,
-          "numero_rejeicoes": 7,
-          "forca_reacao_atr": 1.67,
-          "primeiro_toque": 1610323200,
-          "ultimo_toque": 1793577600,
-          "velas_desde_ultimo_toque": 0,
-          "timeframes_confirmando": [
-            "semanal"
-          ],
-          "role_reversal": true,
-          "cruzamento_confirmado": true,
-          "volume_contexto": "normal",
-          "volume_relativo_mediano": 0.91,
-          "distancia_preco_atual_pct": 0.04232804232803767,
-          "confluencia_nivel_manual": false,
-          "confluencia_faixa_manual": false,
-          "confluencia_resistencia_macro": false,
-          "confluencia_manual_qualquer": false,
-          "membros": [
-            {
-              "time": 1610323200,
-              "preco": 5.67,
-              "tipo": "topo"
-            }
-          ],
-          "velasComScoreAlto": 7,
           "velasEnfraquecida": 0,
           "ultimaVelaAvaliada": 1793577600
         },
@@ -1541,7 +999,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 1.15,
-          "distancia_preco_atual_pct": 0.5536085599264118,
+          "distancia_preco_atual_pct": 0.46851982833350686,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -1600,7 +1058,7 @@
           "cruzamento_confirmado": true,
           "volume_contexto": "normal",
           "volume_relativo_mediano": 1.03,
-          "distancia_preco_atual_pct": 1.16639914392724,
+          "distancia_preco_atual_pct": 1.080791867308737,
           "confluencia_nivel_manual": false,
           "confluencia_faixa_manual": false,
           "confluencia_resistencia_macro": false,
@@ -1615,6 +1073,62 @@
               "time": 1743379200,
               "preco": 5.614,
               "tipo": "fundo"
+            }
+          ],
+          "velasComScoreAlto": 8,
+          "velasEnfraquecida": 0,
+          "ultimaVelaAvaliada": 1793577600
+        },
+        {
+          "id": "usdt|semanal|z28",
+          "tipo": "resistencia",
+          "tipo_confirmado": "resistencia",
+          "ultimo_role_reversal_em": 1760313600,
+          "status": "ativa",
+          "estado_atual": "acima",
+          "centro": 5.56405,
+          "limites_estruturais": {
+            "inferior": 5.527358847292702,
+            "superior": 5.577641152707297
+          },
+          "limites_operacionais": {
+            "inferior": 5.520844236463512,
+            "superior": 5.607255763536488
+          },
+          "score": 85,
+          "score_bruto": 99,
+          "fator_penalidade": 0.85,
+          "penalidades": [
+            "rompida_2x_sem_reacao"
+          ],
+          "numero_toques": 10,
+          "numero_rejeicoes": 7,
+          "forca_reacao_atr": 1.94,
+          "primeiro_toque": 1621209600,
+          "ultimo_toque": 1793577600,
+          "velas_desde_ultimo_toque": 0,
+          "timeframes_confirmando": [
+            "semanal"
+          ],
+          "role_reversal": true,
+          "cruzamento_confirmado": true,
+          "volume_contexto": "acima_da_media_na_epoca",
+          "volume_relativo_mediano": 1.31,
+          "distancia_preco_atual_pct": 1.8610544477493958,
+          "confluencia_nivel_manual": false,
+          "confluencia_faixa_manual": false,
+          "confluencia_resistencia_macro": false,
+          "confluencia_manual_qualquer": false,
+          "membros": [
+            {
+              "time": 1658102400,
+              "preco": 5.536,
+              "tipo": "topo"
+            },
+            {
+              "time": 1621209600,
+              "preco": 5.569,
+              "tipo": "topo"
             }
           ],
           "velasComScoreAlto": 8,
@@ -1694,30 +1208,11 @@
     }
   },
   "trilho_execucao": {
-    "trilho_disponivel": "sim",
-    "trilho_par": "USDT/BRL",
-    "trilho_fonte": "binance",
-    "trilho_preco": 5.6724,
-    "trilho_dia": "2026-11-12",
-    "trilho_premio_pct": 0.48,
-    "trilho_usd_referencia": 5.6453,
-    "trilho_usd_referencia_dia": "2026-11-12",
-    "trilho_premio_defasagem_dias": 0,
-    "trilho_premio_comparavel": "sim",
-    "trilho_premio_janela_dias": 180,
-    "trilho_premio_dias_comparados": 180,
-    "trilho_premio_percentil": 76,
-    "trilho_premio_mediana": 0.3,
-    "trilho_premio_p25": 0.16,
-    "trilho_premio_p75": 0.47,
-    "trilho_premio_classificacao": "caro",
-    "trilho_volume_usdt_ultimo_fechado": 50676513,
-    "trilho_volume_usdt_ultimo_fechado_dia": "2026-11-11",
-    "trilho_volume_usdt_mediana_30d": 72054680
+    "trilho_disponivel": "nao",
+    "trilho_falha": "serie indisponivel nesta execucao: USD/BRL"
   },
   "gatilhos_ativos": [
-    "usdt_rompe_5_08",
-    "usd_rompe_5_30"
+    "usdt_rompe_5_08"
   ],
-  "timestamp": "2026-11-12 23:40 UTC"
+  "timestamp": "2026-11-13 01:27 UTC"
 }
