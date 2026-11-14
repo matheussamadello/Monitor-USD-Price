@@ -25,7 +25,7 @@ import {
   detectarDivergencias, situacaoNiveis, casarZonas, atualizarCiclo,
   zonasCandidatas, rsiSeries, alinhamentoNiveis, anatomia, compradoraForte,
   vendedoraForte, contextoAntesDoTrio, suavizarCentro, zonaJaRepresentadaPorFaixaParaRadar,
-  lerCandidatasRadar, motivoObservacaoRadar,
+  lerCandidatasRadar, motivoObservacaoRadar, pgCandidataRadar,
 } from "./monitor.mjs";
 
 let falhas = 0, checagens = 0;
@@ -429,12 +429,22 @@ console.log("\n== painel: as mesmas verificacoes do prompt sobre o radar ==");
     "ate 0,12 ATR e' pivo unico");
   // Fragmentacao: vizinhas a menos de 1 ATR.
   const usd = [[5.168, 5.181], [5.129, 5.1395], [5.068, 5.0805]];
-  ok(/0,57|0.57/.test(motivoObservacaoRadar(c(5.1400, 5.1600, 90), usd, 0.0504) || ""),
-    "candidata larga entre faixas a 0,57 ATR fica em observacao, com o vao no motivo");
+  const motivoVao = motivoObservacaoRadar(c(5.1400, 5.1600, 90), usd, 0.0504) || "";
+  ok(/entre duas faixas a 0,6% uma da outra, menos que uma oscilação diária típica/.test(motivoVao) &&
+     !/ATR/.test(motivoVao),
+    `candidata larga entre faixas a 0,57 ATR fica em observacao, com o vao no motivo em % e sem jargao (${motivoVao})`);
   ok(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020], [1121, 1140]], 100) === null,
     "vizinhas a 1,01 ATR: passa");
-  ok(/entre faixas/.test(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020], [1119, 1140]], 100) || ""),
+  ok(/entre duas faixas/.test(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020], [1119, 1140]], 100) || ""),
     "vizinhas a 0,99 ATR: observacao");
+  // No painel a candidata sai no formato da pagina, nao no do relatorio.
+  const [btcLida, usdtLida] = lerCandidatasRadar("78097.05-78340.95 score=71 toques=10 (acima do fechamento) | 5.6463-5.6537 score=100 toques=10 (abaixo do fechamento)");
+  ok(pgCandidataRadar(btcLida, 2) === "78.097,05–78.340,95 (score 71, 10 toques, acima do fechamento)",
+    `candidata do BTC com ponto de milhar e virgula decimal (${pgCandidataRadar(btcLida, 2)})`);
+  ok(pgCandidataRadar(usdtLida, 4) === "5,6463–5,6537 (score 100, 10 toques, abaixo do fechamento)",
+    `candidata do USDT/BRL com as casas do par (${pgCandidataRadar(usdtLida, 4)})`);
+  ok(pgCandidataRadar({ inferior: 0.00729, superior: 0.0074, score: 80, toques: 6 }, 8) ===
+     "0,00729–0,00740 (score 80, 6 toques)", "XMR/BTC: as duas pontas com as mesmas casas, e sem lado se o relatorio nao trouxer");
   ok(motivoObservacaoRadar(c(1050, 1080, 90), [[1000, 1020]], 100) === null,
     "faixa de um lado so nao fragmenta nada");
   // As promocoes ja feitas passariam; as recusadas, nao.

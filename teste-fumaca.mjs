@@ -647,6 +647,19 @@ console.log("\n== pagina HTML: o bloco do bot continua intacto ==");
     ok(/\+0,2%/.test(srL) && !/encostado/.test(srL), "a 0,2% continua saindo a porcentagem");
   }
   {
+    // A estrutura recente sai com o nome, nao com o identificador do
+    // relatorio: "lateral_contracao" aparecia cru no cartao, ao lado de
+    // "Predominio de contracao" na sequencia ampliada.
+    const cfgE = PARES_TESTE.find((c) => !c.semCartao);
+    const dE = relatorioParaJSON(r1.texto, r1.zonas);
+    dE.diario[cfgE.label].estrutura_tendencia = "lateral_contracao";
+    dE.semanal[cfgE.label].estrutura_tendencia = "lateral_expansao";
+    const painel = toHTML(r1.texto, dE).split("<pre")[0];
+    ok(/>lateral em contração</.test(painel) && />lateral em expansão</.test(painel) &&
+       !/>lateral_(contracao|expansao)</.test(painel),
+      "o cartao mostra 'lateral em contração/expansão', nao o identificador cru");
+  }
+  {
     // Coerencia visual (2026-10-08).
     ok(monitor.pgDataFechamento("2026-10-01", "Semanal") === "semana até 2026-10-07" &&
        monitor.pgDataFechamento("2026-10-07", "Diário") === "2026-10-07",
@@ -1194,10 +1207,26 @@ console.log("\n== leitura de contexto longo: a linha para quem nao e' trader =="
   ok(/região de suporte manual de 64.000 a 66.000/.test(
       ondeNosNiveis("atual", 0, fx(64000, 66000, "regiao_suporte_64k_66k"), "alinhado", 2)),
     "faixa de suporte e' nomeada como tal, tambem com os limites");
-  ok(/encostando na faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2)),
-    "perto mas fora da faixa: encostando");
-  ok(/perto da faixa manual de 78.000 a 80.000/.test(ondeNosNiveis("monitorar", 2, f78, "alinhado", 2)),
-    "entre 1 e 3 ATR: perto");
+  // Fora da faixa: QUANTO e de que LADO, em porcentagem do fechamento,
+  // com a regra da faixa de suporte e resistencia do cartao (abaixo de
+  // 0,1% e' "encostado"). "Encostando" valia ate 1 ATR semanal, e o
+  // cartao so usa "encostado" abaixo de 0,1%: dois sentidos na mesma tela.
+  ok(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2, null, 80500) ===
+     "0,6% acima da faixa manual de 78.000 a 80.000",
+    "fora da faixa, por cima: a distancia em % e o lado");
+  ok(ondeNosNiveis("monitorar", 2, f78, "alinhado", 2, null, 76000) ===
+     "2,6% abaixo da faixa manual de 78.000 a 80.000",
+    "fora da faixa, por baixo: idem, e entre 1 e 3 ATR a frase e' a mesma");
+  ok(ondeNosNiveis("atual", 0.02, f78, "alinhado", 2, null, 77950) ===
+     "encostado na faixa manual de 78.000 a 80.000",
+    "abaixo de 0,1% da borda: encostado, como no cartao");
+  ok(ondeNosNiveis("atual", 0.3, f78, "alinhado", 2, null, 79000) ===
+     "dentro da faixa manual de 78.000 a 80.000",
+    "fechamento dentro dos limites e' dentro, mesmo com distancia publicada");
+  ok(!/encostando/.test(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2, null, 82000)),
+    "a palavra 'encostando' nao volta para distancias grandes");
+  ok(ondeNosNiveis("atual", 0.4, f78, "alinhado", 2) === "perto da faixa manual de 78.000 a 80.000",
+    "sem o fechamento nao ha como medir: so 'perto'");
   // Longe de TODAS, nomear uma nao ajudaria.
   ok(ondeNosNiveis("obsoleto", 5, f78, "alinhado", 2) === "longe das faixas manuais",
     "alem de 3 ATR: longe das faixas, sem nomear nenhuma");
@@ -1310,6 +1339,10 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     ultimo_fechamento_close: R * 1.01 }), cfg).razao;
   ok(/^resistência de /.test(abaixoR) && /^suporte de /.test(acimaR),
     `a razao diz de QUAL nivel se trata e o papel pelo lado do fechamento (${abaixoR} | ${acimaR})`);
+  // A porcentagem e' do FECHAMENTO: sem a palavra, "resistencia de 73.000,
+  // 11,9% abaixo da media diaria" se lia como se a linha estivesse abaixo.
+  ok(/^resistência de .+, fechamento [\d.,]+% (acima|abaixo) da média diária$/.test(abaixoR),
+    `depois do nivel, a razao diz que a distancia e' do fechamento (${abaixoR})`);
   // Primeiro o que e' atual: o nivel que mudou nesta vela vence um estado
   // mais "decisivo" de outro nivel ja deixado para tras (14/11/2026, BTC:
   // "rompimento falhou" de 80.000, de 29/10, escondia o rompimento de 73.000).

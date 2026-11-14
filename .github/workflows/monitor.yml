@@ -19,6 +19,10 @@ concurrency:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
+    # Uma execucao normal leva menos de um minuto. Sem limite, uma fonte
+    # que nao responde prenderia o job por ate 6 horas, e com o grupo de
+    # concorrencia as execucoes seguintes ficariam esperando atras dele.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:

@@ -5182,6 +5182,12 @@ function pgChips(alertas, deterioracao) {
 // Textos dos (?) curtos de proposito: eram 670 a 850 caracteres, uma
 // parede de texto num balao. Ficaram os fatos -- quais pivos, o que a
 // leitura NAO diz, e por que ela atrasa.
+const NOMES_ESTRUTURA_RECENTE = {
+  lateral_contracao: "lateral em contração",
+  lateral_expansao: "lateral em expansão",
+  lateral_empate: "estrutura com empate",
+};
+
 const EXPLICACOES_ESTRUTURA_RECENTE = {
   alta: "topo e fundo mais recentes acima dos anteriores",
   baixa: "topo e fundo mais recentes abaixo dos anteriores",
@@ -5326,9 +5332,13 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
     typeof diPlus === "number" && typeof diMinus === "number"
       ? (diPlus > diMinus ? "alta" : "baixa")
       : ""));
-  L.push(pgLinha("Estrutura dos últimos pivôs confirmados", pgEsc(tend === "lateral_empate" ? "estrutura com empate" : tend),
+  // O relatorio publica o identificador (lateral_contracao); o cartao
+  // mostra o nome, como a sequencia ampliada logo abaixo ja fazia
+  // ("Predominio de contracao").
+  const tendNome = NOMES_ESTRUTURA_RECENTE[tend] || tend;
+  L.push(pgLinha("Estrutura dos últimos pivôs confirmados", pgEsc(tendNome),
     tend === "alta" ? "alta" : tend === "baixa" ? "baixa" : "fraco",
-    pgAjuda({ rotulo: `Estrutura dos últimos pivôs confirmados: ${tend}` }, `aj-estrutura-${id}`,
+    pgAjuda({ rotulo: `Estrutura dos últimos pivôs confirmados: ${tendNome}` }, `aj-estrutura-${id}`,
       pgExplicacaoEstruturaRecente(tend, titulo))));
   // "Niveis manuais: monitorar faixa_498_503" saiu daqui. Era a situacao
   // de manutencao das faixas, repetida nos dois timeframes, e nao dizia o
@@ -5524,7 +5534,7 @@ function pgValor(v, dec) {
 // rotulo no cartao -- e ainda lembrar que esta leitura sai do bloco
 // SEMANAL, nao do diario. Agora a linha se basta.
 export function ondeNosNiveis(
-  situacao, distAtr, faixa, alinhamento, dec = 2, tfAdjetivo = null
+  situacao, distAtr, faixa, alinhamento, dec = 2, tfAdjetivo = null, fech = null
 ) {
   if (!situacao || situacao === "indefinida") return null;
   const label = faixa && typeof faixa === "object" ? faixa.label : faixa;
@@ -5538,13 +5548,26 @@ export function ondeNosNiveis(
   if (situacao === "obsoleto") {
     // Longe de todas, nomear uma nao ajuda.
     texto = "longe das faixas manuais";
-  } else if (typeof distAtr === "number" && distAtr <= 0) {
+  } else if ((typeof distAtr === "number" && distAtr <= 0) ||
+             (temLimites && typeof fech === "number" && fech >= lo && fech <= hi)) {
     texto = ehSuporte
       ? `dentro da região de suporte manual${intervalo}`
       : `dentro da faixa manual${intervalo}`;
-  } else if (situacao === "atual") {
-    texto = `encostando na faixa manual${intervalo}`;
+  } else if (temLimites && typeof fech === "number" && fech > 0) {
+    // Fora da faixa, a frase diz QUANTO e de que LADO, em porcentagem, e
+    // usa a regra da faixa de suporte e resistencia do cartao: abaixo de
+    // 0,1% e' "encostado". Ate 2026-11-14 dizia "encostando" para tudo
+    // ate 1 ATR semanal -- 2,4% de distancia no XMR/USD, 0,2% no BTC --,
+    // enquanto o cartao logo abaixo so escreve "encostado" abaixo de
+    // 0,1%: a mesma palavra com dois sentidos na mesma tela, e sem dizer
+    // se o fechamento ficou acima ou abaixo da faixa.
+    const acima = fech > hi;
+    const pct = (Math.abs(fech - (acima ? hi : lo)) / fech) * 100;
+    texto = pct < 0.1
+      ? `encostado na faixa manual${intervalo}`
+      : `${pgNum(pct, 1)}% ${acima ? "acima" : "abaixo"} da faixa manual${intervalo}`;
   } else {
+    // Sem o fechamento nao ha como medir: so o que a situacao garante.
     texto = `perto da faixa manual${intervalo}`;
   }
   // Uma faixa que as zonas observadas nao corroboram e' um numero velho,
@@ -5603,7 +5626,8 @@ export function leituraLonga(sem, dec = 2) {
     dec,
     // Esta leitura sai do bloco SEMANAL, e o alinhamento que ela cita foi
     // medido contra as zonas semanais.
-    "semanais"
+    "semanais",
+    fech
   );
   if (typeof fech !== "number" || typeof ema !== "number" || typeof dist !== "number") return nada;
 
@@ -5745,10 +5769,13 @@ export function leituraCurta(dia, cfg) {
     const pct = ((fech - ema) / ema) * 100;
     // Abaixo de 0,05% o arredondamento daria "0,0% abaixo", que afirma um
     // lado que o numero nao sustenta. Em cima da media e' em cima dela.
+    // "fechamento" na frente: depois do nivel, "resistencia de 73.000,
+    // 11,9% abaixo da media diaria" se lia como se a LINHA estivesse
+    // abaixo da media, e e' o fechamento que esta.
     pedacos.push(
       Math.abs(pct) < 0.05
-        ? "em cima da média diária"
-        : `${pgNum(Math.abs(pct), 1)}% ${fech >= ema ? "acima" : "abaixo"} da média diária`
+        ? "fechamento em cima da média diária"
+        : `fechamento ${pgNum(Math.abs(pct), 1)}% ${fech >= ema ? "acima" : "abaixo"} da média diária`
     );
   }
 
@@ -5942,6 +5969,17 @@ export function lerCandidatasRadar(linha) {
   }).filter(Boolean);
 }
 
+// A candidata como a pagina escreve numeros: o relatorio publica
+// "78097.05-78340.95 score=71 toques=10 (acima do fechamento)", formato
+// para maquina, e o painel mostrava isso cru no meio de frases com
+// virgula decimal e ponto de milhar.
+export function pgCandidataRadar(c, dec = 2) {
+  const d = Math.max(casasUteis(c.inferior, dec), casasUteis(c.superior, dec));
+  const lado = (/\((acima|abaixo|no) do fechamento\)/.exec(c.bruto || "") || [])[0];
+  return `${pgNum(c.inferior, d)}–${pgNum(c.superior, d)} (score ${c.score}, ` +
+    `${c.toques} toques${lado ? ", " + lado.slice(1, -1) : ""})`;
+}
+
 // null quando a candidata passa; senao, o motivo para ficar em observacao.
 // Sem ATR nao ha como medir: na duvida, passa, como no proprio radar.
 export function motivoObservacaoRadar(c, faixas, atr) {
@@ -5952,9 +5990,13 @@ export function motivoObservacaoRadar(c, faixas, atr) {
   const abaixo = (faixas || []).filter(([, hi]) => hi <= c.inferior).map(([, hi]) => hi);
   const acima = (faixas || []).filter(([lo]) => lo >= c.superior).map(([lo]) => lo);
   if (abaixo.length && acima.length) {
-    const vao = Math.min(...acima) - Math.max(...abaixo);
+    const de = Math.max(...abaixo), ate = Math.min(...acima);
+    const vao = ate - de;
+    // O criterio e' em ATR, mas o painel nao fala ATR: o vao sai em
+    // porcentagem e o criterio em palavras, como na leitura longa.
     if (vao < RADAR_VAO_VIZINHAS_MIN_ATR * atr)
-      return `entre faixas a ${fixo(vao / atr, 2).replace(".", ",")} ATR uma da outra`;
+      return `entre duas faixas a ${pgNum((vao / ((de + ate) / 2)) * 100, 1)}% uma da outra, ` +
+        "menos que uma oscilação diária típica";
   }
   return null;
 }
@@ -5973,8 +6015,9 @@ function pgLeitura(cfg, dados) {
   const recomendadas = [], emObservacao = [];
   for (const c of lerCandidatasRadar(dia.zonas_candidatas_a_faixa)) {
     const motivo = motivoObservacaoRadar(c, faixasPar, atrDia);
-    if (motivo) emObservacao.push(`${c.bruto} — ${motivo}`);
-    else recomendadas.push(c.bruto);
+    const texto = pgCandidataRadar(c, cfg.dec);
+    if (motivo) emObservacao.push(`${texto} — ${motivo}`);
+    else recomendadas.push(texto);
   }
   const radar =
     (recomendadas.length

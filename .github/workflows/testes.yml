@@ -1,0 +1,44 @@
+# Roda TODA a bateria de testes quando o codigo muda.
+#
+# O monitor.yml so roda teste-fumaca.mjs antes de publicar, de proposito:
+# um teste quebrado em outra parte nao deve impedir o relatorio de sair.
+# Mas sem isto nada rodava os outros testes sozinho -- um commit que
+# quebrasse, por exemplo, teste-zonas.mjs so seria notado na proxima vez
+# que alguem rodasse a bateria a mao. Os commits de hora em hora do
+# monitor so mexem em docs/ e nao disparam este workflow.
+name: Testes
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Rodar todos os testes
+        run: |
+          falhas=0
+          for t in teste-*.mjs; do
+            echo "::group::$t"
+            if node "$t"; then
+              echo "ok $t"
+            else
+              echo "::error::$t falhou"
+              falhas=$((falhas + 1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$falhas" -gt 0 ]; then
+            echo "$falhas arquivo(s) de teste falharam"
+            exit 1
+          fi
+          echo "todos os testes passaram"

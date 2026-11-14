@@ -83,6 +83,8 @@ Duas exceções entraram em 2026-11-14, as duas por falhas reais da guarda.
 - **Sessão reduzida (feriado provável).** Nos feriados brasileiros o mercado offshore negocia poucas horas, e a guarda tomava isso por buraco no dado. Em 12/10 houve negócio em 3 das 10 horas do trecho comum; em 02/11, em 1. As amplitudes do dia foram 0,0087 e 0,0143. Nas duas vezes o bloco semanal ficou fora por cerca de 11 dias, enquanto a semana do feriado era a semana em formação ou a última fechada. Agora uma sessão com negócio em menos da metade das horas esperadas é aceita como está quando a amplitude dela na série diária fica abaixo da metade da mediana das sessões dos 21 dias anteriores (mínimo de cinco). A vela é montada com as horas que existem, e `dados_avisos` registra `Yahoo 1h: sessao reduzida (feriado provavel)` com a data e quantas horas tiveram negócio. Um dia de amplitude normal com as mesmas horas faltando continua falhando. A sessão reduzida também não serve de referência para as sessões seguintes.
 - **Dia ainda aberto.** A guarda só confere dia encerrado, pela mesma regra do fechamento da vela: primeiro negócio do pregão seguinte ou 12 horas depois da virada UTC. Antes ela conferia também o dia que tinha acabado de virar, cujas últimas horas ainda podem chegar atrasadas, e uma hora das 21h ainda não publicada às 00h30 derrubava o bloco. A mesma falta ao meio-dia continua derrubando.
 
+**Uma alternância conhecida: o negócio único da última hora (2026-11-14).** Os servidores do Yahoo nem sempre devolvem a mesma hora do mesmo jeito. Um negócio único às 23h UTC sai ora como hora plana (abertura, máxima, mínima e fechamento iguais), ora como barra comum (abertura igual ao fechamento da hora anterior). Como a hora plana fica fora da vela, o fechamento do dia muda conforme o servidor que responde: o de 09/11/2026 alternou entre 5,5069 (sem a hora das 23h) e 5,5085 (com ela) de uma execução para outra, por três dias. A diferença foi de 0,03%. A máquina dos níveis processa cada vela fechada uma vez só, então isso não cria nem desfaz rompimento; mudam o número publicado e os indicadores, em décimos de milésimo, e o histórico ganha linhas repetidas daquela vela. Contar a hora plana com preço novo acabaria com a alternância, mas foi medido e descartado: em 724 dias de horas, o fechamento mudaria em 203, em até 0,77%, e as horas planas da madrugada com preço novo incluem cotações fora do mercado — em 05/11 uma delas, a 5,4870, viraria o fechamento, 0,3% abaixo do último negócio de verdade. É o mesmo motivo do filtro da hora plana, que existe pela cotação velha de 21/09.
+
 **Efeito na primeira execução.** Comparando o código anterior e o novo sobre as mesmas respostas, no runner: USDT/BRL **idêntico**, gatilhos idênticos; no USD/BRL mudaram os indicadores, as velas, os pivôs e as zonas. Exemplos: o diário de 24/09 passou a fechar em 5,1912 (era 5,1643), o ATR14 diário foi de 0,0553 para 0,0504, e o semanal passou de `lateral_contracao` (LH_HL) para `alta` (HH_HL). O estado persistido (níveis, zonas, EMA89 semanal) não foi reconstruído: segue a partir do que estava salvo, e as velas novas já entram certas. `docs/historico.jsonl` guarda os fechamentos antigos do USD/BRL como eram; análises históricas do USD/BRL anteriores a 2026-09-26 carregam o defeito.
 
 ### Por que não há uma segunda provedora
@@ -525,7 +527,7 @@ As faixas **5,0725–5,0896** e **5,12–5,137** foram **promovidas em 2026-09-2
 - **5,0725–5,0896** (zona `usdt|diario|z3`): score 94, 10 toques, 9 rejeições, confirmada no diário e no semanal, sem penalidade. Dois topos de maio viraram suporte em quatro fundos de julho a setembro.
 - **5,12–5,137** (zona `usdt|diario|z65`): score 78, 10 toques, 6 rejeições, confirmada nos dois timeframes, com a penalidade de ter sido rompida duas vezes sem reação.
 
-Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima. O suporte pontual de 5,15 fica no vão entre elas, fora de qualquer faixa, e a máquina de rompimento/reteste dele não muda. A terceira região que o radar apontava no mesmo dia, 5,2181–5,2219 (6 toques e 0,0038 de largura, nascida da divisão de zonas em 2026-09-24), ficou em observação.
+Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima. O suporte pontual de então, 5,15, ficava no vão entre elas, fora de qualquer faixa, e a máquina de rompimento/reteste dele não mudou. A terceira região que o radar apontava no mesmo dia, 5,2181–5,2219 (6 toques e 0,0038 de largura, nascida da divisão de zonas em 2026-09-24), ficou em observação.
 
 ### USD/BRL
 
@@ -707,7 +709,7 @@ As zonas automáticas são **contexto**. Elas não alimentam a máquina de rompi
 - **O que não muda.** Só o radar usa esse critério. `confluencia_faixa_manual` e `niveis_manuais_alinhamento` fazem outra pergunta — se há sobreposição suficiente para chamar de confluência — e continuam com a sobreposição de sempre. Nenhuma faixa é alargada nem fundida; a zona suprimida continua existindo e sendo publicada entre as zonas automáticas.
 - **Sem ATR**, vale só a sobreposição: na dúvida, o radar mostra.
 - **O que o agente comunica é mais estreito que o radar.** O prompt manda comunicar só a candidata que, além dos critérios mínimos, passe em três verificações feitas com dados do próprio relatório. Primeiro: região de pivô único (largura estrutural de até cerca de 0,12 ATR) só com score de pelo menos 80. Segundo: nada que caiba entre duas faixas vizinhas a menos de 1 ATR uma da outra. Terceiro: nada no mesmo dia de uma correção que refez as zonas do par. Motivo: em 2026-09-26 o agente recomendou, no USD/BRL, duas regiões de um pivô só (score 78 e 71), horas depois de a correção do Yahoo refazer todas as zonas do par. Uma delas cabia num vão de 0,57 ATR entre duas faixas. Aplicadas às recomendações anteriores, as três verificações mantêm as promoções já feitas e barram as que foram recusadas.
-- **O painel aplica as mesmas verificações** (`lerCandidatasRadar` e `motivoObservacaoRadar`), com os mesmos números do prompt: pivô único até 0,12 ATR só com score de pelo menos 80, e nada entre faixas vizinhas a menos de 1 ATR. O que passa sai como "região amadurecida sem faixa manual"; o resto sai discreto, como "em observação, sem recomendação", com o motivo. Antes, o painel mostrava a lista bruta, e a região de 78k do BTC (pivô único, score 71) aparecia como amadurecida enquanto o agente, com razão, não a recomendava. A espera depois de uma correção de dados não entra no painel, porque hoje ela só existe para o USD/BRL, que não tem cartão. O campo do relatório não muda.
+- **O painel aplica as mesmas verificações** (`lerCandidatasRadar` e `motivoObservacaoRadar`), com os mesmos números do prompt: pivô único até 0,12 ATR só com score de pelo menos 80, e nada entre faixas vizinhas a menos de 1 ATR. O que passa sai como "região amadurecida sem faixa manual"; o resto sai discreto, como "em observação, sem recomendação", com o motivo. Antes, o painel mostrava a lista bruta, e a região de 78k do BTC (pivô único, score 71) aparecia como amadurecida enquanto o agente, com razão, não a recomendava. A espera depois de uma correção de dados não entra no painel, porque hoje ela só existe para o USD/BRL, que não tem cartão. O campo do relatório não muda. Desde 2026-11-14 a candidata sai no formato da página, `78.097,05–78.340,95 (score 71, 10 toques, acima do fechamento)`, e não no do relatório, e o motivo da observação sai sem ATR (`entre duas faixas a 0,6% uma da outra, menos que uma oscilação diária típica`).
 - **O histórico de recalibração não entra no algoritmo.** A configuração já é o registro da decisão, e a geometria dela vale sempre, não só logo depois de uma revisão. Uma lista de regiões recusadas precisaria de prazo de validade, e esconderia estrutura nova de verdade que aparecesse no mesmo lugar.
 
 **O radar lê o conjunto inteiro de zonas vivas, não a lista publicada.** A página mostra no máximo três zonas de cada lado do preço, porque uma lista maior deixa de ser legível. Esse corte é de exibição, e durante um tempo o radar herdou ele: uma região madura e descoberta ficava invisível para a promoção só porque havia três outras mais perto do preço na frente dela. Agora o radar recebe todas as zonas vivas do par e o corte de três continua valendo só para a página.
@@ -833,6 +835,15 @@ Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — 
 - a ajuda de "na média longa" dizia que o fechamento estava "colado" na média, ao lado de "perto da média longa (+4,8%)". Agora diz "perto, a menos de uma oscilação semanal típica";
 - a ajuda de "sem evento no diário" dizia "Nada aconteceu no fechamento diário", com uma etiqueta de divergência confirmada no mesmo cartão. Agora diz o que de fato não aconteceu (nível, média, perda de força) e que os outros sinais estão nas etiquetas.
 
+**Coerência visual (2026-11-14).** Outro pente fino no painel achou mais quatro pontos:
+
+- a leitura longa dizia `encostando na faixa manual` para qualquer fechamento a até 1 ATR semanal da faixa — 2,4% de distância no XMR/USD —, enquanto a faixa de suporte e resistência do cartão só escreve `encostado` abaixo de 0,1%. Era a mesma palavra com dois sentidos na mesma tela, e a frase não dizia de que lado o fechamento estava. Agora sai a distância em porcentagem e o lado (`2,4% acima da faixa manual de 558 a 568`), e `encostado` só abaixo de 0,1%, como no cartão;
+- a leitura curta dizia `resistência de 73.000, 11,9% abaixo da média diária`, que se lia como se a linha estivesse abaixo da média. A porcentagem é do fechamento, e agora a frase diz isso: `resistência de 73.000, fechamento 11,9% abaixo da média diária`;
+- a estrutura recente aparecia no cartão com o identificador do relatório, `lateral_contracao` e `lateral_expansao`. Agora sai `lateral em contração` e `lateral em expansão`, como a sequência ampliada logo abaixo já escrevia;
+- o radar aparecia no formato do relatório, `78097.05-78340.95 score=71 toques=10`, no meio de frases com vírgula decimal. Agora sai `78.097,05–78.340,95 (score 71, 10 toques, acima do fechamento)`, e o motivo da observação não fala em ATR: `entre duas faixas a 0,6% uma da outra, menos que uma oscilação diária típica`.
+
+Tudo isso é só apresentação: o relatório não mudou.
+
 **O ATR não aparece no cartão**, e a distância da EMA89 sai em porcentagem em vez de em múltiplos de ATR. Isso é só apresentação, e a razão é que ATR é unidade de **cálculo**, não leitura de relance: `0,0418` é muito ou pouco dependendo do par, enquanto `0,56%` se lê na hora.
 
 Internamente nada mudou. O ATR continua dimensionando a largura das zonas automáticas, medindo a obsolescência dos níveis manuais e servindo de unidade para as margens do prompt — 0,25 ATR para a travessia semanal, 1,0 ATR para a corroboração da perda diária. E o relatório continua publicando `atr14`, `atr14_pct` e `distancia_ema89_fechada_atr` para quem dimensiona stop e tamanho de posição.
@@ -853,17 +864,18 @@ O **USD/BRL não tem gráfico**, de propósito. Em todos os outros pares do proj
 
 Também pode ser criado `alerta.txt` na raiz quando surgem novos gatilhos internos. O workflow oficial, entretanto, faz `git add docs`, portanto esse arquivo não é publicado pelo processo automático atual.
 
-## Estrutura simplificada do repositório
+## Estrutura do repositório
 
-Considerando a estrutura atual e os dois arquivos de documentação deste pacote:
+Todos os arquivos versionados. Além do código, ficam na raiz os testes (`teste-*.mjs`, todos rodados por `testes.yml`), os dados gravados que eles usam (`fixture-*` e `teste-retrato-*`) e as evidências das revisões de níveis e zonas (os arquivos com data no nome).
 
 ```text
 Monitor-USD-Price/
 ├── .github/
 │   └── workflows/
-│       ├── monitor.yml
-│       └── paridade.yml
-├── docs/
+│       ├── monitor.yml   publica o relatório, de hora em hora
+│       ├── paridade.yml  confere, uma vez por dia, que os três monitores têm o mesmo motor
+│       └── testes.yml    roda todos os testes quando o código muda
+├── docs/                       o que o GitHub Pages publica
 │   ├── .nojekyll
 │   ├── estado.json
 │   ├── historico.jsonl
@@ -873,17 +885,44 @@ Monitor-USD-Price/
 ├── monitor.mjs
 ├── ema89-semanal.mjs
 ├── analisar-historico.mjs
+├── auditar-faixas-manuais.mjs
 ├── paridade.mjs
 ├── paridade-esperada.mjs
-├── teste-fumaca.mjs
-├── teste-regressoes.mjs
+├── teste-auditoria-faixas.mjs
+├── teste-auto-equivalencia.mjs
 ├── teste-ema89-semanal.mjs
-├── teste-paridade.mjs
-├── teste-niveis.mjs
+├── teste-estrutura-visual.mjs
+├── teste-fontes-usd.mjs
+├── teste-fumaca.mjs
 ├── teste-limiares.mjs
+├── teste-niveis.mjs
+├── teste-paridade.mjs
+├── teste-promocao-zonas.mjs
+├── teste-qualidade-dados.mjs
+├── teste-reajuste-faixas.mjs
+├── teste-regressoes.mjs
 ├── teste-retrato.mjs
+├── teste-revisao-zonas.mjs
+├── teste-zonas.mjs
+├── fixture-auto-equivalencia-2026-09-25.json
+├── fixture-promocao-usd-2026-10-07.json
 ├── teste-retrato-cassete.json
 ├── teste-retrato.txt
+├── AUDITORIA_FAIXAS_2026-09-25.md
+├── AUTO_EQUIVALENCIA_2026-09-25.md
+├── REAJUSTE_FAIXAS_2026-09-25.md
+├── REVISAO_ZONAS_2026-09-25.md
+├── REVISAO_ZONAS_2026-10-07.md
+├── auditoria-faixas-dados-2026-09-25.json
+├── auditoria-faixas-qualidade-2026-09-25.json
+├── comparacao-auto-equivalencia-2026-09-25.json
+├── promocao-faixa-usd-2026-10-10.json
+├── promocao-faixas-usd-2026-10-27.json
+├── promocao-faixas-usdt-2026-10-26.json
+├── reajuste-faixas-manuais-2026-09-25.json
+├── revisao-faixas-manuais-2026-09-25.json
+├── revisao-zonas-2026-09-25.json
+├── revisao-zonas-2026-10-07.json
 ├── README.md
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
@@ -915,7 +954,7 @@ Barato e caindo saem com rótulos diferentes de propósito: juntar os dois seria
 
 **A linha mostra os números que a produziram, e nenhum deles em jargão.** Essa é a única parte da página escrita para quem não sabe análise técnica, e um número numa unidade que a pessoa não entende não deixa nada conferível, que era a razão de a linha existir. Então:
 
-- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro da faixa manual de 76.000 a 78.000`, `dentro da região de suporte manual de …`, `encostando na`, `perto da` ou `longe das faixas manuais`. **A frase nomeia os limites da faixa**, porque sem isso ela afirmava algo sobre "uma faixa" e obrigava quem lê a procurar o rótulo no cartão, e ainda a lembrar que esta leitura sai do bloco **semanal**, não do diário. Longe de todas, nomear uma não ajudaria, então ali o intervalo não aparece. As casas decimais se ajustam ao par: 76.000 sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas. Desde 2026-10-08 a frase começa por **`fechou a semana`** (`fechou a semana encostando na faixa manual de …`): ela mede o fechamento semanal, não a cotação, e depois de uma semana de queda dizia "encostando na faixa de 5,191 a 5,1965" com o USDT a 5,04, logo acima da faixa de suporte e resistência do cartão, que usa a cotação;
+- a linha começa pelos **níveis**, que são a prioridade 1 da lista do prompt. A faixa nascia apoiada na média longa (prioridade 3) e nos indicadores (prioridade 5), pulando o item mais importante. Sai como `dentro da faixa manual de 76.000 a 78.000`, `dentro da região de suporte manual de …`, `2,4% acima da faixa manual de …` (ou abaixo: a distância do fechamento até a borda mais próxima, com o lado), `encostado na faixa manual de …` (a menos de 0,1%, a mesma regra do cartão) ou `longe das faixas manuais`. Até 2026-11-14 eram `encostando na` (até 1 ATR) e `perto da` (até 3 ATR), sem número e sem lado. **A frase nomeia os limites da faixa**, porque sem isso ela afirmava algo sobre "uma faixa" e obrigava quem lê a procurar o rótulo no cartão, e ainda a lembrar que esta leitura sai do bloco **semanal**, não do diário. Longe de todas, nomear uma não ajudaria, então ali o intervalo não aparece. As casas decimais se ajustam ao par: 76.000 sai inteiro, 0,00656 sai com cinco casas, 5,12 com duas. Desde 2026-10-08 a frase começa por **`fechou a semana`** (`fechou a semana 2,4% acima da faixa manual de …`): ela mede o fechamento semanal, não a cotação, e depois de uma semana de queda dizia "encostando na faixa de 5,191 a 5,1965" com o USDT a 5,04, logo acima da faixa de suporte e resistência do cartão, que usa a cotação;
 - uma faixa que as zonas observadas não corroboram é citada **com a ressalva** `(sem corroboração das zonas automáticas semanais atuais)`. Dar destaque a um nível desalinhado sem avisar seria pior que omiti-lo. A ressalva dizia `(que o mercado não vem respeitando)`, e foi trocada por ser mais forte do que o código mede: `alinhamentoNiveis` só compara as faixas com as zonas automáticas daquele timeframe pelo corte de sobreposição, então `desalinhado` quer dizer que as zonas atuais não corroboram a faixa — não que o mercado deixou de respeitá-la. Uma faixa pode ter sido muito respeitada e simplesmente não ter zona viva em cima dela agora. O adjetivo do timeframe entra por parâmetro, e sem ele a frase sai neutra, `(sem corroboração das zonas automáticas atuais neste timeframe)`: hoje a função só é chamada da leitura longa, que lê o bloco semanal, mas ela própria não sabe de que timeframe vieram os números, e cravar "semanais" faria a frase mentir em silêncio no dia em que a leitura curta a usasse;
 - a distância sai em **porcentagem**, que dispensa explicação, e não em ATR;
 - o critério de 1 ATR vira **palavra**: `bem acima` e `bem abaixo` contra `perto`. A palavra carrega o critério, o número carrega o tamanho;
@@ -973,7 +1012,7 @@ A ordem da tabela é a ordem de relevância, mas só depois de um corte de atual
 
 **O destaque em amarelo quer dizer "vale olhar", não quer dizer bom nem ruim.** Um reteste confirmado de resistência rompida para cima e um de suporte perdido para baixo têm o mesmo nome e significados opostos. Inventar a direção aqui seria palpite disfarçado de leitura, então a cor sinaliza atenção e o texto nomeia o nível, deixando o julgamento com quem lê.
 
-Sem jargão, pela mesma razão da faixa longa. E quando o fechamento fica a menos de 0,05% da média, a razão diz `em cima da média diária` em vez de arredondar para `0,0% abaixo`, que afirmaria um lado que o número não sustenta.
+Sem jargão, pela mesma razão da faixa longa. E quando o fechamento fica a menos de 0,05% da média, a razão diz `fechamento em cima da média diária` em vez de arredondar para `0,0% abaixo`, que afirmaria um lado que o número não sustenta.
 
 ## Histórico: o substrato para medir
 
@@ -1169,6 +1208,12 @@ A cada execução, o workflow:
 O `reset` antes da execução é importante porque `docs/estado.json` funciona como memória persistente. Dessa forma, cada tentativa lê o estado mais recente já publicado antes de recalcular o relatório.
 
 O checkout usa `fetch-depth: 0`. Push a partir de clone raso funciona no GitHub, mas o ciclo de `fetch` e `reset --hard` dentro do loop de retry fica mais previsível com o histórico completo.
+
+### Limite de tempo e bateria completa de testes (2026-11-14)
+
+Os três workflows têm `timeout-minutes`: 15 minutos para o monitor e para os testes, 10 para a paridade. Uma execução normal do monitor leva menos de um minuto. Sem limite, uma fonte que não respondesse prenderia o job por até 6 horas, e o grupo de concorrência faria as execuções seguintes esperarem atrás dele.
+
+O `monitor.yml` continua rodando só `teste-fumaca.mjs` antes de publicar, de propósito: um teste quebrado em outra parte não deve impedir o relatório de sair. A bateria inteira, todos os `teste-*.mjs`, roda no workflow próprio `.github/workflows/testes.yml`, a cada push em `main` que mexa em código. Os commits de hora em hora do monitor só mudam `docs/` e não o disparam. Um X vermelho nesse workflow quer dizer que algum teste quebrou na última mudança de código, mesmo com o relatório saindo normalmente. Antes dele, nada rodava a bateria inteira sozinho.
 
 ## Executando localmente
 
