@@ -85,7 +85,13 @@ assert.ok(!cfg.niveis.faixas.some(f=>f[0]===usd27.regiao_nao_promovida.inferior&
 const evidenciasUSD27={ 'usd|diario|z48': [86,8,6], 'usd|diario|z38': [73,14,8], 'usd|diario|z27': [73,10,7] };
 for(const c of usd27.capturas){
   assert.equal(c.zonas.length,3);assert.equal(c.fechamento,5.3716);
-  assert.equal(m.zonasCandidatas(c.zonas,usd27.configuracao_anterior,c.fechamento,'diario',c.atr14).length,3);
+  // Em 27/10 o radar listava as tres, e a sobreposta (z27) foi deixada de
+  // fora na revisao manual. Desde 14/11 o proprio radar a conta uma vez so:
+  // ela ja esta representada pela candidata de score maior (z48).
+  const radar27=m.zonasCandidatas(c.zonas,usd27.configuracao_anterior,c.fechamento,'diario',c.atr14);
+  const z27=c.zonas.find(z=>z.id===usd27.regiao_nao_promovida.id).limites_estruturais;
+  assert.equal(radar27.length,2,'a regiao sobreposta nao aparece como candidata separada');
+  assert.ok(!radar27.some(r=>r.inferior===z27.inferior&&r.superior===z27.superior),'a que sai e a de score menor, z27');
   for(const z of c.zonas){
     assert.equal(z.status,'ativa');
     assert.deepEqual([z.score,z.numero_toques,z.numero_rejeicoes],evidenciasUSD27[z.id]);

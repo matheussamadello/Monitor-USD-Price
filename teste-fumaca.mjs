@@ -1309,6 +1309,28 @@ console.log("\n== leitura de contexto curto: o que aconteceu no diario ==");
     ultimo_fechamento_close: R * 1.01 }), cfg).razao;
   ok(/^resistência de /.test(abaixoR) && /^suporte de /.test(acimaR),
     `a razao diz de QUAL nivel se trata e o papel pelo lado do fechamento (${abaixoR} | ${acimaR})`);
+  // Primeiro o que e' atual: o nivel que mudou nesta vela vence um estado
+  // mais "decisivo" de outro nivel ja deixado para tras (14/11/2026, BTC:
+  // "rompimento falhou" de 80.000, de 29/10, escondia o rompimento de 73.000).
+  {
+    const S = nv.suporte, Rs = nv.resistencia;
+    const dois = base({ ultimo_fechamento_close: S * 0.97,
+      [`nivel_${nv.resistenciaLabel}_estado`]: "rompimento_falhou", [`nivel_${nv.resistenciaLabel}_afastado`]: "sim",
+      [`nivel_${nv.suporteLabel}_estado`]: "rompido", [`nivel_${nv.suporteLabel}_afastado`]: "nao",
+      niveis_mudancas_nesta_vela: [`rompido_${nv.suporteLabel}`] });
+    const so = leituraCurta(base({ ultimo_fechamento_close: S * 0.97,
+      [`nivel_${nv.suporteLabel}_estado`]: "rompido" }), cfg);
+    const l = leituraCurta(dois, cfg);
+    ok(S !== Rs && l.rotulo === so.rotulo && l.razao === so.razao,
+      `o nivel que mudou nesta vela vem antes do estado antigo de outro (${l.rotulo}: ${l.razao})`);
+    const semEvento = leituraCurta({ ...dois, niveis_mudancas_nesta_vela: [] }, cfg);
+    ok(semEvento.razao === so.razao,
+      `sem evento, o nivel ainda perto vem antes do afastado (${semEvento.rotulo}: ${semEvento.razao})`);
+    const tudoLonge = leituraCurta({ ...dois, niveis_mudancas_nesta_vela: [],
+      [`nivel_${nv.suporteLabel}_afastado`]: "sim" }, cfg);
+    ok(/rompimento falhou/.test(tudoLonge.rotulo),
+      `com todos afastados e sem evento, volta a ordem de relevancia (${tudoLonge.rotulo})`);
+  }
 
   // Ordem de relevancia: com dois niveis em estados diferentes, vence o
   // mais decisivo, nao o primeiro da lista de niveis.

@@ -29,6 +29,32 @@ try {
     const flat=hours.map(h=>h.time===target+15*H?{...h,open:5.16,high:5.16,low:5.16,close:5.16}:h);
     assert.doesNotThrow(()=>parse(flat,tf),'hora plana recebida satisfaz cobertura');
   }
+  // SESSAO REDUZIDA (feriado no Brasil). Em 12/10 e 02/11/2026 o Yahoo
+  // teve 3 e 1 das 10 horas do nucleo com negocio, o resto plano ou
+  // ausente, e a serie diaria mostrou amplitude pequena. A guarda derrubava
+  // o semanal por onze dias. Agora: aceita, com aviso. A mesma falta de
+  // horas num dia de amplitude normal continua sendo buraco no dado.
+  {
+    const feriadoHoras=hours.filter(h=>h.time<target||h.time>=target+DIA||h.time===target+12*H||h.time===target+18*H);
+    const diarioFeriado=daily.map(r=>r.time===target?{...r,high:5.104,low:5.1}:r);
+    for(const tf of [diario,semanal]) {
+      const r=parse(feriadoHoras,tf,diarioFeriado);
+      assert.match(r.avisosDados.join(' '),/sessao reduzida \(feriado provavel\).*2026-09-30 \(2 de 11 horas com negocio\)/,`feriado aceito com aviso (${tf.key})`);
+      assert.throws(()=>parse(feriadoHoras,tf),/cobertura incompleta em 2026-09-30 \(hora ausente\)/,
+        `as mesmas horas faltando num dia de amplitude normal sao buraco no dado (${tf.key})`);
+    }
+  }
+  // Logo depois da meia-noite as ultimas horas do dia ainda nao chegaram:
+  // o dia so e' conferido quando encerrado (negocio no dia seguinte ou 12h).
+  {
+    const semUltima=hours.filter(h=>h.time!==target+21*H);
+    Date.now=()=>Date.parse('2026-10-01T00:30:00Z');
+    const madrugada=semUltima.filter(h=>h.time<Date.now()/1000);
+    assert.doesNotThrow(()=>parse(madrugada),'de madrugada o dia que acabou de terminar ainda nao e conferido');
+    Date.now=()=>Date.parse('2026-10-01T12:30:00Z');
+    assert.throws(()=>parse(madrugada),/cobertura incompleta em 2026-09-30/,'passada a carencia, a hora que nao chegou e buraco');
+    Date.now=()=>Date.parse('2026-10-01T15:00:00Z');
+  }
   // Horas esparsas fora do nucleo da sessao nao sao obrigatorias.
   const sparse=[...hours,...days.slice(-8).filter(t=>t!==target).map(time=>({time:time+6*H,open:5.1,high:5.12,low:5.09,close:5.11}))];
   assert.doesNotThrow(()=>parse(sparse));

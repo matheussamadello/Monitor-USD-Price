@@ -1021,11 +1021,41 @@ export function parseYahooHibrido(textos, tf) {
   const corte = semHoras ? Infinity : montadas[1].time;
 
   const { linhas, descartadas } = linhasYahoo(textoLongo, { tolerante: !semHoras });
+  const reduzidas = [];
   if (!semHoras) {
     const agora = Date.now() / 1000;
     const ultimaFechada = montadas.filter(m => m.fim <= agora).at(-1)?.time;
     const inicio = ultimaFechada ?? montadas.at(-1).time;
     const dias = [...cobertura.keys()].sort((a, b) => a - b);
+    // A serie diaria longa tambem comprova a existencia de um pregao que
+    // pode ter sumido INTEIRO da resposta horaria (conferido mais abaixo),
+    // e a amplitude dela separa feriado de buraco no dado.
+    const sessoes = semanal && textos[2]
+      ? linhasYahoo(textos[2], { tolerante: true }).linhas : semanal ? [] : linhas;
+    const amplitudeSessao = new Map(sessoes.map((l) => [l.time, l.high - l.low]));
+    // SESSAO REDUZIDA. Em feriado no Brasil o real so cota no exterior, e
+    // pouco: em 12/10 e 02/11/2026 o Yahoo teve 3 e 1 das 10 horas do
+    // nucleo com negocio, e a amplitude da serie diaria foi 0,0087 e 0,0143,
+    // contra 0,03 a 0,07 num pregao normal. A guarda lia isso como buraco no
+    // dado e derrubava o bloco: o diario por um dia e meio, o SEMANAL por
+    // onze dias, ate a semana do feriado sair da janela -- duas vezes num
+    // mes. Feriado e' dia de pouca negociacao E de amplitude pequena na
+    // serie diaria. Buraco no dado e' hora faltando num dia de amplitude
+    // normal, e esse continua derrubando o bloco.
+    const sessaoReduzida = (dia) => {
+      const a = amplitudeSessao.get(dia);
+      const antes = sessoes.filter((l) => l.time < dia && l.time >= dia - 21 * 86400 && l.high > l.low)
+        .map((l) => l.high - l.low);
+      if (!(a >= 0) || antes.length < 5) return false;
+      return a * 2 < medianaDe(antes);
+    };
+    // Dia ENCERRADO para a guarda: o mesmo criterio do fechamento da vela
+    // (YAHOO_CARENCIA_FECHAMENTO). Logo depois da meia-noite as ultimas
+    // horas do dia ainda nao chegaram; conferir o dia nessa hora derrubava
+    // o bloco por uma execucao (cinco vezes entre 16/10 e 13/11).
+    const ultimoNegocio = Math.max(...negociadas.keys());
+    const encerrado = (t) => t + 86400 + YAHOO_CARENCIA_FECHAMENTO <= agora || t < ultimoNegocio;
+
     // Na janela que pode confirmar um evento, descarte de uma hora nao
     // pode transformar o resto do dia/semana em candle completo.
     for (const dia of invalidas)
@@ -1034,8 +1064,11 @@ export function parseYahooHibrido(textos, tf) {
     // Nao exige 24 horas: a fonte tem observacoes esparsas de madrugada.
     // Uma hora plana recebida tambem satisfaz a cobertura, sem entrar no
     // OHLC. E' uma guarda de lacunas, nao um calendario oficial de sessoes.
-    for (const dia of dias.filter(t => t >= inicio && t + 86400 <= agora)) {
-      const referencias = dias.filter(t => t < dia && t >= dia - 14 * 86400 && negociadas.has(t)).slice(-5);
+    for (const dia of dias.filter(t => t >= inicio && encerrado(t))) {
+      // Sessao reduzida tambem nao serve de referencia: com ela, o nucleo
+      // comum encolhia para uma ou duas horas nas semanas seguintes.
+      const referencias = dias.filter(t => t < dia && t >= dia - 14 * 86400 && negociadas.has(t) &&
+        !sessaoReduzida(t)).slice(-5);
       if (referencias.length < 3) throw new Error("Yahoo 1h: cobertura recente sem sessoes suficientes para conferir");
       const comuns = [...negociadas.get(referencias[0])]
         .filter(h => referencias.every(t => negociadas.get(t).has(h))).sort((a, b) => a - b);
@@ -1046,14 +1079,16 @@ export function parseYahooHibrido(textos, tf) {
       }
       const maior = Math.max(0, ...trechos.map(t => t.length));
       const esperadas = trechos.filter(t => t.length === maior).flat();
+      const comNegocio = esperadas.filter((h) => negociadas.get(dia)?.has(h)).length;
+      if (esperadas.length && comNegocio * 2 < esperadas.length && sessaoReduzida(dia)) {
+        reduzidas.push(`${fmtDia(dia)} (${comNegocio} de ${esperadas.length} horas com negocio)`);
+        continue;
+      }
       if (!esperadas.length || esperadas.some(h => !cobertura.get(dia).has(h)))
         throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
     }
-    // A serie diaria longa tambem comprova a existencia de um pregao
-    // que pode ter sumido INTEIRO da resposta horaria. Feriado sem vela
-    // negociada na fonte nao cria uma exigencia de horas artificiais.
-    const sessoes = semanal && textos[2]
-      ? linhasYahoo(textos[2], { tolerante: true }).linhas : semanal ? [] : linhas;
+    // Pregao sumido inteiro da resposta horaria. Feriado sem vela negociada
+    // na fonte nao cria uma exigencia de horas artificiais.
     for (const l of sessoes)
       if (l.time >= inicio && l.time >= corte && l.time + 86400 <= agora &&
           l.high > l.low && !cobertura.has(l.time))
@@ -1103,6 +1138,8 @@ export function parseYahooHibrido(textos, tf) {
     avisos.push(`Yahoo: candles historicos com OHLC inconsistente descartados (${perdidas.length}): ${perdidas.join(", ")}`);
   if (horasFora)
     avisos.push(`Yahoo 1h: ${horasFora} velas de 1 hora com OHLC incompleto ou inconsistente descartadas`);
+  if (reduzidas.length)
+    avisos.push(`Yahoo 1h: sessao reduzida (feriado provavel), vela montada com as horas disponiveis: ${reduzidas.join(", ")}`);
   if (semHoras)
     avisos.push(`Yahoo 1h indisponivel (${semHoras}): velas montadas da serie ${semanal ? "semanal" : "diaria"} com o fechamento reparado pela abertura seguinte`);
   return { ...serie, degradada: !!semHoras, avisosDados: avisos };
@@ -5421,7 +5458,17 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey, atr = null) {
           : null,
     });
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, 3);
+  // Duas candidatas na MESMA regiao contam uma vez so, pelo mesmo criterio
+  // de "ja representada" usado contra as faixas: sobrepostas ou coladas.
+  // Em 14/11/2026 o painel do USDT/BRL recomendava 5,5971-5,6339 e
+  // 5,5848-5,6142 como duas regioes, com 58% de sobreposicao: promover as
+  // duas criaria duas faixas para um mesmo nivel.
+  const escolhidas = [];
+  for (const c of out.sort((a, b) => b.score - a.score)) {
+    if (escolhidas.some((e) => zonaJaRepresentadaPorFaixaParaRadar(c, [e.inferior, e.superior], atr))) continue;
+    escolhidas.push(c);
+  }
+  return escolhidas.slice(0, 3);
 }
 
 // Casas decimais suficientes para o valor, sem zeros a toa: 76000 sai
@@ -5683,25 +5730,37 @@ export function leituraCurta(dia, cfg) {
   }
 
   // Qual nivel manual esta no estado mais decisivo. A ordem de
-  // ESTADOS_CURTO e' a ordem de relevancia para quem decide entrada.
+  // ESTADOS_CURTO e' a ordem de relevancia para quem decide entrada, mas
+  // so DEPOIS do que e' atual: primeiro o nivel que mudou NESTA vela,
+  // depois os que o preco ainda nao deixou para tras (afastado), e so entao
+  // o resto. Pela ordem de estado pura, em 14/11/2026 o BTC mostrava
+  // "rompimento falhou -- resistencia de 80.000", de 29/10 e com o preco
+  // 15% abaixo, no dia em que o suporte de 73.000 foi rompido.
+  const mudancas = dia.niveis_mudancas_nesta_vela || [];
+  const mudouAgora = (nv) => mudancas.some((x) => x.endsWith(`_${nv.label}`));
+  const perto = (nv) => dia[`nivel_${nv.label}_afastado`] !== "sim";
   let achado = null;
-  for (const [estado, texto] of ESTADOS_CURTO) {
-    for (const nv of niveisDoPar(cfg)) {
-      const evento = (dia.niveis_mudancas_nesta_vela || []).includes(`${estado}_${nv.label}`);
-      if (dia[`nivel_${nv.label}_estado`] !== estado && !evento) continue;
-      // O papel vem da POSICAO do fechamento, como na faixa de suporte e
-      // resistencia do cartao. Pelo nome da configuracao, o painel dizia
-      // "resistencia de 550" na leitura e "Suporte 550" logo abaixo, com o
-      // XMR fechando acima da linha que ele mesmo tinha rompido.
-      const papel = typeof fech === "number"
-        ? (fech >= nv.nivel ? "suporte" : "resistência")
-        : (nv.direcao === "alta" ? "resistência" : "suporte");
-      achado = {
-        chave: estado,
-        rotulo: texto,
-        alvo: `${papel} de ${pgValor(nv.nivel, dec)}`,
-      };
-      break;
+  for (const filtro of [mudouAgora, perto, () => true]) {
+    for (const [estado, texto] of ESTADOS_CURTO) {
+      for (const nv of niveisDoPar(cfg)) {
+        if (!filtro(nv)) continue;
+        const evento = mudancas.includes(`${estado}_${nv.label}`);
+        if (dia[`nivel_${nv.label}_estado`] !== estado && !evento) continue;
+        // O papel vem da POSICAO do fechamento, como na faixa de suporte e
+        // resistencia do cartao. Pelo nome da configuracao, o painel dizia
+        // "resistencia de 550" na leitura e "Suporte 550" logo abaixo, com o
+        // XMR fechando acima da linha que ele mesmo tinha rompido.
+        const papel = typeof fech === "number"
+          ? (fech >= nv.nivel ? "suporte" : "resistência")
+          : (nv.direcao === "alta" ? "resistência" : "suporte");
+        achado = {
+          chave: estado,
+          rotulo: texto,
+          alvo: `${papel} de ${pgValor(nv.nivel, dec)}`,
+        };
+        break;
+      }
+      if (achado) break;
     }
     if (achado) break;
   }

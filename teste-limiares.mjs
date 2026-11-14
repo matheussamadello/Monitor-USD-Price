@@ -392,6 +392,21 @@ console.log("\n== radar: zona colada numa faixa ja esta representada ==");
     "zona com o fechamento dentro sai 'no fechamento'; fora, sai o lado");
 }
 
+{
+  // Duas candidatas na mesma regiao contam uma vez (14/11/2026, USDT/BRL:
+  // 5,5971-5,6339 e 5,5848-5,6142, com 58% de sobreposicao).
+  const zz = (lo, hi, score) => ({ limites_estruturais: { inferior: lo, superior: hi }, score,
+    numero_toques: 8, status: "ativa" });
+  const lista = zonasCandidatas([zz(5.5971, 5.6339, 99), zz(5.5848, 5.6142, 92), zz(5.40, 5.42, 80)],
+    { faixas: [] }, 5.7, "diario", 0.0969);
+  ok(lista.length === 2 && lista[0].inferior === 5.5971 && lista[1].inferior === 5.40,
+    "candidata sobreposta a outra de score maior nao aparece como regiao separada");
+  const colada = zonasCandidatas([zz(5.60, 5.62, 90), zz(5.6215, 5.63, 85)], { faixas: [] }, 5.7, "diario", 0.0969);
+  ok(colada.length === 1, "colada (vao abaixo de 0,2 ATR) tambem conta como a mesma regiao");
+  const longe = zonasCandidatas([zz(5.60, 5.62, 90), zz(5.65, 5.66, 85)], { faixas: [] }, 5.7, "diario", 0.0969);
+  ok(longe.length === 2, "com vao acima de 0,2 ATR sao duas regioes");
+}
+
 console.log("\n== painel: as mesmas verificacoes do prompt sobre o radar ==");
 {
   const lidas = lerCandidatasRadar("78101.29-78336.71 score=71 toques=9 (abaixo do fechamento) | 5.0725-5.0896 score=94 toques=10 (abaixo do fechamento)");
