@@ -488,6 +488,10 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 
 | Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
+| 5,950–5,990 | `faixa_5_950_5_990` | 5,95, 5,96, 5,98, 5,987 (revisão de 2026-11-14) |
+| 5,776–5,800 | `faixa_5_776_5_800` | 5,78, 5,785, 5,79, 5,80 (revisão de 2026-11-14) |
+| 5,693–5,733 | `faixa_5_693_5_733` | 5,693, 5,695, 5,705, 5,712, 5,725, 5,727, 5,729, 5,733 (revisão de 2026-11-14) |
+| 5,605–5,650 | `faixa_5_605_5_650` | 5,607, 5,61, 5,611, 5,614, 5,614, 5,628, 5,631, 5,634, 5,64, 5,644, 5,646, 5,65 (revisão de 2026-11-14) |
 | 5,4775–5,5122 | `faixa_5_4775_5_5122` | Promovida após o alerta de 2026-10-26: zona diária `usdt\|diario\|z67`, score 71, 13 toques e 7 rejeições |
 | 5,3890–5,4255 | `faixa_5_3890_5_4255` | Promovida após o alerta de 2026-10-26: zona diária `usdt\|diario\|z66`, score 74, 15 toques e 9 rejeições |
 | 5,338–5,3465 | `faixa_5_338_5_3465` | 5,34, 5,3415, 5,3448 |
@@ -501,7 +505,16 @@ As faixas não mudam automaticamente com o ATR. A revisão preservou o número d
 | 4,946–4,965 | `faixa_4_946_4_965` | 4,955, 4,9571, 4,962, 4,965 |
 | 4,874–4,893 | `faixa_4_874_4_893` | 4,8766, 4,892 |
 
-Resistência pontual: **5,08** (era 5,31). Suporte pontual: **4,95** (era 5,15).
+Resistência pontual: **5,73** (era 5,08; antes, 5,31). Suporte pontual: **5,62** (era 4,95; antes, 5,15).
+
+**Revisão manual de 2026-11-14.** De 24/10 a 13/11 o USDT/BRL subiu de 5,01 para 5,71 e ficou acima de todas as faixas: o cartão mostrava "Resistência: nenhum nível manual". O par voltou à região onde negociou de meados de 2024 até 2025, entre 5,40 e 6,00. As contagens sobre as velas diárias da Binance desde junho de 2024 (pivôs 5/5 no diário e 2/2 no semanal) deram quatro faixas:
+
+- **5,605–5,650**, suporte: 15 pivôs diários e 5 semanais, com zonas automáticas de score 99, 100 e 89 no diário e 93 e 83 no semanal. Foi teto de 09 a 11/11, rompida em 12/11, e a mínima de 13/11 (5,6411) parou dentro dela. Respeitou 44 vezes e foi cruzada 1. É a região que o radar vinha apontando.
+- **5,693–5,733**, resistência, com o preço dentro dela no dia da revisão: 8 pivôs diários e 3 semanais, com topos de 5,712 a 5,733 em jul/2024, mai/2025 e out/2025, e zonas de score 85 e 92. A máxima de 13/11 parou em 5,728.
+- **5,776–5,800**: a agulhada de 08/11 (5,785) e topos de 5,78 a 5,80 em set/2024 e mai/2025, sobre zona diária de score 84.
+- **5,950–5,990**: topos e fundos de nov/2024 a mar/2025; respeitou 14 vezes e foi cruzada 1. As zonas automáticas dali estão enfraquecidas, sem toque há mais de um ano, e a faixa existe para o cartão não ficar sem resistência acima de 5,80.
+
+As larguras vão de 0,25 a 0,46 ATR diário, no ATR da revisão (0,0969). O teste de configuração registra esse ATR faixa a faixa, como nas promoções de outubro. A resistência pontual passou de 5,08 para **5,73**, no topo da faixa onde o preço estava: a de 5,08 foi rompida em 16/10, falhou em 18/10, foi recuperada em 25/10 e o preço se afastou 12%, então o ciclo dela tinha acabado. O suporte passou de 4,95, que ficava 13% abaixo do preço e nunca abriu registro, para **5,62**, dentro de 5,605–5,650. As linhas novas começam sem registro. Com as faixas novas, as candidatas que o radar mostrava passam a estar representadas.
 
 **Promoção após o alerta de 2026-10-26, 21h03 Brasília (27/10, 00h03 UTC).** As faixas **5,3890–5,4255** e **5,4775–5,5122** ampliam as referências acima da antiga faixa superior de 5,338–5,3465. As duas zonas diárias permaneciam ativas no relatório das 01h42 UTC: respectivamente score 74, 15 toques e 9 rejeições; score 71, 13 toques e 7 rejeições. As larguras equivalem a cerca de 0,43 e 0,41 ATR diário, dentro do teto de 0,5 ATR da calibração atual (ATR 0,084). Os limites seguem o alerta, com quatro casas decimais. A inclusão preserva todas as faixas e linhas pontuais existentes, inclusive as do USD/BRL, e não cria ciclo próprio de rompimento e reteste nem sinal de compra ou venda. A [evidência da promoção](promocao-faixas-usdt-2026-10-26.json) registra o alerta, as zonas e a configuração anterior.
 

@@ -56,8 +56,15 @@ console.log('  ok     promocao de 2026-10-10: evidencia do alerta, faixas anteri
 // Duas resistencias de USDT/BRL, autorizadas pelo alerta de 26/10 Brasilia.
 const usdtRev=JSON.parse(readFileSync(new URL('./promocao-faixas-usdt-2026-10-26.json',import.meta.url)));
 const usdt=m.PARES_TESTE.find(p=>p.key==='usdt'),labels=new Set(usdtRev.faixas.map(f=>f[2]));
+// Revisao manual de 2026-11-14: quatro faixas acima de 5,60 e as linhas
+// movidas (5,08 -> 5,73 e 4,95 -> 5,62). As verificacoes das promocoes
+// anteriores comparam a configuracao de antes dela.
+const labelsUSDT1114=['faixa_5_950_5_990','faixa_5_776_5_800','faixa_5_693_5_733','faixa_5_605_5_650'];
+assert.deepEqual(usdt.niveis.faixas.slice(0,4).map(f=>f[2]),labelsUSDT1114,'faixas de 14/11 no topo, uma vez cada');
+const usdtAntes1114={...usdt.niveis,faixas:usdt.niveis.faixas.filter(f=>!labelsUSDT1114.includes(f[2])),
+  resistencia:5.08,resistenciaLabel:'5_08',suporte:4.95,suporteLabel:'4_95'};
 assert.deepEqual(usdt.niveis.faixas.filter(f=>labels.has(f[2])),usdtRev.faixas,'faixas exatas, sem duplicacao');
-assert.deepEqual({...usdt.niveis,faixas:usdt.niveis.faixas.filter(f=>!labels.has(f[2]))},
+assert.deepEqual({...usdtAntes1114,faixas:usdtAntes1114.faixas.filter(f=>!labels.has(f[2]))},
   usdtRev.configuracao_anterior,'preserva faixas e linhas pontuais anteriores do USDT/BRL');
 assert.deepEqual(usdAntes27,usdtRev.configuracao_usd_preservada,'preserva USD/BRL anterior a sua revisao de 27/10');
 const esperado={ 'usdt|diario|z66': [74,15,9], 'usdt|diario|z67': [71,13,7] };
@@ -80,7 +87,7 @@ console.log('  ok     promocao USDT/BRL de 26/10: duas resistencias, calibracao,
 
 assert.deepEqual(cfg.niveis.faixas.filter(f=>labelsUSD27.has(f[2])),usd27.faixas,'tres faixas exatas, sem duplicacao');
 assert.deepEqual(usdAntes27,usd27.configuracao_anterior,'preserva nove faixas e niveis pontuais anteriores');
-assert.deepEqual(usdt.niveis,usd27.configuracao_usdt_preservada,'preserva todas as referencias do USDT/BRL');
+assert.deepEqual(usdtAntes1114,usd27.configuracao_usdt_preservada,'preserva todas as referencias do USDT/BRL');
 assert.ok(!cfg.niveis.faixas.some(f=>f[0]===usd27.regiao_nao_promovida.inferior&&f[1]===usd27.regiao_nao_promovida.superior));
 const evidenciasUSD27={ 'usd|diario|z48': [86,8,6], 'usd|diario|z38': [73,14,8], 'usd|diario|z27': [73,10,7] };
 for(const c of usd27.capturas){

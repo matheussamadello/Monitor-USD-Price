@@ -180,12 +180,18 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
   //   registro; passou a vigiar o piso das minimas de 09-14 a 09-27).
   //   2026-10-07 USDT/BRL: resistencia 5.31 -> 5.08 e suporte 5.15 -> 4.95
   //   (a queda de 05/10 deixou o preco abaixo de todas as faixas).
-  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0064 }, 'USDT/BRL': { suporte: 4.95, resistencia: 5.08 } };
+  //   2026-11-14 USDT/BRL: resistencia 5.08 -> 5.73 e suporte 4.95 -> 5.62;
+  //   XMR/BTC: resistencia 0.007 -> 0.00825 e suporte 0.0064 -> 0.0073
+  //   (as altas de outubro e novembro deixaram os dois pares acima de
+  //   todas as faixas).
+  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0073, resistencia: 0.00825 }, 'USDT/BRL': { suporte: 5.62, resistencia: 5.73 } };
   // Promocoes posteriores usam o ATR fechado da propria calibracao,
   // sem alterar a referencia de setembro das faixas ja existentes.
   // Alerta de 2026-10-26: promocao-faixas-usdt-2026-10-26.json, ATR 0,084.
   const ATR_PROMOCOES = {
-    'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084 },
+    'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084,
+      // Revisao manual de 2026-11-14, ATR diario 0,0969.
+      faixa_5_950_5_990: 0.0969, faixa_5_776_5_800: 0.0969, faixa_5_693_5_733: 0.0969, faixa_5_605_5_650: 0.0969 },
     // Alerta de 27/10: promocao-faixas-usd-2026-10-27.json.
     'USD/BRL': { faixa_5_5780_5_6066: 0.0986, faixa_5_3660_5_3973: 0.0986, faixa_5_4980_5_5306: 0.0987 },
   };

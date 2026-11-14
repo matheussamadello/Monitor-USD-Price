@@ -204,6 +204,10 @@ A faixa R$ 5,1966–5,2242 foi promovida em 2026-10-10 após o alerta de manuten
 
 #### USDT/BRL
 
+- R$ 5,950–5,990 — `faixa_5_950_5_990`;
+- R$ 5,776–5,800 — `faixa_5_776_5_800`;
+- R$ 5,693–5,733 — `faixa_5_693_5_733`;
+- R$ 5,605–5,650 — `faixa_5_605_5_650`;
 - R$ 5,4775–5,5122 — `faixa_5_4775_5_5122`;
 - R$ 5,3890–5,4255 — `faixa_5_3890_5_4255`;
 - R$ 5,338–5,3465 — `faixa_5_338_5_3465`;
@@ -216,12 +220,14 @@ A faixa R$ 5,1966–5,2242 foi promovida em 2026-10-10 após o alerta de manuten
 - R$ 5,025–5,044 — `faixa_5_025_5_044`;
 - R$ 4,946–4,965 — `faixa_4_946_4_965`;
 - R$ 4,874–4,893 — `faixa_4_874_4_893`;
-- resistência pontual de referência em torno de R$ 5,08 (era 5,31 até 2026-10-07);
-- suporte pontual de referência em torno de R$ 4,95 (era 5,15 até 2026-10-07).
+- resistência pontual de referência em torno de R$ 5,73 (era 5,08 até 2026-11-14 e 5,31 até 2026-10-07);
+- suporte pontual de referência em torno de R$ 5,62 (era 4,95 até 2026-11-14 e 5,15 até 2026-10-07).
+
+As quatro primeiras faixas e as duas linhas atuais são da revisão manual de 2026-11-14, depois da alta de 24/10 a 13/11 (5,01 → 5,71) que deixou o preço acima de todas as faixas. É manutenção de configuração, não sinal de mercado: não alerte pela mudança. As linhas novas começam como `sem_registro`. A faixa R$ 5,605–5,650 cobre as candidatas que o radar vinha mostrando (5,6463–5,6537, 5,5971–5,6339 e 5,5848–5,6142), e a R$ 5,693–5,733 cobre a de 5,7222–5,7358: essas regiões já estão representadas, não repita a recomendação de inclusão. A faixa R$ 5,950–5,990 só tem zonas automáticas enfraquecidas, sem toque há mais de um ano; é referência de topo antigo, mais fraca que as outras.
 
 As faixas R$ 5,3890–5,4255 e R$ 5,4775–5,5122 foram promovidas após o alerta de manutenção de 2026-10-26, 21h03 Brasília (27/10, 00h03 UTC). As zonas diárias estavam ativas, com score 74/71, 15/13 toques e 9/7 rejeições, respectivamente. As regiões já estão representadas pelas faixas manuais: não repita a recomendação de inclusão. A inclusão é manutenção de configuração, não sinal de mercado, e não cria ciclo próprio de rompimento e reteste.
 
-As três últimas faixas e as duas linhas novas são da revisão manual de 2026-10-07, depois da queda de 05/10 que deixou o preço abaixo de todas as faixas. As linhas novas começam como `sem_registro`: não há rompimento anterior a considerar nelas, e a mudança é de configuração, não de mercado — não alerte por ela. Dois efeitos esperados dessa revisão, que não são motivo de alerta nem de revisão dos níveis: (1) até o fechamento semanal de domingo, 2026-10-11, o bloco semanal mostra `rompimento_confirmado_5_08`, porque o último fechamento semanal (5,2132, de antes da queda) fica acima da linha nova — é a fotografia de uma semana já encerrada, não um rompimento; (2) a faixa 4,874–4,893 só tem zona automática no semanal (no diário a zona do fundo de maio já decaiu), então o alinhamento diário do USDT/BRL sai `parcial`, 9 de 10. O semanal já era `parcial` antes, pela faixa 5,191–5,1965.
+As três últimas faixas são da revisão manual de 2026-10-07, depois da queda de 05/10 que deixou o preço abaixo de todas as faixas. Essa revisão também levou as linhas para 5,08 e 4,95, trocadas de novo em 2026-11-14. Os efeitos passageiros dela (o `rompimento_confirmado_5_08` semanal até 2026-10-11 e o alinhamento `parcial`) já passaram e não valem para a configuração atual.
 
 São leituras de uma configuração atual, não valores eternos. Se o JSON publicar outra configuração, **prevalece o JSON**.
 
@@ -546,7 +552,7 @@ Use a resistência manual principal publicada em `niveis_manuais` do par analisa
 Na configuração atual, as referências pontuais conhecidas são aproximadamente:
 
 - **USD/BRL:** R$ 5,30;
-- **USDT/BRL:** R$ 5,08, dentro da faixa R$ 5,0725–5,0896.
+- **USDT/BRL:** R$ 5,73, no topo da faixa R$ 5,693–5,733.
 
 Se o JSON publicar outra configuração, prevalece o JSON.
 
@@ -722,7 +728,7 @@ A perda da região de suporte manual principal do par também pode evoluir para 
 Na configuração atual, as referências pontuais inferiores conhecidas são aproximadamente:
 
 - **USD/BRL:** R$ 5,13, com faixa relacionada R$ 5,05–5,12;
-- **USDT/BRL:** R$ 4,95, com faixa relacionada R$ 4,946–4,965.
+- **USDT/BRL:** R$ 5,62, com faixa relacionada R$ 5,605–5,650.
 
 Leia sempre a configuração atual do JSON. Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.
 

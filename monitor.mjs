@@ -558,6 +558,27 @@ const FONTES_CRIPTO = [
 // ------------------------------------------------------------
 const NIVEIS_USDT = {
   faixas: [
+    // Acrescentadas em 2026-11-14 por revisao manual. A alta de 24/10 a
+    // 13/11 (5,01 -> 5,71) deixou o preco acima de todas as faixas, de
+    // volta a regiao de negociacao de 2024-2025. Contagens sobre as velas
+    // diarias da Binance desde 2024-06 (pivos 5/5 no diario e 2/2 no
+    // semanal). Larguras no ATR diario da revisao, 0,0969 (teto 0,0485).
+    //   5.950-5.990  topos e fundos de nov/2024 a mar/2025: 4 pivos diarios
+    //                (5,95, 5,96, 5,98, 5,987) e 2 semanais; respeitou 14
+    //                vezes, cruzada 1. Zonas automaticas ja enfraquecidas.
+    //   5.776-5.800  4 pivos diarios (5,78, 5,79, 5,80 e a agulhada de
+    //                08/11, 5,785) e 3 semanais; zona diaria de score 84.
+    //   5.693-5.733  8 pivos diarios (topos de 5,712 a 5,733 em jul/2024,
+    //                mai/2025 e out/2025) e 3 semanais; zonas de score 85
+    //                e 92. A maxima de 13/11 parou em 5,728.
+    //   5.605-5.650  15 pivos diarios e 5 semanais; zonas de score 99, 100
+    //                e 89 no diario, 93 e 83 no semanal. Teto de 09 a
+    //                11/11, rompida em 12/11; a minima de 13/11 (5,6411)
+    //                parou dentro. Respeitou 44 vezes, cruzada 1.
+    [5.950, 5.990, "faixa_5_950_5_990"],
+    [5.776, 5.800, "faixa_5_776_5_800"],
+    [5.693, 5.733, "faixa_5_693_5_733"],
+    [5.605, 5.650, "faixa_5_605_5_650"],
     // Promovidas apos o alerta de 26/10/2026, 21h03 Brasilia (27/10 UTC).
     // usdt|diario|z67: score 71, 13 episodios e 7 rejeicoes.
     // usdt|diario|z66: score 74, 15 episodios e 9 rejeicoes.
@@ -592,15 +613,17 @@ const NIVEIS_USDT = {
     [4.946, 4.965, "faixa_4_946_4_965"],
     [4.874, 4.893, "faixa_4_874_4_893"],
   ],
-  // Movidas em 2026-10-07. A resistencia de 5,31 ficava 6% acima do preco e
-  // nunca abriu registro; o suporte de 5,15 foi rompido para baixo e o
-  // preco se afastou (ciclo encerrado). As novas vigiam as duas decisoes
-  // de agora: recuperar 5,08 (dentro de 5,0725-5,0896, o suporte mais forte
-  // ate 05/10, agora teto) ou perder 4,95 (dentro de 4,946-4,965).
-  resistencia: 5.08,
-  resistenciaLabel: "5_08",
-  suporte: 4.95,
-  suporteLabel: "4_95",
+  // Movidas em 2026-11-14. A resistencia de 5,08 foi rompida em 16/10,
+  // falhou em 18/10 e foi recuperada em 25/10; depois o preco se afastou
+  // 12% (ciclo encerrado). O suporte de 4,95
+  // ficava 13% abaixo e nunca abriu registro. As novas vigiam as duas
+  // decisoes de agora: romper o topo da faixa 5,693-5,733, onde o preco
+  // esta, ou perder 5,62 (dentro de 5,605-5,650, o teto rompido em 12/11).
+  // Antes (2026-10-07 a 2026-11-14): 5,08 e 4,95; antes disso, 5,31 e 5,15.
+  resistencia: 5.73,
+  resistenciaLabel: "5_73",
+  suporte: 5.62,
+  suporteLabel: "5_62",
 };
 
 // A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia
