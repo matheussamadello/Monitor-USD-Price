@@ -181,8 +181,13 @@ Na configuração atual do projeto, as referências conhecidas são:
 
 #### USD/BRL
 
+- R$ 5,796–5,825 — `faixa_5_796_5_825`;
+- R$ 5,730–5,765 — `faixa_5_730_5_765`;
+- R$ 5,671–5,701 — `faixa_5_671_5_701`;
+- R$ 5,625–5,637 — `faixa_5_625_5_637`;
 - R$ 5,5780–5,6066 — `faixa_5_5780_5_6066`;
 - R$ 5,4980–5,5306 — `faixa_5_4980_5_5306`;
+- R$ 5,455–5,475 — `faixa_5_455_5_475`;
 - R$ 5,3660–5,3973 — `faixa_5_3660_5_3973`;
 - R$ 5,3315–5,341 — `faixa_5_3315_5_341`;
 - R$ 5,2525–5,2675 — `faixa_5_2525_5_2675`;
@@ -193,12 +198,14 @@ Na configuração atual do projeto, as referências conhecidas são:
 - R$ 5,049–5,0545 — `regiao_suporte_5_049_5_0545`;
 - R$ 4,9945–5,0005 — `regiao_suporte_4_9945_5_0005`;
 - R$ 4,9284–4,9521 — `regiao_suporte_4_9284_4_9521`;
-- resistência pontual de referência em torno de R$ 5,30;
-- suporte pontual de referência em torno de R$ 5,13.
+- resistência pontual de referência em torno de R$ 5,70 (era 5,30 até 2026-11-15);
+- suporte pontual de referência em torno de R$ 5,63 (era 5,13 até 2026-11-15).
+
+As quatro primeiras faixas, a de R$ 5,455–5,475 e as duas linhas atuais são da revisão manual de 2026-11-15, depois do salto de 26/10 e da alta até 13/11 (5,6666), que deixaram o preço acima de todas as faixas. É manutenção de configuração, não sinal de mercado: não alerte pela mudança. As linhas novas começam como `sem_registro`. As candidatas que o radar mostrava (5,6263–5,6370, 5,6712–5,6963 e 5,4624–5,4684) passaram a ser faixas: não repita a recomendação de inclusão. A faixa R$ 5,796–5,825 só tem zona automática no semanal, então o alinhamento diário do USD/BRL sai `parcial` (16 de 17): isso é esperado e não é motivo de revisão dos níveis.
 
 As faixas R$ 5,3660–5,3973 e R$ 5,5780–5,6066 foram promovidas em 2026-10-27 após o alerta das 06h06 Brasília (09h06 UTC). A região R$ 5,5954–5,6312 ficou sem faixa própria por sobreposição com a referência superior de score 86; a união excederia o teto de largura da calibração. A decisão está registrada em `promocao-faixas-usd-2026-10-27.json`. As regiões promovidas já estão representadas: não repita a recomendação de inclusão. A terceira não exige inclusão automática nem repetição do mesmo aviso apenas por continuar no radar: só reavalie com evidência nova que justifique uma referência distinta. A manutenção não é sinal de mercado e não cria ciclo próprio de rompimento e reteste.
 
-Na conferência posterior de 27/10, a faixa R$ 5,4980–5,5306 também foi promovida (zona diária ativa, score 72, 10 toques e 6 rejeições). Ela apareceu após as inclusões anteriores liberarem vagas no radar de até três candidatas. Já está representada: não repita a recomendação. A candidata R$ 5,4624–5,4684 continua em observação, pois tem largura de pivô único e score 70, abaixo do mínimo adicional de 80: não recomende sua promoção enquanto esse filtro não for satisfeito.
+Na conferência posterior de 27/10, a faixa R$ 5,4980–5,5306 também foi promovida (zona diária ativa, score 72, 10 toques e 6 rejeições). Ela apareceu após as inclusões anteriores liberarem vagas no radar de até três candidatas. Já está representada: não repita a recomendação. A candidata R$ 5,4624–5,4684, que então tinha score 70 e ficou em observação, subiu para 81 e virou a faixa R$ 5,455–5,475 na revisão de 2026-11-15.
 
 A faixa R$ 5,1966–5,2242 foi promovida em 2026-10-10 após o alerta de manutenção: zona diária ativa, score 77, 10 toques, 6 rejeições e confirmação semanal. A inclusão é manutenção de configuração, não movimento novo do mercado, e não cria ciclo próprio de rompimento e reteste. A região já está representada pelas faixas manuais: não repita a recomendação de inclusão.
 
@@ -551,7 +558,7 @@ Use a resistência manual principal publicada em `niveis_manuais` do par analisa
 
 Na configuração atual, as referências pontuais conhecidas são aproximadamente:
 
-- **USD/BRL:** R$ 5,30;
+- **USD/BRL:** R$ 5,70, no topo da faixa R$ 5,671–5,701;
 - **USDT/BRL:** R$ 5,73, no topo da faixa R$ 5,693–5,733.
 
 Se o JSON publicar outra configuração, prevalece o JSON.
@@ -727,7 +734,7 @@ A perda da região de suporte manual principal do par também pode evoluir para 
 
 Na configuração atual, as referências pontuais inferiores conhecidas são aproximadamente:
 
-- **USD/BRL:** R$ 5,13, com faixa relacionada R$ 5,05–5,12;
+- **USD/BRL:** R$ 5,63, com faixa relacionada R$ 5,625–5,637;
 - **USDT/BRL:** R$ 5,62, com faixa relacionada R$ 5,605–5,650.
 
 Leia sempre a configuração atual do JSON. Não transforme uma simples aproximação ou perfuração intradiária em confirmação conservadora.

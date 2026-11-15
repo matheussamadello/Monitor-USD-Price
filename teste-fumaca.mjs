@@ -563,7 +563,8 @@ ok(typeof j.diario["USDT/BRL"].volume_vs_media_pct === "number",
 ok(j.diario["USDT/BRL"].niveis_manuais.faixas[0].label ===
     PARES_TESTE.find((p) => p.key === "usdt").niveis.faixas[0][2],
   "cada par publica as SUAS faixas manuais");
-ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label === "faixa_5_5780_5_6066",
+ok(j.diario["USD/BRL"].niveis_manuais.faixas[0].label ===
+    PARES_TESTE.find((p) => p.key === "usd").niveis.faixas[0][2],
   "as faixas do cambio nao foram trocadas pelas do cripto");
 
 console.log("\n== perda de suporte: corpo, nao so fechamento ==");

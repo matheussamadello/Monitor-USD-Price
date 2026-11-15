@@ -119,6 +119,28 @@ const TIMEFRAMES = [
 // zona, e o diario foi a 4 de 4.
 const NIVEIS_USD = {
   faixas: [
+    // Acrescentadas em 2026-11-15 por revisao manual. O salto de 26/10
+    // (4,99 -> 5,37, maxima 5,6053) e a alta ate 13/11 (5,6666) deixaram o
+    // preco acima de todas as faixas. Contagens sobre as velas diarias
+    // hibridas do Yahoo desde 2024-06 (pivos 5/5 no diario, 2/2 no
+    // semanal), ATR diario da revisao 0,0795 (teto 0,0398).
+    //   5.796-5.825  topos semanais de 2020, 2021, 2024 e 2025 (5,8035,
+    //                5,8028, 5,8242 e 5,7976); segurou 22 vezes, cruzada 3.
+    //                So tem zona SEMANAL (z57): o diario sai parcial.
+    //   5.730-5.765  topos de 21/10/2024, 07/05 e 23/05/2025 (5,7345, 5,7624
+    //                e 5,7449) e fundo de 06/03/2025 (5,7320); segurou 17
+    //                vezes, cruzada 2. Zonas diaria z49 e semanal z41.
+    //   5.671-5.701  candidata do radar usd|diario|z41 (score 85, 8 toques):
+    //                topos de jul, ago e set/2024 (5,7009, 5,6926 e 5,6763),
+    //                fundo de 18/02/2025 (5,6749) e topos semanais de 2020 e
+    //                2024. A maxima de 13/11 parou em 5,6718.
+    //   5.625-5.637  candidata do radar usd|diario|z62 (score 100, 9 toques,
+    //                7 rejeicoes): fundos de 07/11/2024 e 19/03/2025, topos
+    //                de jul/2025; segurou 23 vezes. Minima de 13/11: 5,6291.
+    [5.796, 5.825, "faixa_5_796_5_825"],
+    [5.730, 5.765, "faixa_5_730_5_765"],
+    [5.671, 5.701, "faixa_5_671_5_701"],
+    [5.625, 5.637, "faixa_5_625_5_637"],
     // Promovidas em 27/10/2026 apos o alerta de 09h06 UTC.
     // usd|diario|z48: score 86, 8 episodios e 6 rejeicoes.
     // usd|diario|z65: score 72, 10 episodios e 6 rejeicoes; revelada
@@ -128,6 +150,12 @@ const NIVEIS_USD = {
     // Evidencia: promocao-faixas-usd-2026-10-27.json. ATR: 0,0986.
     [5.5780, 5.6066, "faixa_5_5780_5_6066"],
     [5.4980, 5.5306, "faixa_5_4980_5_5306"],
+    // Acrescentada em 2026-11-15: a candidata do radar usd|diario|z61
+    // (5,4624-5,4684) subiu para score 81 e passou nos filtros. Fundo de
+    // 17/06/2025 (5,4654) e pivos semanais de 2021 (5,4602, 5,4718 e
+    // 5,4606); foi teto em 30/10 (maxima 5,4617). Zonas semanais z90 e
+    // z74 (score 83). A mais fraca da revisao: segurou 32, cruzada 15.
+    [5.455, 5.475, "faixa_5_455_5_475"],
     [5.3660, 5.3973, "faixa_5_3660_5_3973"],
     // Faixas fixas revistas por pivos/reacoes em 2026-09-25; teto de 0,5 ATR na calibracao.
     // Evidencia: reajuste-faixas-manuais-2026-09-25.json. Pontos de rompimento intactos.
@@ -149,10 +177,15 @@ const NIVEIS_USD = {
     // Evidencia: revisao-zonas-2026-10-07.json. Nao cria ciclo pontual.
     [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
-  resistencia: 5.30,
-  resistenciaLabel: "5_30",
-  suporte: 5.13,
-  suporteLabel: "5_13",
+  // Movidas em 2026-11-15. A resistencia de 5,30 foi rompida e o preco
+  // ficou 6,5% acima; o suporte de 5,13 teve o rompimento falhado e ficou
+  // 9,5% abaixo. As novas vigiam as decisoes de agora: romper o topo da
+  // regiao de topos de 2024 (5,70, topo de 5,671-5,701) ou perder 5,63
+  // (dentro de 5,625-5,637). Antes: 5,30 e 5,13.
+  resistencia: 5.70,
+  resistenciaLabel: "5_70",
+  suporte: 5.63,
+  suporteLabel: "5_63",
 };
 
 // ------------------------------------------------------------

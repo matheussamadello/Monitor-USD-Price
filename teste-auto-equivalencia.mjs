@@ -20,20 +20,31 @@ try {
  //   2026-10-07: USDT/BRL 5.025-5.044, 4.946-4.965, 4.874-4.893.
  //   2026-11-14: USDT/BRL 5.950-5.990, 5.776-5.800, 5.693-5.733, 5.605-5.650;
  //   XMR/BTC 0.00819-0.00829 e 0.00729-0.0074.
+ //   2026-11-15: BTC/USD 66800-67300, 62150-62550, 57700-58900; USD/BRL
+ //   5.796-5.825, 5.730-5.765, 5.671-5.701, 5.625-5.637, 5.455-5.475.
  const FAIXAS_POSTERIORES=['faixa_83750_84550','faixa_86250_86550','faixa_558_568',
   'faixa_5_025_5_044','faixa_4_946_4_965','faixa_4_874_4_893',
   'faixa_5_950_5_990','faixa_5_776_5_800','faixa_5_693_5_733','faixa_5_605_5_650',
-  'faixa_0_00819_0_00829','faixa_0_00729_0_0074'];
+  'faixa_0_00819_0_00829','faixa_0_00729_0_0074',
+  'faixa_66800_67300','faixa_62150_62550','faixa_57700_58900',
+  'faixa_5_796_5_825','faixa_5_730_5_765','faixa_5_671_5_701','faixa_5_625_5_637','faixa_5_455_5_475'];
  // Linhas pontuais movidas depois da captura: a linha nova nao tem registro
  // no estado gravado e a maquina a avalia na vela gravada.
  //   2026-10-07: USDT/BRL resistencia 5.31 -> 5.08, suporte 5.15 -> 4.95.
  //   2026-11-14: USDT/BRL 5.08 -> 5.73 e 4.95 -> 5.62; XMR/BTC 0.007 ->
  //   0.00825 e 0.0064 -> 0.0073.
+ //   2026-11-15: BTC/USD 80000 -> 67000 e 73000 -> 64600; USD/BRL 5.30 ->
+ //   5.70 e 5.13 -> 5.63.
  const LINHAS_POSTERIORES=['usdt_rompe_5_08','usdt_perde_4_95',
-  'usdt_rompe_5_73','usdt_perde_5_62','btc_rompe_000825','btc_perde_000730'];
+  'usdt_rompe_5_73','usdt_perde_5_62','btc_rompe_000825','btc_perde_000730',
+  'usd_rompe_67000','usd_perde_64600','usd_rompe_5_70','usd_perde_5_63'];
+ // Linhas RETIRADAS depois da captura: o gatilho gravado delas nao pode
+ // mais aparecer, porque a linha nao existe na configuracao.
+ //   2026-11-15: BTC/USD 80000 (a captura de 09-25 tinha usd_rompe_80000).
+ const LINHAS_RETIRADAS=['usd_rompe_80000'];
  const posterior=g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f))||LINHAS_POSTERIORES.includes(g.id);
  assert.ok(r.gatilhos.filter(g=>FAIXAS_POSTERIORES.some(f=>g.id.endsWith('_'+f))).every(g=>/entrou na regiao/.test(g.msg)),'faixa nova so acrescenta o aviso de entrada');
- assert.deepEqual(r.gatilhos.filter(g=>!posterior(g)),ref.gatilhos_antes,'geometria nao altera gatilhos na mesma entrada');
+ assert.deepEqual(r.gatilhos.filter(g=>!posterior(g)),ref.gatilhos_antes.filter(g=>!LINHAS_RETIRADAS.includes(g.id)),'geometria nao altera gatilhos na mesma entrada');
  for(const p of ref.pares){
   const cfg=m.PARES_TESTE.find(c=>c.label===p.par),k=cfg.key+'|'+p.tf;
   assert.deepEqual(r.zonas[k].map(medida),p.depois,'score, toques e rejeicoes reais reproduziveis');

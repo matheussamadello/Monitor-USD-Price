@@ -184,7 +184,12 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
   //   XMR/BTC: resistencia 0.007 -> 0.00825 e suporte 0.0064 -> 0.0073
   //   (as altas de outubro e novembro deixaram os dois pares acima de
   //   todas as faixas).
-  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0073, resistencia: 0.00825 }, 'USDT/BRL': { suporte: 5.62, resistencia: 5.73 } };
+  //   2026-11-15 BTC/USD: resistencia 80000 -> 67000 e suporte 73000 ->
+  //   64600 (a queda ate 64.115 deixou o preco na faixa mais baixa);
+  //   USD/BRL: resistencia 5.30 -> 5.70 e suporte 5.13 -> 5.63 (o salto de
+  //   26/10 deixou o preco acima de todas as faixas).
+  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0073, resistencia: 0.00825 }, 'USDT/BRL': { suporte: 5.62, resistencia: 5.73 },
+    'BTC/USD': { suporte: 64600, resistencia: 67000 }, 'USD/BRL': { suporte: 5.63, resistencia: 5.70 } };
   // Promocoes posteriores usam o ATR fechado da propria calibracao,
   // sem alterar a referencia de setembro das faixas ja existentes.
   // Alerta de 2026-10-26: promocao-faixas-usdt-2026-10-26.json, ATR 0,084.
@@ -193,7 +198,11 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
       // Revisao manual de 2026-11-14, ATR diario 0,0969.
       faixa_5_950_5_990: 0.0969, faixa_5_776_5_800: 0.0969, faixa_5_693_5_733: 0.0969, faixa_5_605_5_650: 0.0969 },
     // Alerta de 27/10: promocao-faixas-usd-2026-10-27.json.
-    'USD/BRL': { faixa_5_5780_5_6066: 0.0986, faixa_5_3660_5_3973: 0.0986, faixa_5_4980_5_5306: 0.0987 },
+    'USD/BRL': { faixa_5_5780_5_6066: 0.0986, faixa_5_3660_5_3973: 0.0986, faixa_5_4980_5_5306: 0.0987,
+      // Revisao manual de 2026-11-15, ATR diario 0,0795. (As do BTC/USD da
+      // mesma revisao cabem no teto da referencia de setembro.)
+      faixa_5_796_5_825: 0.0795, faixa_5_730_5_765: 0.0795, faixa_5_671_5_701: 0.0795,
+      faixa_5_625_5_637: 0.0795, faixa_5_455_5_475: 0.0795 },
   };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);

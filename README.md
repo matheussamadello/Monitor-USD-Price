@@ -533,8 +533,13 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 
 | Faixa atual | Label | Pivôs confirmados incluídos |
 | --- | --- | --- |
+| 5,796–5,825 | `faixa_5_796_5_825` | topos semanais de 5,7976, 5,8028, 5,8035 e 5,8242 (revisão de 2026-11-15) |
+| 5,730–5,765 | `faixa_5_730_5_765` | 5,7320, 5,7345, 5,7449, 5,7624 (revisão de 2026-11-15) |
+| 5,671–5,701 | `faixa_5_671_5_701` | 5,6749, 5,6763, 5,6926, 5,7009 (revisão de 2026-11-15) |
+| 5,625–5,637 | `faixa_5_625_5_637` | 5,6277, 5,6298, 5,6316, 5,6335 (revisão de 2026-11-15) |
 | 5,5780–5,6066 | `faixa_5_5780_5_6066` | Promovida em 2026-10-27: zona diária `usd\|diario\|z48`, score 86, 8 toques e 6 rejeições |
 | 5,4980–5,5306 | `faixa_5_4980_5_5306` | Promovida na conferência de 2026-10-27: zona diária `usd\|diario\|z65`, score 72, 10 toques e 6 rejeições |
+| 5,455–5,475 | `faixa_5_455_5_475` | 5,4654 e os semanais de 2021 5,4602, 5,4606 e 5,4718 (revisão de 2026-11-15) |
 | 5,3660–5,3973 | `faixa_5_3660_5_3973` | Promovida em 2026-10-27: zona diária `usd\|diario\|z38`, score 73, 14 toques e 8 rejeições |
 | 5,3315–5,341 | `faixa_5_3315_5_341` | 5,33284521, 5,33850002, 5,33970022 |
 | 5,2525–5,2675 | `faixa_5_2525_5_2675` | 5,25400019, 5,25812817, 5,26617479 |
@@ -546,7 +551,17 @@ Nenhuma sobrepõe outra faixa: a mais próxima é 5,1525–5,162, a 0,0155 acima
 | 4,9945–5,0005 | `regiao_suporte_4_9945_5_0005` | 4,99590015, 4,99780607, 4,99849987, 4,99900007 |
 | 4,9284–4,9521 | `regiao_suporte_4_9284_4_9521` | Promovida em 2026-10-07: pivôs de 4,9404, 4,9305, 4,9500 e 4,9387 |
 
-Resistência pontual: **5,3**. Suporte pontual: **5,13**.
+Resistência pontual: **5,70** (era 5,30 até 2026-11-15). Suporte pontual: **5,63** (era 5,13 até 2026-11-15).
+
+**Revisão manual de 2026-11-15.** O salto de 26/10 (de 4,99 para 5,37, com máxima de 5,6053) e a alta até 13/11 (5,6666) deixaram o USD/BRL acima de todas as faixas, com o radar apontando três regiões. As contagens sobre as velas diárias híbridas do Yahoo desde junho de 2024 (pivôs 5/5 no diário e 2/2 no semanal) deram cinco faixas:
+
+- **5,625–5,637**, suporte: a candidata do radar de score 100 (`usd|diario|z62`, 9 toques e 7 rejeições), com fundos de nov/2024 e mar/2025 e topos de jul/2025. Segurou 23 vezes; a mínima de 13/11 (5,6291) parou nela.
+- **5,671–5,701**, resistência logo acima do preço: a candidata do radar de score 85 (`usd|diario|z41`), com topos de jul, ago e set/2024 (5,7009, 5,6926 e 5,6763) e topos semanais de 2020 e 2024. A máxima de 13/11 parou em 5,6718.
+- **5,730–5,765**: topos de out/2024 e mai/2025; segurou 17 vezes e foi cruzada 2.
+- **5,796–5,825**: topos semanais de 2020, 2021, 2024 e 2025; segurou 22 vezes e foi cruzada 3. Só tem zona automática no semanal, então o alinhamento diário do USD/BRL sai `parcial` (16 de 17). É esperado.
+- **5,455–5,475**, entre duas faixas que já existiam: a candidata do radar `usd|diario|z61` (5,4624–5,4684), que subiu para score 81 e passou nos filtros, com o fundo de jun/2025 e pivôs semanais de 2021; foi teto em 30/10. É a mais fraca das cinco: segurou 32 vezes e foi cruzada 15.
+
+As larguras vão de 0,15 a 0,44 ATR diário, no ATR da revisão (0,0795); o teste de configuração registra esse ATR faixa a faixa. Ficaram de fora 5,862–5,877 (o preço atravessou quase tanto quanto foi rejeitado) e os picos de 6,10–6,12, 7,6% acima. A resistência pontual passou de 5,30, rompida e 6,5% abaixo do preço, para **5,70**, no topo de 5,671–5,701: romper exige fechar acima de cerca de 5,72. O suporte passou de 5,13, com o rompimento falhado e 9,5% abaixo, para **5,63**, dentro de 5,625–5,637: perder exige fechar abaixo de cerca de 5,61. O último fechamento fica entre as duas linhas novas, então não há efeito passageiro. Com as faixas novas, o radar do USD/BRL fica vazio.
 
 **Promoção de 2026-10-27.** Após o alerta de manutenção das 06h06 Brasília (09h06 UTC), foram incluídas **5,3660–5,3973** e **5,5780–5,6066**, preservando as nove faixas anteriores e os níveis pontuais. A primeira é uma região de reação próxima do fechamento de 5,3716; a segunda é a referência superior de maior score, sem penalidades na zona automática. Na conferência das 16h50 UTC, as larguras correspondiam a cerca de 0,32 e 0,29 ATR diário (ATR 0,0986). Os limites seguem o alerta com quatro casas decimais. A terceira candidata, **5,5954–5,6312**, permaneceu sem faixa manual própria: sobrepõe a referência superior e a união das duas excederia o teto de 0,5 ATR. Ela continua na memória automática conforme seu ciclo de vida e fica registrada para reavaliação. A [evidência da decisão](promocao-faixas-usd-2026-10-27.json) documenta as três candidatas e a configuração anterior. A manutenção não altera as faixas do USDT/BRL nem cria ciclo próprio de rompimento e reteste ou sinal de compra e venda.
 
@@ -1278,8 +1293,17 @@ Exemplo da estrutura atual:
 ```js
 const NIVEIS_USD = {
   faixas: [
+    [5.796, 5.825, "faixa_5_796_5_825"],
+    [5.730, 5.765, "faixa_5_730_5_765"],
+    [5.671, 5.701, "faixa_5_671_5_701"],
+    [5.625, 5.637, "faixa_5_625_5_637"],
+    [5.5780, 5.6066, "faixa_5_5780_5_6066"],
+    [5.4980, 5.5306, "faixa_5_4980_5_5306"],
+    [5.455, 5.475, "faixa_5_455_5_475"],
+    [5.3660, 5.3973, "faixa_5_3660_5_3973"],
     [5.3315, 5.341, "faixa_5_3315_5_341"],
     [5.2525, 5.2675, "faixa_5_2525_5_2675"],
+    [5.1966, 5.2242, "faixa_5_1966_5_2242"],
     [5.168, 5.181, "faixa_5_168_5_181"],
     [5.129, 5.1395, "faixa_5_129_5_1395"],
     [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
@@ -1287,10 +1311,10 @@ const NIVEIS_USD = {
     [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
     [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
   ],
-  resistencia: 5.30,
-  resistenciaLabel: "5_30",
-  suporte: 5.13,
-  suporteLabel: "5_13",
+  resistencia: 5.70,
+  resistenciaLabel: "5_70",
+  suporte: 5.63,
+  suporteLabel: "5_63",
 };
 ```
 

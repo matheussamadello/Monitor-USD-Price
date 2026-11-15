@@ -7,9 +7,18 @@ const f=JSON.parse(readFileSync(new URL('./fixture-promocao-usd-2026-10-07.json'
 const cfg=m.PARES_TESTE.find(p=>p.key==='usd'),faixa=cfg.niveis.faixas.find(x=>x[2]===f.faixa[2]);
 const usd27=JSON.parse(readFileSync(new URL('./promocao-faixas-usd-2026-10-27.json',import.meta.url)));
 const labelsUSD27=new Set(usd27.faixas.map(f=>f[2]));
+// Revisao manual de 2026-11-15: cinco faixas e as linhas movidas (5,30 ->
+// 5,70 e 5,13 -> 5,63). As verificacoes das promocoes anteriores comparam
+// a configuracao de antes dela.
+const labelsUSD1115=['faixa_5_796_5_825','faixa_5_730_5_765','faixa_5_671_5_701','faixa_5_625_5_637','faixa_5_455_5_475'];
+assert.deepEqual(cfg.niveis.faixas.filter(f=>labelsUSD1115.includes(f[2])).map(f=>f[2]),labelsUSD1115,
+  'faixas de 15/11, uma vez cada');
+assert.deepEqual(cfg.niveis.faixas.slice(0,4).map(f=>f[2]),labelsUSD1115.slice(0,4),'as quatro de cima no topo');
+const usdAntes1115={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>!labelsUSD1115.includes(f[2])),
+  resistencia:5.3,resistenciaLabel:'5_30',suporte:5.13,suporteLabel:'5_13'};
 // A revisao de 27/10 acrescenta tres faixas: as capturas anteriores
 // continuam verificando todos os limites e linhas que ja existiam.
-const usdAntes27={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>!labelsUSD27.has(f[2]))};
+const usdAntes27={...usdAntes1115,faixas:usdAntes1115.faixas.filter(f=>!labelsUSD27.has(f[2]))};
 assert.deepEqual(faixa,f.faixa);
 assert.ok(faixa[0]<=f.zona.limites_estruturais.inferior&&faixa[1]>=f.zona.limites_estruturais.superior);
 const atr=m.atrSeries(f.serie.highs,f.serie.lows,f.serie.closes).at(-1);
@@ -123,7 +132,7 @@ assert.deepEqual([zAd.score,zAd.numero_toques,zAd.numero_rejeicoes],[72,10,6]);
 const fAd=usd27.faixas.find(f=>f[2]==='faixa_5_4980_5_5306');
 assert.deepEqual([zAd.limites_estruturais.inferior,zAd.limites_estruturais.superior].map(x=>Number(x.toFixed(4))),fAd.slice(0,2));
 assert.ok(fAd[1]-fAd[0]<=.5*adicional.atr14);
-const semAd={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>f[2]!==fAd[2])};
+const semAd={...usdAntes1115,faixas:usdAntes1115.faixas.filter(f=>f[2]!==fAd[2])};
 assert.equal(m.motivoObservacaoRadar({...zAd.limites_estruturais,score:zAd.score},semAd.faixas,adicional.atr14),null);
 assert.equal(m.zonasCandidatas([zAd],semAd,adicional.fechamento,'diario',adicional.atr14).length,1);
 assert.deepEqual(m.zonasCandidatas([zAd],cfg.niveis,adicional.fechamento,'diario',adicional.atr14),[]);
