@@ -203,6 +203,9 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
       // mesma revisao cabem no teto da referencia de setembro.)
       faixa_5_796_5_825: 0.0795, faixa_5_730_5_765: 0.0795, faixa_5_671_5_701: 0.0795,
       faixa_5_625_5_637: 0.0795, faixa_5_455_5_475: 0.0795 },
+    // Promocao de 2026-11-17 apontada pelo radar: zona diaria de 1.313 de
+    // largura, ATR diario 2.631 no relatorio de 2026-11-15.
+    'BTC/USD': { faixa_70800_72100: 2631 },
   };
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);

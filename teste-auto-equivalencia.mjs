@@ -22,11 +22,12 @@ try {
  //   XMR/BTC 0.00819-0.00829 e 0.00729-0.0074.
  //   2026-11-15: BTC/USD 66800-67300, 62150-62550, 57700-58900; USD/BRL
  //   5.796-5.825, 5.730-5.765, 5.671-5.701, 5.625-5.637, 5.455-5.475.
+ //   2026-11-17: BTC/USD 70800-72100.
  const FAIXAS_POSTERIORES=['faixa_83750_84550','faixa_86250_86550','faixa_558_568',
   'faixa_5_025_5_044','faixa_4_946_4_965','faixa_4_874_4_893',
   'faixa_5_950_5_990','faixa_5_776_5_800','faixa_5_693_5_733','faixa_5_605_5_650',
   'faixa_0_00819_0_00829','faixa_0_00729_0_0074',
-  'faixa_66800_67300','faixa_62150_62550','faixa_57700_58900',
+  'faixa_66800_67300','faixa_62150_62550','faixa_57700_58900','faixa_70800_72100',
   'faixa_5_796_5_825','faixa_5_730_5_765','faixa_5_671_5_701','faixa_5_625_5_637','faixa_5_455_5_475'];
  // Linhas pontuais movidas depois da captura: a linha nova nao tem registro
  // no estado gravado e a maquina a avalia na vela gravada.
