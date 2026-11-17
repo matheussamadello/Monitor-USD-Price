@@ -601,6 +601,8 @@ Essa distinção não é detalhe. A página mostra no máximo três zonas de cad
 
 Era o caso do monitor de BTC quando este campo foi criado. Nenhuma das três faixas manuais atingia o limite de sobreposição em nenhum dos dois timeframes, e as duas do diário ficavam logo abaixo dele porque estavam cerca de 1.500 dólares abaixo de onde o mercado reagia: a zona automática de score 99 ficava em 79.536 a 81.093, contra a faixa configurada de 78.000 a 80.000. Nada no relatório dizia isso, porque o único campo que olhava as faixas media distância até o preço. O sinal existia por zona, em `confluencia_faixa_manual`, mas nunca era somado.
 
+**A contagem pode mudar sem o mercado mudar.** A sobreposição é medida contra a janela operacional de cada zona, o centro ± 0,25 ATR atual, e não contra os limites estruturais. Uma faixa que está no limite da sobreposição mínima (0,35) entra e sai da contagem quando o ATR sobe ou desce. Em 2026-11-17 era o caso da faixa mais funda do USDT/BRL, 4,874–4,893: a zona diária que a corrobora cobria 34% dela, e o alinhamento diário alternava entre 16 de 16 e 15 de 16. O relatório publica a contagem, não o nome da faixa; os prompts tratam uma queda de uma unidade, sozinha, como insuficiente para pedir revisão.
+
 `obsoleto` não é alerta de mercado: é aviso de manutenção. Significa que os níveis descrevem um regime que ficou para trás e precisam de revisão.
 
 ### Perda de suporte: forte x fraca
@@ -1286,9 +1288,9 @@ Em um fork com outro nome de usuário/repositório, ajuste os URLs usados por bo
 
 ## Personalizando níveis e faixas
 
-A configuração manual fica no objeto `NIVEIS_USD` de `monitor.mjs`.
+A configuração manual fica em dois objetos de `monitor.mjs`: `NIVEIS_USD` (USD/BRL) e `NIVEIS_USDT` (USDT/BRL), com a mesma estrutura.
 
-Exemplo da estrutura atual:
+Exemplo da estrutura atual, a do USD/BRL:
 
 ```js
 const NIVEIS_USD = {
