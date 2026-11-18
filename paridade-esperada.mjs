@@ -147,6 +147,8 @@ export const PRESENCA_ESPERADA = {
   sessaoCambio: ["Monitor-USD-Price"],
   YAHOO_HORARIO: ["Monitor-USD-Price"],
   YAHOO_CARENCIA_FECHAMENTO: ["Monitor-USD-Price"],
+  // Descartes da serie longa ja examinados, que nao repetem o aviso.
+  DESCARTES_YAHOO_REVISADOS: ["Monitor-USD-Price"],
   parseBinance: ["Monitor-USD-Price"],
   parseMercadoBitcoin: ["Monitor-USD-Price"],
   montarSerie: ["Monitor-USD-Price"],

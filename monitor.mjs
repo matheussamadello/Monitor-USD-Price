@@ -517,6 +517,15 @@ const HOSTS_YAHOO = ["query1", "query2"];
 // uma correcao aplicada num repositorio so.
 const AGENTE_HTTP = "usd-monitor/1.0";
 
+// Velas da serie longa do Yahoo que ele devolve com OHLC impossivel ou
+// incompleto em toda consulta, ja examinadas. Continuam DESCARTADAS --
+// nada muda no calculo --, so deixam de aparecer em dados_avisos. Sem
+// isto, a semana de 2023-11-20 saia no bloco semanal do USD/BRL de hora
+// em hora desde setembro de 2026, e um aviso que nunca muda ensina a nao
+// ler avisos. Uma data NOVA descartada continua avisando. Chave:
+// "timeframe|data da vela".
+export const DESCARTES_YAHOO_REVISADOS = new Set(["semanal|2023-11-20"]);
+
 // Duas consultas por host: as horas, de onde sai a vela, e a serie longa
 // do timeframe, para o historico anterior as horas. Ver parseYahooHibrido.
 const FONTES_CAMBIO = HOSTS_YAHOO.map((host) => ({
@@ -1042,7 +1051,7 @@ function horasYahoo(texto) {
   return { horas: horas.sort((a, b) => a.t - b.t), descartadas, cobertura, negociadas, invalidas };
 }
 
-export function parseYahooHibrido(textos, tf) {
+export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISADOS) {
   const [textoHorario, textoLongo] = textos;
   const periodo = tf?.segundos || 86400;
   const semanal = periodo === SEMANA;
@@ -1188,7 +1197,8 @@ export function parseYahooHibrido(textos, tf) {
   // das horas. Um dia que as horas cobrem nao se perdeu.
   const ini = serie.times.length ? fmtDia(serie.times[0]) : "";
   const ate = Number.isFinite(corte) ? fmtDia(corte) : "9999";
-  const perdidas = descartadas.filter((dia) => dia >= ini && dia < ate);
+  const perdidas = descartadas.filter((dia) => dia >= ini && dia < ate &&
+    !revisados.has(`${semanal ? "semanal" : "diario"}|${dia}`));
   const avisos = [];
   if (perdidas.length)
     avisos.push(`Yahoo: candles historicos com OHLC inconsistente descartados (${perdidas.length}): ${perdidas.join(", ")}`);
@@ -5340,19 +5350,19 @@ function pgEstruturaVisual(v, recente, dec, id, titulo) {
   const resumo = v && !v.completa
     ? `${v.topos.length} de 4 topos e ${v.fundos.length} de 4 fundos disponíveis.` : "";
   const explicacao = pgExplicacaoEstruturaVisual(v, titulo);
-  const ajudaJanela = pgAjuda({ rotulo: "Sequência ampliada" },
-    `aj-janela-${id}`, explicacao + (resumo ? " " + resumo : ""));
+  // UM "?" so, ao lado do valor, como na linha da estrutura recente. Eram
+  // dois lado a lado, no rotulo e no valor, e abriam o mesmo texto.
   const ajuda = pgAjuda({ rotulo: v ? v.rotulo : "Sequência ampliada indisponível" },
-    `aj-sequencia-${id}`, explicacao);
+    `aj-sequencia-${id}`, explicacao + (resumo ? " " + resumo : ""));
   const sintese = `<p class="estrutura-sintese">${pgEsc(pgSinteseEstrutural(recente, v))}</p>`;
-  if (!v) return `<div class="estrutura-ampliada"><div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span><strong class="fraco">Indisponível${ajuda}</strong></div>${sintese}</div>`;
+  if (!v) return `<div class="estrutura-ampliada"><div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada</span><strong class="fraco">Indisponível${ajuda}</strong></div>${sintese}</div>`;
   const classe = v.tendencia === "alta" ? "alta" : v.tendencia === "baixa" ? "baixa" : "fraco";
   const contagem = (c) => `${c.subindo} subindo · ${c.caindo} caindo · ${c.iguais} iguais`;
   const lista = (pontos) => pontos.length
     ? pontos.map((p) => `${pgEsc(fmtDia(p.time))}: ${pgNum(p.preco, dec)}`).join("<br>")
     : "Nenhum confirmado";
   return `<div class="estrutura-ampliada">` +
-    `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada${ajudaJanela}</span>` +
+    `<div class="estrutura-resumo estrutura-ajuda"><span>Sequência ampliada</span>` +
     `<strong class="${classe}">${pgEsc(v.rotulo)}${ajuda}</strong></div>` +
     sintese + `<details><summary>Ver pivôs e comparações</summary>` +
     `<p>Topos: ${pgEsc(contagem(v.comparacoes.topos))}<br>` +

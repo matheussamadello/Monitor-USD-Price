@@ -917,6 +917,15 @@ if (typeof m.parseYahooHibrido === "function") await teste("USD/BRL montado das 
     assert.equal(tol.closes[tol.times.indexOf(qua)], s.closes[i], "vela ruim na serie longa nao mexe no que vem das horas");
     assert.match(tol.avisosDados.join(" "), /descartados \(1\): 2025-06-04/,
       "o aviso cita so a data que faz falta");
+    // Descarte ja examinado sai do aviso, mas continua descartado; a
+    // mesma data noutro timeframe continua avisando.
+    const revisto = m.parseYahooHibrido([resp(horas), resp(estragada)], diario, new Set(["diario|2025-06-04"]));
+    assert.ok(!revisto.avisosDados.some((a) => a.includes("2025-06-04")), "descarte revisado nao repete o aviso");
+    assert.deepEqual(revisto.closes, tol.closes, "e a serie e' a mesma: a vela continua fora");
+    const outroTf = m.parseYahooHibrido([resp(horas), resp(estragada)], diario, new Set(["semanal|2025-06-04"]));
+    assert.match(outroTf.avisosDados.join(" "), /descartados \(1\): 2025-06-04/, "a chave inclui o timeframe");
+    assert.deepEqual([...m.DESCARTES_YAHOO_REVISADOS], ["semanal|2023-11-20"],
+      "lista curta e explicada no README: cada entrada foi examinada");
     const semHorasRuim = [null, resp(estragada)]; semHorasRuim.falhas = ["HTTP 503"];
     assert.throws(() => m.parseYahooHibrido(semHorasRuim, diario), /mais recente|incompleto/,
       "sem as horas a regra dura volta: a cotacao atual sairia dessa serie");

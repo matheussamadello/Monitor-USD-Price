@@ -156,14 +156,14 @@ try {
       assert.ok(tooltip.includes(tf === "diario" ? "após 5 velas fechadas à direita" : "após 2 velas semanais fechadas à direita"));
       assert.ok(tooltip.includes("Atrasa de propósito"));
       assert.ok(tooltip.length <= 300, `balao da estrutura recente com ${tooltip.length} caracteres`);
-      for (const tipo of ["janela", "sequencia"]) {
-        const ajuda = pagina.match(new RegExp(`id="aj-${tipo}-${par.key}-${tf}" role="tooltip">([^<]+)`))?.[1];
-        assert.ok(ajuda?.includes("4 topos e 4 fundos confirmados"));
-        assert.ok(ajuda.includes("janela mais ampla"));
-        assert.ok(ajuda.includes("diferença de horizonte, não contradição"));
-        assert.ok(ajuda.includes(tf === "diario" ? "fractal 5/5" : "fractal 2/2"));
-        assert.ok(ajuda.length <= 380, `balao da sequencia ampliada com ${ajuda.length} caracteres`);
-      }
+      // Um "?" so na sequencia ampliada: o do rotulo repetia o do valor.
+      assert.ok(!pagina.includes(`aj-janela-${par.key}-${tf}`), "sem a ajuda duplicada do rotulo");
+      const ajuda = pagina.match(new RegExp(`id="aj-sequencia-${par.key}-${tf}" role="tooltip">([^<]+)`))?.[1];
+      assert.ok(ajuda?.includes("4 topos e 4 fundos confirmados"));
+      assert.ok(ajuda.includes("janela mais ampla"));
+      assert.ok(ajuda.includes("diferença de horizonte, não contradição"));
+      assert.ok(ajuda.includes(tf === "diario" ? "fractal 5/5" : "fractal 2/2"));
+      assert.ok(ajuda.length <= 380, `balao da sequencia ampliada com ${ajuda.length} caracteres`);
     }
   }
   const chips = structuredClone(json);
