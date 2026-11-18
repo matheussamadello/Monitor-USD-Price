@@ -173,51 +173,40 @@ teste('filhos novos continuam sujeitos a duas velas e evidencia independente', (
 });
 teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', () => {
   const ref = JSON.parse(readFileSync(new URL('./reajuste-faixas-manuais-2026-09-25.json', import.meta.url)));
-  // Revisoes manuais POSTERIORES ao reajuste que moveram um nivel pontual
-  // de proposito. Registradas aqui uma a uma: fora desta lista, o nivel
-  // continua preso ao valor do reajuste.
-  //   2026-09-28 XMR/BTC: suporte 0.00584 -> 0.0064 (nunca tinha aberto
-  //   registro; passou a vigiar o piso das minimas de 09-14 a 09-27).
-  //   2026-10-07 USDT/BRL: resistencia 5.31 -> 5.08 e suporte 5.15 -> 4.95
-  //   (a queda de 05/10 deixou o preco abaixo de todas as faixas).
-  //   2026-11-14 USDT/BRL: resistencia 5.08 -> 5.73 e suporte 4.95 -> 5.62;
-  //   XMR/BTC: resistencia 0.007 -> 0.00825 e suporte 0.0064 -> 0.0073
-  //   (as altas de outubro e novembro deixaram os dois pares acima de
-  //   todas as faixas).
-  //   2026-11-15 BTC/USD: resistencia 80000 -> 67000 e suporte 73000 ->
-  //   64600 (a queda ate 64.115 deixou o preco na faixa mais baixa);
-  //   USD/BRL: resistencia 5.30 -> 5.70 e suporte 5.13 -> 5.63 (o salto de
-  //   26/10 deixou o preco acima de todas as faixas).
-  const PONTUAIS_REVISTOS = { 'XMR/BTC': { suporte: 0.0073, resistencia: 0.00825 }, 'USDT/BRL': { suporte: 5.62, resistencia: 5.73 },
-    'BTC/USD': { suporte: 64600, resistencia: 67000 }, 'USD/BRL': { suporte: 5.63, resistencia: 5.70 } };
-  // Promocoes posteriores usam o ATR fechado da propria calibracao,
-  // sem alterar a referencia de setembro das faixas ja existentes.
-  // Alerta de 2026-10-26: promocao-faixas-usdt-2026-10-26.json, ATR 0,084.
-  const ATR_PROMOCOES = {
-    'USDT/BRL': { faixa_5_4775_5_5122: 0.084, faixa_5_3890_5_4255: 0.084,
-      // Revisao manual de 2026-11-14, ATR diario 0,0969.
-      faixa_5_950_5_990: 0.0969, faixa_5_776_5_800: 0.0969, faixa_5_693_5_733: 0.0969, faixa_5_605_5_650: 0.0969 },
-    // Alerta de 27/10: promocao-faixas-usd-2026-10-27.json.
-    'USD/BRL': { faixa_5_5780_5_6066: 0.0986, faixa_5_3660_5_3973: 0.0986, faixa_5_4980_5_5306: 0.0987,
-      // Revisao manual de 2026-11-15, ATR diario 0,0795. (As do BTC/USD da
-      // mesma revisao cabem no teto da referencia de setembro.)
-      faixa_5_796_5_825: 0.0795, faixa_5_730_5_765: 0.0795, faixa_5_671_5_701: 0.0795,
-      faixa_5_625_5_637: 0.0795, faixa_5_455_5_475: 0.0795 },
-    // Promocao de 2026-11-17 apontada pelo radar: zona diaria de 1.313 de
-    // largura, ATR diario 2.631 no relatorio de 2026-11-15.
-    'BTC/USD': { faixa_70800_72100: 2631 },
-  };
+  // As revisoes depois do reajuste vem do historico da propria
+  // configuracao (niveis.revisoes): a data de cada faixa acrescentada, o
+  // ATR diario que limitou a largura dela, e as linhas pontuais anteriores.
+  // Nenhuma lista de revisoes mora neste teste.
   for (const r of ref.faixas_manuais) {
     const cfg = m.PARES_TESTE.find(p => p.key === r.key);
-    const rev = PONTUAIS_REVISTOS[r.par] || {};
-    assert.equal(cfg.niveis.suporte, rev.suporte ?? r.suporte_pontual);
-    assert.equal(cfg.niveis.resistencia, rev.resistencia ?? r.resistencia_pontual);
+    const rev = cfg.niveis.revisoes || {};
+    // Na calibracao as linhas eram as do reajuste. Uma linha so muda com
+    // a entrada correspondente em revisoes.linhasAnteriores.
+    const naCalibracao = m.niveisEm(cfg.niveis, '2026-09-25');
+    assert.equal(naCalibracao.suporte, r.suporte_pontual);
+    assert.equal(naCalibracao.resistencia, r.resistencia_pontual);
+    const ates = (rev.linhasAnteriores || []).map(l => l.ate);
+    assert.deepEqual(ates, [...ates].sort(), 'linhas anteriores em ordem de data');
+    for (const l of rev.linhasAnteriores || [])
+      assert.ok(l.ate > '2026-09-25' && typeof l.resistencia === 'number' && typeof l.suporte === 'number'
+        && l.resistenciaLabel && l.suporteLabel, `linha anterior completa ate ${l.ate}`);
     // O reajuste de 2026-09-25 continua valendo faixa a faixa. Promocoes
     // posteriores do radar ACRESCENTAM faixas e nao podem mexer nas
     // reajustadas, entao a correspondencia com o audit passou a ser por
     // label. O que segue vale so para as reajustadas, porque compara cada
     // uma com o estado dela ANTES do reajuste.
     const porLabel = new Map(cfg.niveis.faixas.map(f => [f[2], f]));
+    // Historico completo: toda faixa fora do reajuste tem data de entrada,
+    // e nenhuma do reajuste tem.
+    const doReajuste = new Set(r.depois.map(f => f[2]));
+    for (const [, , label] of cfg.niveis.faixas)
+      assert.equal(doReajuste.has(label), !rev.faixas?.[label], `historico da faixa ${label}`);
+    for (const [label, v] of Object.entries(rev.faixas || {})) {
+      assert.ok(porLabel.has(label), `revisao de faixa que nao esta configurada: ${label}`);
+      assert.match(v.desde, /^\d{4}-\d{2}-\d{2}$/);
+      assert.ok(v.desde >= '2026-09-25', `faixa ${label} posterior a calibracao`);
+      assert.ok(v.atr === undefined || v.atr > 0, `ATR de calibracao de ${label}`);
+    }
     assert.equal(r.antes.length, r.depois.length, 'o reajuste nao multiplica faixas manuais');
     for (const [i, esperada] of r.depois.entries()) {
       assert.deepEqual(porLabel.get(esperada[2]), esperada, `faixa reajustada ${esperada[2]} intacta`);
@@ -234,7 +223,7 @@ teste('faixas manuais respeitam o teto da calibracao e mantem niveis pontuais', 
     // configurada, inclusive as promovidas depois do reajuste.
     for (const [lo, hi, label] of cfg.niveis.faixas) {
       assert.ok(lo < hi);
-      const atrCalibracao = ATR_PROMOCOES[r.par]?.[label] ?? r.atr_diario_referencia;
+      const atrCalibracao = rev.faixas?.[label]?.atr ?? r.atr_diario_referencia;
       assert.ok(hi - lo <= .5 * atrCalibracao + 1e-10, `largura da faixa ${label} no ATR da calibracao`);
       const ind = {rsi:null,adx:null,diPlus:null,diMinus:null,divergencias:[],estruturaEventos:[],enfraquecimento:[],padroes:[],mudancasNivel:[]};
       const alertas = preco => m.alertasTecnicos(cfg, {live:{close:preco,high:preco,low:preco},opens:[preco],closes:[preco]}, ind);

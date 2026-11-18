@@ -186,6 +186,30 @@ const NIVEIS_USD = {
   resistenciaLabel: "5_70",
   suporte: 5.63,
   suporteLabel: "5_63",
+  // Historico das revisoes depois da calibracao de 2026-09-25. Os testes
+  // leem daqui: quando cada faixa acrescentada entrou ("desde"; as sem
+  // entrada sao da calibracao), o ATR diario que limitou a largura dela
+  // quando nao foi o de referencia de setembro ("atr"), e as linhas
+  // pontuais anteriores, cada uma valendo ate a data em "ate" (exclusive).
+  // niveisEm() reconstroi daqui a configuracao de qualquer data. Revisar
+  // niveis mexe so neste objeto, no README e no prompt.
+  revisoes: {
+    faixas: {
+      faixa_5_796_5_825: { desde: "2026-11-15", atr: 0.0795 },
+      faixa_5_730_5_765: { desde: "2026-11-15", atr: 0.0795 },
+      faixa_5_671_5_701: { desde: "2026-11-15", atr: 0.0795 },
+      faixa_5_625_5_637: { desde: "2026-11-15", atr: 0.0795 },
+      faixa_5_5780_5_6066: { desde: "2026-10-27", atr: 0.0986 },
+      faixa_5_4980_5_5306: { desde: "2026-10-27", atr: 0.0987 },
+      faixa_5_455_5_475: { desde: "2026-11-15", atr: 0.0795 },
+      faixa_5_3660_5_3973: { desde: "2026-10-27", atr: 0.0986 },
+      faixa_5_1966_5_2242: { desde: "2026-10-10" },
+      regiao_suporte_4_9284_4_9521: { desde: "2026-10-07" },
+    },
+    linhasAnteriores: [
+      { ate: "2026-11-15", resistencia: 5.3, resistenciaLabel: "5_30", suporte: 5.13, suporteLabel: "5_13" },
+    ],
+  },
 };
 
 // ------------------------------------------------------------
@@ -666,6 +690,32 @@ const NIVEIS_USDT = {
   resistenciaLabel: "5_73",
   suporte: 5.62,
   suporteLabel: "5_62",
+  // Historico das revisoes depois da calibracao de 2026-09-25. Os testes
+  // leem daqui: quando cada faixa acrescentada entrou ("desde"; as sem
+  // entrada sao da calibracao), o ATR diario que limitou a largura dela
+  // quando nao foi o de referencia de setembro ("atr"), e as linhas
+  // pontuais anteriores, cada uma valendo ate a data em "ate" (exclusive).
+  // niveisEm() reconstroi daqui a configuracao de qualquer data. Revisar
+  // niveis mexe so neste objeto, no README e no prompt.
+  revisoes: {
+    faixas: {
+      faixa_5_950_5_990: { desde: "2026-11-14", atr: 0.0969 },
+      faixa_5_776_5_800: { desde: "2026-11-14", atr: 0.0969 },
+      faixa_5_693_5_733: { desde: "2026-11-14", atr: 0.0969 },
+      faixa_5_605_5_650: { desde: "2026-11-14", atr: 0.0969 },
+      faixa_5_4775_5_5122: { desde: "2026-10-26", atr: 0.084 },
+      faixa_5_3890_5_4255: { desde: "2026-10-26", atr: 0.084 },
+      faixa_5_12_5_137: { desde: "2026-09-26" },
+      faixa_5_0725_5_0896: { desde: "2026-09-26" },
+      faixa_5_025_5_044: { desde: "2026-10-07" },
+      faixa_4_946_4_965: { desde: "2026-10-07" },
+      faixa_4_874_4_893: { desde: "2026-10-07" },
+    },
+    linhasAnteriores: [
+      { ate: "2026-10-07", resistencia: 5.31, resistenciaLabel: "5_31", suporte: 5.15, suporteLabel: "5_15" },
+      { ate: "2026-11-14", resistencia: 5.08, resistenciaLabel: "5_08", suporte: 4.95, suporteLabel: "4_95" },
+    ],
+  },
 };
 
 // A ORDEM IMPORTA: o USD/BRL vem primeiro porque e' a referencia
@@ -2404,6 +2454,25 @@ export function alinhamentoNiveis(niveis, zonas) {
       ? "desalinhado"
       : "parcial";
   return { situacao, corroboradas, total: faixas.length, semZona };
+}
+
+// Os niveis como estavam numa data (AAAA-MM-DD), pelo historico em
+// niveis.revisoes: sem as faixas que entraram depois dela e com as linhas
+// pontuais da epoca. Serve aos testes que conferem capturas gravadas
+// contra a configuracao de quando foram feitas; o monitor so usa a atual.
+export function niveisEm(niveis, data) {
+  const rev = niveis.revisoes || {};
+  const faixas = niveis.faixas.filter(([, , label]) => !(rev.faixas?.[label]?.desde > data));
+  const linhas = (rev.linhasAnteriores || []).find((l) => data < l.ate) || niveis;
+  const out = {
+    faixas,
+    resistencia: linhas.resistencia,
+    resistenciaLabel: linhas.resistenciaLabel,
+    suporte: linhas.suporte,
+    suporteLabel: linhas.suporteLabel,
+  };
+  if (niveis.resistenciaMacro) out.resistenciaMacro = niveis.resistenciaMacro;
+  return out;
 }
 
 export function situacaoNiveis(niveis, preco, atr) {

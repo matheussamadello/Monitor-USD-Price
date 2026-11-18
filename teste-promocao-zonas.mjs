@@ -7,18 +7,12 @@ const f=JSON.parse(readFileSync(new URL('./fixture-promocao-usd-2026-10-07.json'
 const cfg=m.PARES_TESTE.find(p=>p.key==='usd'),faixa=cfg.niveis.faixas.find(x=>x[2]===f.faixa[2]);
 const usd27=JSON.parse(readFileSync(new URL('./promocao-faixas-usd-2026-10-27.json',import.meta.url)));
 const labelsUSD27=new Set(usd27.faixas.map(f=>f[2]));
-// Revisao manual de 2026-11-15: cinco faixas e as linhas movidas (5,30 ->
-// 5,70 e 5,13 -> 5,63). As verificacoes das promocoes anteriores comparam
-// a configuracao de antes dela.
-const labelsUSD1115=['faixa_5_796_5_825','faixa_5_730_5_765','faixa_5_671_5_701','faixa_5_625_5_637','faixa_5_455_5_475'];
-assert.deepEqual(cfg.niveis.faixas.filter(f=>labelsUSD1115.includes(f[2])).map(f=>f[2]),labelsUSD1115,
-  'faixas de 15/11, uma vez cada');
-assert.deepEqual(cfg.niveis.faixas.slice(0,4).map(f=>f[2]),labelsUSD1115.slice(0,4),'as quatro de cima no topo');
-const usdAntes1115={...cfg.niveis,faixas:cfg.niveis.faixas.filter(f=>!labelsUSD1115.includes(f[2])),
-  resistencia:5.3,resistenciaLabel:'5_30',suporte:5.13,suporteLabel:'5_13'};
-// A revisao de 27/10 acrescenta tres faixas: as capturas anteriores
-// continuam verificando todos os limites e linhas que ja existiam.
-const usdAntes27={...usdAntes1115,faixas:usdAntes1115.faixas.filter(f=>!labelsUSD27.has(f[2]))};
+// Cada promocao e' conferida contra a configuracao de ANTES dela,
+// reconstruida do historico em niveis.revisoes por niveisEm: sem as faixas
+// que entraram depois e com as linhas pontuais da epoca. Uma revisao nova
+// nao mexe neste arquivo.
+const usdAntes1115=m.niveisEm(cfg.niveis,'2026-11-14');
+const usdAntes27=m.niveisEm(cfg.niveis,'2026-10-26');
 assert.deepEqual(faixa,f.faixa);
 assert.ok(faixa[0]<=f.zona.limites_estruturais.inferior&&faixa[1]>=f.zona.limites_estruturais.superior);
 const atr=m.atrSeries(f.serie.highs,f.serie.lows,f.serie.closes).at(-1);
@@ -65,16 +59,10 @@ console.log('  ok     promocao de 2026-10-10: evidencia do alerta, faixas anteri
 // Duas resistencias de USDT/BRL, autorizadas pelo alerta de 26/10 Brasilia.
 const usdtRev=JSON.parse(readFileSync(new URL('./promocao-faixas-usdt-2026-10-26.json',import.meta.url)));
 const usdt=m.PARES_TESTE.find(p=>p.key==='usdt'),labels=new Set(usdtRev.faixas.map(f=>f[2]));
-// Revisao manual de 2026-11-14: quatro faixas acima de 5,60 e as linhas
-// movidas (5,08 -> 5,73 e 4,95 -> 5,62). As verificacoes das promocoes
-// anteriores comparam a configuracao de antes dela.
-const labelsUSDT1114=['faixa_5_950_5_990','faixa_5_776_5_800','faixa_5_693_5_733','faixa_5_605_5_650'];
-assert.deepEqual(usdt.niveis.faixas.slice(0,4).map(f=>f[2]),labelsUSDT1114,'faixas de 14/11 no topo, uma vez cada');
-const usdtAntes1114={...usdt.niveis,faixas:usdt.niveis.faixas.filter(f=>!labelsUSDT1114.includes(f[2])),
-  resistencia:5.08,resistenciaLabel:'5_08',suporte:4.95,suporteLabel:'4_95'};
+const usdtAntes1114=m.niveisEm(usdt.niveis,'2026-11-13');
 assert.deepEqual(usdt.niveis.faixas.filter(f=>labels.has(f[2])),usdtRev.faixas,'faixas exatas, sem duplicacao');
-assert.deepEqual({...usdtAntes1114,faixas:usdtAntes1114.faixas.filter(f=>!labels.has(f[2]))},
-  usdtRev.configuracao_anterior,'preserva faixas e linhas pontuais anteriores do USDT/BRL');
+assert.deepEqual(m.niveisEm(usdt.niveis,'2026-10-25'),usdtRev.configuracao_anterior,
+  'preserva faixas e linhas pontuais anteriores do USDT/BRL');
 assert.deepEqual(usdAntes27,usdtRev.configuracao_usd_preservada,'preserva USD/BRL anterior a sua revisao de 27/10');
 const esperado={ 'usdt|diario|z66': [74,15,9], 'usdt|diario|z67': [71,13,7] };
 for(const c of usdtRev.capturas){

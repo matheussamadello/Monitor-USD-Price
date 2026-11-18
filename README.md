@@ -1297,40 +1297,44 @@ Em um fork com outro nome de usuário/repositório, ajuste os URLs usados por bo
 
 ## Personalizando níveis e faixas
 
-A configuração manual fica em dois objetos de `monitor.mjs`: `NIVEIS_USD` (USD/BRL) e `NIVEIS_USDT` (USDT/BRL), com a mesma estrutura.
-
-Exemplo da estrutura atual, a do USD/BRL:
+A configuração manual fica em dois objetos de `monitor.mjs`: `NIVEIS_USD` (USD/BRL) e `NIVEIS_USDT` (USDT/BRL), com a mesma estrutura e o motivo de cada faixa em comentário; as listas de faixas, mais acima, repetem os valores para leitura. O formato, no do USD/BRL:
 
 ```js
 const NIVEIS_USD = {
   faixas: [
+    // [inferior, superior, label], de cima para baixo
     [5.796, 5.825, "faixa_5_796_5_825"],
     [5.730, 5.765, "faixa_5_730_5_765"],
-    [5.671, 5.701, "faixa_5_671_5_701"],
-    [5.625, 5.637, "faixa_5_625_5_637"],
-    [5.5780, 5.6066, "faixa_5_5780_5_6066"],
-    [5.4980, 5.5306, "faixa_5_4980_5_5306"],
-    [5.455, 5.475, "faixa_5_455_5_475"],
-    [5.3660, 5.3973, "faixa_5_3660_5_3973"],
-    [5.3315, 5.341, "faixa_5_3315_5_341"],
-    [5.2525, 5.2675, "faixa_5_2525_5_2675"],
-    [5.1966, 5.2242, "faixa_5_1966_5_2242"],
-    [5.168, 5.181, "faixa_5_168_5_181"],
-    [5.129, 5.1395, "faixa_5_129_5_1395"],
-    [5.068, 5.0805, "regiao_suporte_5_068_5_0805"],
-    [5.049, 5.0545, "regiao_suporte_5_049_5_0545"],
-    [4.9945, 5.0005, "regiao_suporte_4_9945_5_0005"],
-    [4.9284, 4.9521, "regiao_suporte_4_9284_4_9521"],
+    // ...
   ],
   resistencia: 5.70,
   resistenciaLabel: "5_70",
   suporte: 5.63,
   suporteLabel: "5_63",
+  revisoes: {
+    faixas: {
+      faixa_5_796_5_825: { desde: "2026-11-15", atr: 0.0795 },
+      // ...
+    },
+    linhasAnteriores: [
+      { ate: "2026-11-15", resistencia: 5.3, resistenciaLabel: "5_30", suporte: 5.13, suporteLabel: "5_13" },
+    ],
+  },
 };
 ```
 
 As faixas são automaticamente refletidas em `niveis_manuais.faixas` no `relatorio.json`.
 
+**`revisoes` é o histórico das mudanças depois da calibração de 2026-09-25, e é dele que os testes leem.** Em `faixas`, cada faixa acrescentada depois da calibração tem a data em que entrou (`desde`) e, quando ficou mais larga que o teto da calibração de setembro (0,5 ATR diário de referência), o ATR diário que a limitou (`atr`). Em `linhasAnteriores`, cada par de linhas pontuais anterior, valendo até a data em `ate`. A função `niveisEm(niveis, data)` reconstrói daí a configuração de qualquer data: é assim que os testes de replay e de promoção comparam capturas antigas com a configuração de quando foram feitas.
+
+### Roteiro de uma revisão de níveis
+
+1. Em `monitor.mjs`, acrescente ou mova as faixas e as linhas, com o motivo em comentário, e registre a mudança em `revisoes`: a faixa nova com `desde` (e `atr`, se for mais larga que 0,5 ATR da referência de setembro); a linha movida com uma entrada nova em `linhasAnteriores`, com os valores antigos e `ate` igual à data da mudança.
+2. No README, a faixa na tabela e um parágrafo com a evidência. No prompt, a faixa na lista e, se a mudança deixar algum efeito passageiro, uma nota curta com a data em que ele acaba.
+3. Rode a bateria de testes. O retrato (`teste-retrato.txt`) muda com os níveis: confira que só mudaram linhas ligadas a eles e atualize com `node teste-retrato.mjs --atualizar`.
+4. Commit, push e, para ver no ar, rode o workflow do monitor.
+
+Até 2026-11-18 cada revisão também acrescentava a faixa ou a linha a listas dentro dos testes compartilhados (`teste-zonas.mjs` e `teste-auto-equivalencia.mjs`, nos três repositórios) e, no USD, reconstruía à mão a configuração anterior em `teste-promocao-zonas.mjs`. Uma faixa nova mexia em cerca de dez arquivos; agora mexe em três (`monitor.mjs`, README e prompt), mais o retrato. Se faltar a entrada em `revisoes`, `teste-zonas.mjs` falha e diz qual faixa; se uma linha mudar sem entrada em `linhasAnteriores`, ele falha na conferência das linhas da calibração.
 Ao alterar níveis pontuais, mantenha coerentes o valor e o respectivo label, pois o label participa dos nomes de campos da máquina de estados publicada no relatório.
 
 ## Usando o JSON com bots, agentes e LLMs
