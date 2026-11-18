@@ -374,7 +374,7 @@ Isso também resolveu uma incoerência anterior: `rompimento_confirmado` é aval
 
 ### Estrutura recente e sequência ampliada no painel
 
-O título **Estrutura dos últimos pivôs confirmados** delimita a leitura recente: dois topos e dois fundos, sem concluir a tendência geral do ativo. Os seis valores canônicos não mudam. Na página, `estrutura_de_baixa` aparece como `estrutura_recente_de_baixa`, e `estrutura_de_alta_preservada` como `estrutura_recente_de_alta_preservada`; chips de eventos estruturais também qualificam o horizonte recente. Relatório, estado, histórico, prompts e automações conservam os identificadores originais.
+O título **Estrutura dos últimos pivôs confirmados** delimita a leitura recente: dois topos e dois fundos, sem concluir a tendência geral do ativo. Os seis valores canônicos não mudam. Na página, `estrutura_de_baixa` aparece como "Estrutura recente de baixa", e `estrutura_de_alta_preservada` como "Estrutura recente de alta preservada"; as etiquetas de eventos estruturais também falam do horizonte recente. Relatório, estado, histórico, prompts e automações conservam os identificadores originais.
 
 | Pivôs recentes | Sequência ampliada | Síntese visual |
 |---|---|---|
@@ -840,7 +840,7 @@ A página serve a dois leitores ao mesmo tempo, com prioridades opostas.
 
 Não há regra por **horário**, de propósito. Quem quer tema escuro à noite já liga o agendamento automático do próprio sistema, e o `prefers-color-scheme` entrega isso de graça. Uma regra própria brigaria com quem escolheu claro deliberadamente, e faria a página mudar de cara sozinha conforme a hora de abrir — o que se lê como defeito, não como recurso. O tema claro **só redefine tokens de cor**: nenhuma regra de layout existe duas vezes, então os dois não têm como divergir de estrutura. Há um teste que compara os dois conjuntos de tokens e falha se alguém acrescentar uma cor no escuro e esquecer do claro — senão o tema claro herdaria uma cor de fundo escuro em silêncio.
 
-Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI e ADX com DI+/DI− (ambos rotulados com os períodos daquele timeframe), estrutura —, mais os alertas técnicos como etiquetas.
+Para **você**: um cartão do **USDT/BRL** com o resumo dos dois timeframes — último fechamento, lado e distância da EMA89 **em porcentagem**, RSI e ADX com DI+/DI− (ambos rotulados com os períodos daquele timeframe), estrutura —, mais os alertas técnicos como etiquetas em português (o identificador do relatório fica no *title* de cada uma: passe o mouse).
 
 **Suporte e resistência no cartão (2026-09-28).** Logo abaixo da cotação, cada cartão mostra o **suporte** e a **resistência** manuais mais próximos, com a distância em porcentagem até a borda mais próxima. Abaixo de 0,1% o cartão escreve **encostado** no lugar do número, porque "+0,0%" parecia erro. Entram as faixas, os níveis pontuais e a resistência macro, quando existe. O papel vem da **posição**, não do nome na configuração: a "resistência" de 550 do XMR, rompida para cima, passa a aparecer como suporte quando o preço está acima dela. Nível pontual traz também o estado do fechamento diário (rompido, em reteste, reteste confirmado, rompimento falhou, recuperado). Se o preço estiver dentro de uma faixa, ela aparece entre os dois. Antes, cada coluna tinha uma linha "Níveis manuais" com `atual`, `monitorar` ou `obsoleto` e o rótulo da faixa mais próxima. Isso é a situação de **manutenção** das faixas, repetida nos dois timeframes, e só olhava faixas: no XMR, com o preço a 2% da linha de 550 e a 7% da faixa de 498–503, o cartão dizia "monitorar faixa_498_503". A situação continua no relatório (`niveis_manuais_situacao`), que é onde o prompt a lê. A leitura é feita contra a cotação do cabeçalho, uma vez por cartão, porque os níveis manuais são os mesmos nos dois timeframes.
 
@@ -864,7 +864,9 @@ Tudo isso é só apresentação: o relatório não mudou.
 
 **Coerência visual (2026-11-18).**
 
-- a sequência ampliada tinha dois "?" lado a lado, no rótulo e no valor, e os dois abriam o mesmo texto. Ficou só o do valor, como na linha da estrutura recente; com a sequência incompleta, ele também diz quantos topos e fundos já existem.
+- a sequência ampliada tinha dois "?" lado a lado, no rótulo e no valor, e os dois abriam o mesmo texto. Ficou só o do valor, como na linha da estrutura recente; com a sequência incompleta, ele também diz quantos topos e fundos já existem;
+- as etiquetas de alerta mostravam o identificador do relatório, como `adx_subindo_com_di_minus_dominante` ou `toque_suporte_intradiario_64600`. Agora saem em português: "ADX subindo com vendedores no comando", "Tocou 64.600 na vela em formação, sem fechar abaixo", "Preço na faixa 64.600–65.700". Os números usam o formato da faixa de suporte e resistência do cartão, e o identificador continua no *title* da etiqueta para conferir com o relatório. A tradução fica em `ROTULOS_ETIQUETA` e `rotuloEtiqueta`; um código sem rótulo sai cru, nunca some, e o teste de estrutura visual falha se o motor ganhar um alerta sem rótulo;
+- a síntese `perda_de_suporte_confirmada` repetia, em português, o alerta `perda_suporte_confirmada_X` do mesmo cartão (o mesmo vale para `rompimento_falhou`). Quando o alerta com a linha existe, ele sai em vermelho e a síntese não ganha etiqueta própria.
 
 **O ATR não aparece no cartão**, e a distância da EMA89 sai em porcentagem em vez de em múltiplos de ATR. Isso é só apresentação, e a razão é que ATR é unidade de **cálculo**, não leitura de relance: `0,0418` é muito ou pouco dependendo do par, enquanto `0,56%` se lê na hora.
 

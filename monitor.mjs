@@ -5095,9 +5095,8 @@ dl{margin:0;display:grid;gap:8px}
 .estrutura-ampliada summary{cursor:pointer;color:var(--acento)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;
   padding-top:13px;border-top:1px dashed var(--linha)}
-.chip{font:11px/1 var(--mono);padding:5px 9px;border-radius:6px;
-  background:var(--chip-bg);border:1px solid var(--chip-borda);color:var(--chip-txt)}
-.chip.estrutura-chip{max-width:100%;overflow-wrap:anywhere;line-height:1.4}
+.chip{font-size:12.5px;line-height:1.35;padding:4px 9px;border-radius:6px;max-width:100%;
+  overflow-wrap:anywhere;background:var(--chip-bg);border:1px solid var(--chip-borda);color:var(--chip-txt)}
 .chip.risco{background:var(--risco-bg);border-color:var(--risco-borda);color:var(--risco-txt)}
 .chip.vazio{background:none;border-color:var(--linha);color:var(--fraco)}
 .falha{margin:0;font:13px/1.5 var(--mono);color:var(--baixa)}
@@ -5238,33 +5237,127 @@ function pgLinha(rotulo, valor, classe, ajuda = "") {
   return `<div class="m${ajuda ? " estrutura-ajuda" : ""}"><dt>${pgEsc(rotulo)}</dt><dd class="${classe || ""}">${valor}${ajuda}</dd></div>`;
 }
 
-// Um item aparece UMA vez. alertas_tecnicos e deterioracao_tendencia se
-// sobrepoem de proposito -- a segunda e' sintese da primeira --, e
-// pintar a mesma string duas vezes em duas cores so confunde. Quem
-// esta nas duas sai como risco; quem so esta na sintese entra depois.
-// Somente rotulos do HTML. Os identificadores canonicos continuam nos
-// relatorios, estado, historico, prompts e regras de alerta.
-const ROTULOS_CHIPS_ESTRUTURA = {
-  estrutura_de_alta_preservada: "estrutura_recente_de_alta_preservada",
-  estrutura_de_baixa: "estrutura_recente_de_baixa",
-  estrutura_perda_estrutura_alta_novo_LL: "estrutura_recente_perda_estrutura_alta_novo_LL",
-  estrutura_topo_mais_baixo_apos_HH: "estrutura_recente_topo_mais_baixo_apos_HH",
-  perda_estrutura_alta_novo_LL: "perda_estrutura_recente_alta_novo_LL",
-  di_minus_dominante_com_estrutura_nao_altista: "di_minus_dominante_com_estrutura_recente_nao_altista",
+// Etiquetas do cartao em portugues. Eram os identificadores crus do
+// relatorio (adx_subindo_com_di_minus_dominante, toque_suporte_
+// intradiario_64600), legiveis para quem escreveu o codigo e para o
+// agente, nao para quem olha o painel. So a PAGINA traduz: relatorio,
+// JSON, estado, historico, prompts e regras de alerta continuam com os
+// identificadores, e cada etiqueta guarda o seu no title (passe o mouse)
+// para conferir com o relatorio. Codigo que nao estiver aqui sai cru:
+// melhor um identificador feio que uma etiqueta sumida. O teste de
+// estrutura visual confere que todo codigo que o motor gera tem rotulo.
+//
+// "Estrutura recente" e' a dos ultimos 2 topos e 2 fundos, a mesma do
+// cartao; nao e' a tendencia geral, que fica na sequencia ampliada.
+export const ROTULOS_ETIQUETA = {
+  rsi_acima_70: "RSI acima de 70",
+  rsi_abaixo_30: "RSI abaixo de 30",
+  di_plus_cruzando_acima_di_minus: "DI+ cruzou acima do DI−: compradores à frente",
+  di_minus_cruzando_acima_di_plus: "DI− cruzou acima do DI+: vendedores à frente",
+  adx_subindo_com_di_plus_dominante: "ADX subindo com compradores no comando",
+  adx_subindo_com_di_minus_dominante: "ADX subindo com vendedores no comando",
+  divergencia_bullish_regular_confirmada: "Divergência de alta no RSI, confirmada",
+  divergencia_bearish_regular_confirmada: "Divergência de baixa no RSI, confirmada",
+  divergencia_bullish_oculta_confirmada: "Divergência oculta de alta no RSI, confirmada",
+  divergencia_bearish_oculta_confirmada: "Divergência oculta de baixa no RSI, confirmada",
+  perda_estrutura_alta_novo_LL: "Fundo mais baixo: estrutura recente de alta perdida",
+  novo_HL_apos_fundo_mais_baixo: "Fundo mais alto depois de um mais baixo",
+  novo_HH_apos_topo_mais_baixo: "Topo mais alto depois de um mais baixo",
+  topo_mais_baixo_apos_HH: "Topo mais baixo depois de um mais alto",
+  estrutura_perda_estrutura_alta_novo_LL: "Fundo mais baixo: estrutura recente de alta perdida",
+  estrutura_topo_mais_baixo_apos_HH: "Topo mais baixo depois de um mais alto",
+  rompimento_com_volume_acima_da_media: "Rompimento com volume acima da média",
+  rompimento_com_volume_fraco: "Rompimento com volume fraco",
+  queda_com_expansao_de_volume: "Queda com volume crescendo",
+  pullback_com_volume_decrescente: "Correção com volume diminuindo",
+  advance_block: "Alta perdendo força (advance block)",
+  stalled_pattern: "Alta travando (stalled pattern)",
+  tres_soldados_em_contexto_de_reversao: "Três soldados brancos: possível reversão",
+  tres_soldados_em_contexto_de_continuacao: "Três soldados brancos: continuação da alta",
+  tres_soldados_com_sinais_de_exaustao: "Três soldados brancos com sinais de exaustão",
+  confluencia_pullback_bullish: "Correção dentro da alta, com sinais a favor",
+  // deterioracao_tendencia
+  estrutura_de_baixa: "Estrutura recente de baixa",
+  estrutura_de_alta_preservada: "Estrutura recente de alta preservada",
+  rompimento_falhou: "Rompimento falhou",
+  perda_de_suporte_confirmada: "Perda de suporte confirmada",
+  di_minus_dominante_com_estrutura_nao_altista: "Vendedores no comando, sem estrutura recente de alta",
 };
 
-function pgChips(alertas, deterioracao) {
+// Etiquetas que citam uma LINHA pontual (o label vem no fim do codigo).
+// Ordem importa: o prefixo da versao fraca vem antes do da forte, que
+// tambem casaria com ele. O valor sai no formato da faixa de suporte e
+// resistencia do cartao. Rompimento e perda comparam o FECHAMENTO da
+// vela do bloco; "na vela em formacao" e' a que ainda nao fechou.
+const ETIQUETAS_DE_LINHA = [
+  ["rompimento_confirmado_fraco_", (v) => `Fechou acima de ${v}, mas abriu abaixo: rompimento fraco`],
+  ["rompimento_confirmado_", (v) => `Fechou acima de ${v}: rompimento confirmado`],
+  ["rompimento_intradiario_", (v) => `Passou de ${v} na vela em formação, sem fechar acima`],
+  ["perda_suporte_confirmada_fraca_", (v) => `Fechou abaixo de ${v}, mas abriu acima: perda fraca`],
+  ["perda_suporte_confirmada_", (v) => `Fechou abaixo de ${v}: perda de suporte confirmada`],
+  ["toque_suporte_intradiario_", (v) => `Tocou ${v} na vela em formação, sem fechar abaixo`],
+  // Mudancas de estado da maquina de niveis (niveis_mudancas_nesta_vela).
+  ["rompimento_falhou_", (v) => `Rompimento de ${v} falhou`],
+  ["rompimento_candidato_", (v) => `Possível rompimento de ${v}, em observação`],
+  ["reteste_confirmado_", (v) => `Reteste de ${v} confirmado`],
+  ["em_reteste_", (v) => `Reteste de ${v} em curso`],
+  ["rompido_", (v, dir) => `${v} rompido${dir === "alta" ? " para cima" : dir === "baixa" ? " para baixo" : ""}`],
+  ["recuperado_", (v) => `${v} recuperado`],
+  ["arquivado_", (v) => `Ciclo de ${v} arquivado: o preço se afastou`],
+];
+
+export function rotuloEtiqueta(codigo, cfg = null, bloco = null) {
+  if (Object.hasOwn(ROTULOS_ETIQUETA, codigo)) return ROTULOS_ETIQUETA[codigo];
+  const nv = (cfg && cfg.niveis) || {};
+  const dec = cfg && Number.isInteger(cfg.dec) ? cfg.dec : 2;
+  const faixa = (nv.faixas || []).find((f) => f[2] === codigo);
+  if (faixa) {
+    const [lo, hi, label] = faixa;
+    const d = Math.max(casasUteis(lo, dec), casasUteis(hi, dec));
+    const tipo = label.startsWith("regiao_suporte_") ? "região de suporte" : "faixa";
+    return `Preço na ${tipo} ${pgNum(lo, d)}–${pgNum(hi, d)}`;
+  }
+  for (const [prefixo, frase] of ETIQUETAS_DE_LINHA) {
+    if (!codigo.startsWith(prefixo)) continue;
+    const label = codigo.slice(prefixo.length);
+    const valor = label === nv.resistenciaLabel ? nv.resistencia
+      : label === nv.suporteLabel ? nv.suporte : null;
+    if (typeof valor !== "number") continue;
+    return frase(pgValor(valor, dec), bloco ? bloco[`nivel_${label}_direcao`] : null);
+  }
+  return codigo;
+}
+
+// Sinteses de deterioracao que repetem um alerta com linha: o alerta ja
+// diz o mesmo, e com o valor ("Fechou abaixo de 500: perda de suporte
+// confirmada"). Com ele presente, o alerta sai em vermelho e a sintese
+// nao ganha etiqueta propria -- em portugues as duas liam igual.
+const SINTESE_REPETE_ALERTA = {
+  perda_de_suporte_confirmada: (x) =>
+    x.startsWith("perda_suporte_confirmada_") && !x.startsWith("perda_suporte_confirmada_fraca_"),
+  rompimento_falhou: (x) => x.startsWith("rompimento_falhou_"),
+};
+
+// Um item aparece UMA vez. alertas_tecnicos e deterioracao_tendencia se
+// sobrepoem de proposito -- a segunda e' sintese da primeira --, e
+// pintar a mesma etiqueta duas vezes em duas cores so confunde. Quem
+// esta nas duas sai como risco; quem so esta na sintese entra depois.
+function pgChips(alertas, deterioracao, cfg = null, bloco = null) {
   const det = new Set(deterioracao || []);
   const vistos = new Set();
   const out = [];
-  const chip = (x, risco) => {
-    const rotulo = ROTULOS_CHIPS_ESTRUTURA[x];
-    return `<span class="chip${risco ? " risco" : ""}${rotulo ? " estrutura-chip" : ""}">${pgEsc(rotulo || x)}</span>`;
-  };
+  const chip = (x, risco) =>
+    `<span class="chip${risco ? " risco" : ""}" title="${pgEsc(x)}">${pgEsc(rotuloEtiqueta(x, cfg, bloco))}</span>`;
+  const emRisco = new Set();
+  for (const [sintese, casa] of Object.entries(SINTESE_REPETE_ALERTA)) {
+    if (!det.has(sintese)) continue;
+    const alerta = (alertas || []).find(casa);
+    if (alerta) { emRisco.add(alerta); vistos.add(sintese); }
+  }
   for (const x of alertas || []) {
     if (vistos.has(x)) continue;
     vistos.add(x);
-    out.push(chip(x, det.has(x)));
+    out.push(chip(x, det.has(x) || emRisco.has(x)));
   }
   for (const x of det) {
     if (vistos.has(x)) continue;
@@ -5375,7 +5468,7 @@ function pgEstruturaVisual(v, recente, dec, id, titulo) {
     `</details></div>`;
 }
 
-function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
+function pgTimeframe(titulo, b, dec, estruturaVisual, id, cfg = null) {
   if (!b) return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">sem bloco</p></div>`;
   if (b.falha)
     return `<div class="tf"><h3>${pgEsc(titulo)}</h3><p class="falha">FALHA: ${pgEsc(b.falha)}</p></div>`;
@@ -5452,7 +5545,7 @@ function pgTimeframe(titulo, b, dec, estruturaVisual, id) {
   return (
     `<div class="tf"><h3>${pgEsc(titulo)}</h3><dl>${L.join("")}</dl>` +
     pgEstruturaVisual(estruturaVisual, tend, dec, id, titulo) +
-    `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia)}</div>` +
+    `<div class="chips">${pgChips(b.alertas_tecnicos, b.deterioracao_tendencia, cfg, b)}</div>` +
     `</div>`
   );
 }
@@ -6229,7 +6322,7 @@ function pgCartao(cfg, dados, estruturaVisual) {
     `<header><h2>${pgEsc(cfg.label)}</h2>` +
     `<div class="preco">${preco}</div></header>` +
     pgNiveisProximos(cfg, dia) +
-    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`], `${cfg.key}-diario`)}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`], `${cfg.key}-semanal`)}</div>` +
+    `<div class="tfs">${pgTimeframe("Diário", dia, cfg.dec, estruturaVisual[`${cfg.key}|diario`], `${cfg.key}-diario`, cfg)}${pgTimeframe("Semanal", sem, cfg.dec, estruturaVisual[`${cfg.key}|semanal`], `${cfg.key}-semanal`, cfg)}</div>` +
     grafico +
     `</article>`
   );
