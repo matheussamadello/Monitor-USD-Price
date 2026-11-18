@@ -73,6 +73,20 @@ try {
     assert.equal(r.ok,true); assert.equal(r.fonte,'yahoo/query2');
     assert.equal(r.parsed.degradada,false);
   }
+  // Host que aceita o pedido e nunca responde: com o prazo por pedido, a
+  // cascata passa ao seguinte em vez de esperar os minutos do Node. Um
+  // socket de verdade manteria o processo vivo; aqui, um timer.
+  const vivo=setInterval(()=>{},1000);
+  try{
+    const espera=signal=>new Promise((_,rejeita)=>signal.addEventListener('abort',()=>rejeita(signal.reason),{once:true}));
+    const query1Mudo=async(url,opcoes={})=>url.includes('query1')?espera(opcoes.signal):fetchBy('ok')(url);
+    const r=await m.buscarSerie(m.fetchComPrazo(query1Mudo,20),cfg,diario);
+    assert.equal(r.ok,true); assert.equal(r.fonte,'yahoo/query2');
+    assert.equal(r.parsed.degradada,false);
+    const tudoMudo=await m.buscarSerie(m.fetchComPrazo(async(url,opcoes={})=>espera(opcoes.signal),20),cfg,diario);
+    assert.equal(tudoMudo.ok,false);
+    assert.match(tudoMudo.erro,/query1: sem resposta da fonte em 0\.02 s \| yahoo\/query2: sem resposta da fonte em 0\.02 s/);
+  }finally{clearInterval(vivo);}
   const degraded=await m.buscarSerie(async url=>url.includes('interval=1h')?{ok:false,status:503}:{ok:true,text:async()=>resp(daily)},cfg,diario);
   assert.equal(degraded.ok,true,'serie longa ainda pode reparar fechamentos com sucessora e vela viva');
   assert.equal(degraded.parsed.degradada,true);

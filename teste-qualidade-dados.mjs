@@ -49,6 +49,48 @@ try {
   })();
   assert.ok(!voltou.texto.includes('FALHA:'));
 
+  // Fonte que aceita o pedido e nunca responde. Sem prazo, cada pedido
+  // esperava os 5 minutos do Node; com ele, vira falha legivel, o
+  // relatorio sai, e nada da memoria se perde.
+  const esperaAbortar = signal => new Promise((_, rejeita) =>
+    signal.addEventListener('abort', () => rejeita(signal.reason), { once: true }));
+  const muda = (url, opcoes = {}) => esperaAbortar(opcoes.signal);
+  // Um pedido de verdade tem conexao aberta, e ela mantem o processo vivo
+  // enquanto o prazo corre; a fonte falsa nao tem, entao um timer segura.
+  const vivo = setInterval(() => {}, 1000);
+  try {
+    Date.now = () => Date.parse('2026-09-10T12:00:00Z');
+    const inicio = performance.now();
+    const travada = await m.build(m.fetchComPrazo(muda, 20), clone(salvo));
+    assert.ok(performance.now() - inicio < 10000, 'prazo curto encerra a execucao rapido');
+    const jsonTravada = m.relatorioParaJSON(travada.texto, travada.zonas);
+    for (const tf of m.TIMEFRAMES_TESTE) for (const cfg of m.PARES_TESTE)
+      assert.match(jsonTravada[tf.key][cfg.label].falha, /sem resposta da fonte em 0\.02 s/);
+    assert.deepEqual(travada.estadoNiveis, salvo.niveis);
+    assert.deepEqual(travada.zonasEstado, salvo.zonas);
+    assert.deepEqual(travada.contadoresZona, salvo.contadoresZona);
+    assert.deepEqual(travada.ultimaVelaProcessada, salvo.ultimaVelaProcessada);
+    assert.deepEqual(travada.gatilhos, []);
+    // O prazo cobre tambem o corpo: cabecalho chegou, corpo nunca termina.
+    const corpoMudo = async (url, opcoes = {}) => ({ ok: true, status: 200,
+      json: () => esperaAbortar(opcoes.signal), text: () => esperaAbortar(opcoes.signal) });
+    await assert.rejects(m.fetchComPrazo(corpoMudo, 20)('u').then(r => r.json()), /sem resposta da fonte em 0\.02 s/);
+    await assert.rejects(m.fetchComPrazo(corpoMudo, 20)('u').then(r => r.text()), /sem resposta da fonte em 0\.02 s/);
+    // Resposta normal passa intacta; erro que nao e' de prazo nao e' traduzido;
+    // um sinal de quem chama continua valendo junto com o prazo.
+    const pronta = await m.fetchComPrazo(async () => ({ ok: true, status: 200, json: async () => ({ a: 1 }), text: async () => 'b' }), 1000)('u');
+    assert.deepEqual(await pronta.json(), { a: 1 });
+    assert.equal(await pronta.text(), 'b');
+    await assert.rejects(m.fetchComPrazo(async () => { throw new Error('ECONNRESET'); }, 1000)('u'), /^Error: ECONNRESET$/);
+    const cancelado = new AbortController();
+    const pedido = m.fetchComPrazo(muda, 60000)('u', { signal: cancelado.signal });
+    cancelado.abort(new Error('cancelado por quem chamou'));
+    await assert.rejects(pedido, /cancelado por quem chamou/);
+    assert.equal(m.PRAZO_FONTE_MS, 30000);
+  } finally {
+    clearInterval(vivo);
+  }
+
   const n = 165, closes = Array.from({ length: n }, (_, i) => 100 + i * .014 + 9 * Math.sin(i * .29) + 3 * Math.sin(i * .077));
   const d = { closes, opens: closes.map((c, i) => closes[i - 1] ?? c),
     highs: closes.map((c, i) => Math.max(c, closes[i - 1] ?? c) + .7),

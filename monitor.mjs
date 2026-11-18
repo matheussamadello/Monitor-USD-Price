@@ -4672,6 +4672,45 @@ export function registrarHistorico(dadosJSON, assinaturasAnt = {}, agora = new D
   return { entradas, assinaturas };
 }
 
+// Prazo de cada pedido a uma fonte. Sem ele valia o padrao do Node: ate
+// 5 minutos esperando o cabecalho e outros 5 esperando o corpo, POR
+// pedido. Os pedidos saem um de cada vez, entao uma fonte que aceita a
+// conexao e nao responde levava o XMR (4 pedidos) e o USD (varios, com a
+// cascata) alem do limite de 15 minutos do job, e a execucao terminava
+// sem relatorio nenhum. Com o prazo, o pedido vira falha em 30 s: a
+// cascata tenta a fonte seguinte, onde existe, e onde nao existe o par
+// sai como FALHA com a memoria preservada. Uma resposta normal leva
+// menos de 2 s. O prazo cobre o pedido inteiro, corpo incluido, e a
+// mensagem diz o que houve em vez do "aborted due to timeout" do Node.
+export const PRAZO_FONTE_MS = 30000;
+
+export function fetchComPrazo(fetchImpl = fetch, prazoMs = PRAZO_FONTE_MS) {
+  return async (url, opcoes = {}) => {
+    const prazo = AbortSignal.timeout(prazoMs);
+    const signal = opcoes.signal ? AbortSignal.any([opcoes.signal, prazo]) : prazo;
+    const traduz = (err) =>
+      prazo.aborted ? new Error(`sem resposta da fonte em ${prazoMs / 1000} s`) : err;
+    let res;
+    try {
+      res = await fetchImpl(url, { ...opcoes, signal });
+    } catch (err) {
+      throw traduz(err);
+    }
+    for (const metodo of ["json", "text"]) {
+      if (typeof res?.[metodo] !== "function") continue;
+      const original = res[metodo].bind(res);
+      res[metodo] = async () => {
+        try {
+          return await original();
+        } catch (err) {
+          throw traduz(err);
+        }
+      };
+    }
+    return res;
+  };
+}
+
 export async function build(fetchImpl = fetch, estadoAnterior = {}) {
   const blocks = [];
   const dados = {};
@@ -6423,7 +6462,7 @@ if (executadoDireto) {
   const anteriores = estadoPrev.ativos || [];
 
   const { texto, gatilhos, estadoNiveis, estadoEma89Semanal, zonas, zonasEstado, contadoresZona,
-    estruturaVisual, ultimaVelaProcessada } = await build(fetch, estadoPrev);
+    estruturaVisual, ultimaVelaProcessada } = await build(fetchComPrazo(fetch), estadoPrev);
   mkdirSync("docs", { recursive: true });
   const ativos = gatilhos.map((g) => g.id);
   const novos = gatilhos.filter((g) => !anteriores.includes(g.id));
