@@ -588,6 +588,7 @@ Agora o relatório publica, por par e por timeframe:
 | `niveis_manuais_faixa_mais_proxima` | qual faixa é essa |
 | `niveis_manuais_alinhamento` | `alinhado`, `parcial`, `desalinhado` ou `indefinido` |
 | `niveis_manuais_faixas_corroboradas` | quantas faixas caem sobre uma zona automática |
+| `niveis_manuais_faixas_sem_zona` | quais faixas ficaram sem zona automática, pelo label; `nenhuma` quando todas têm, `--` quando não há zona para comparar. No JSON é uma lista |
 
 Os cortes são **1 ATR** e **3 ATR**: dentro de uma faixa ou a menos de 1 ATR dela é `atual`; entre 1 e 3 é `monitorar`; além de 3 é `obsoleto`.
 
@@ -601,7 +602,7 @@ Essa distinção não é detalhe. A página mostra no máximo três zonas de cad
 
 Era o caso do monitor de BTC quando este campo foi criado. Nenhuma das três faixas manuais atingia o limite de sobreposição em nenhum dos dois timeframes, e as duas do diário ficavam logo abaixo dele porque estavam cerca de 1.500 dólares abaixo de onde o mercado reagia: a zona automática de score 99 ficava em 79.536 a 81.093, contra a faixa configurada de 78.000 a 80.000. Nada no relatório dizia isso, porque o único campo que olhava as faixas media distância até o preço. O sinal existia por zona, em `confluencia_faixa_manual`, mas nunca era somado.
 
-**A contagem pode mudar sem o mercado mudar.** A sobreposição é medida contra a janela operacional de cada zona, o centro ± 0,25 ATR atual, e não contra os limites estruturais. Uma faixa que está no limite da sobreposição mínima (0,35) entra e sai da contagem quando o ATR sobe ou desce. Em 2026-11-17 era o caso da faixa mais funda do USDT/BRL, 4,874–4,893: a zona diária que a corrobora cobria 34% dela, e o alinhamento diário alternava entre 16 de 16 e 15 de 16. O relatório publica a contagem, não o nome da faixa; os prompts tratam uma queda de uma unidade, sozinha, como insuficiente para pedir revisão.
+**A contagem pode mudar sem o mercado mudar.** A sobreposição é medida contra a janela operacional de cada zona, o centro ± 0,25 ATR atual, e não contra os limites estruturais. Uma faixa que está no limite da sobreposição mínima (0,35) entra e sai da contagem quando o ATR sobe ou desce. Em 2026-11-17 era o caso da faixa mais funda do USDT/BRL, 4,874–4,893: a zona diária que a corrobora cobria 34% dela, e o alinhamento diário alternava entre 16 de 16 e 15 de 16. Por isso, desde 2026-11-18, o relatório diz também **quais** faixas ficaram sem zona, em `niveis_manuais_faixas_sem_zona`. Só a contagem não bastava: "15 de 16" não diz se a que faltou é a faixa onde o preço está, que importa, ou a mais funda, longe dele, que não importa. Os prompts mandam olhar a lista antes de pedir revisão: faixa funda ou no limite da sobreposição não é motivo; faixa perto do preço sem zona por vários dias é.
 
 `obsoleto` não é alerta de mercado: é aviso de manutenção. Significa que os níveis descrevem um regime que ficou para trás e precisam de revisão.
 

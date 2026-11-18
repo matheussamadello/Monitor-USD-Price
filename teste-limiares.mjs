@@ -225,6 +225,15 @@ console.log("\n== confluencia entre faixa manual e zona observada ==");
     "com 25% nao conta: a faixa esta deslocada da regiao que o mercado usa");
   ok(alinhamentoNiveis(niveis, []).situacao === "indefinido",
     "sem zonas nao ha o que corroborar");
+  // Quais faixas ficaram sem zona, na ordem da configuracao.
+  const tres = { faixas: [[300, 310, "alta"], [200, 210, "meio"], [100, 110, "funda"]] };
+  const parcial = alinhamentoNiveis(tres, [zona(201, 209)]);
+  ok(parcial.situacao === "parcial" && parcial.semZona.join() === "alta,funda",
+    "parcial diz quais faixas ficaram sem zona");
+  ok(alinhamentoNiveis(tres, [zona(301, 309), zona(201, 209), zona(101, 109)]).semZona.length === 0,
+    "alinhado nao lista nenhuma");
+  ok(alinhamentoNiveis(tres, []).semZona.length === 0,
+    "indefinido nao acusa faixa nenhuma: sem zonas a pergunta nao tem resposta");
 }
 
 // 5. CICLO DE VIDA DA ZONA

@@ -2362,14 +2362,20 @@ const NIVEIS_OBSOLETO_ATR = 3; // alem daqui, o preco vive noutro lugar
 // da zona de score 99, e nada no relatorio dizia isso. Esta funcao
 // fecha essa lacuna: compara cada faixa manual com as zonas observadas,
 // pelo mesmo criterio de sobreposicao usado nas confluencias.
+//
+// Devolve tambem QUAIS faixas ficaram sem zona (semZona, os labels na
+// ordem da configuracao). So a contagem nao bastava: "15 de 16" nao diz
+// se a que faltou e' a faixa onde o preco esta (importa) ou a mais funda,
+// a 15% dele (nao importa). Era o caso do USDT/BRL em 2026-11-17.
 export function alinhamentoNiveis(niveis, zonas) {
   const faixas = (niveis && niveis.faixas) || [];
   const zs = zonas || [];
   if (!faixas.length || !zs.length) {
-    return { situacao: "indefinido", corroboradas: 0, total: faixas.length };
+    return { situacao: "indefinido", corroboradas: 0, total: faixas.length, semZona: [] };
   }
   let corroboradas = 0;
-  for (const [lo, hi] of faixas) {
+  const semZona = [];
+  for (const [lo, hi, label] of faixas) {
     const bate = zs.some((z) => {
       const L = z.limites_operacionais;
       if (!L) return false;
@@ -2379,6 +2385,7 @@ export function alinhamentoNiveis(niveis, zonas) {
       );
     });
     if (bate) corroboradas++;
+    else semZona.push(label);
   }
   const situacao =
     corroboradas === faixas.length
@@ -2386,7 +2393,7 @@ export function alinhamentoNiveis(niveis, zonas) {
       : corroboradas === 0
       ? "desalinhado"
       : "parcial";
-  return { situacao, corroboradas, total: faixas.length };
+  return { situacao, corroboradas, total: faixas.length, semZona };
 }
 
 export function situacaoNiveis(niveis, preco, atr) {
@@ -2654,6 +2661,7 @@ const CAMPOS_LISTA = new Set([
   "riscos_tecnicos",
   "deterioracao_tendencia",
   "padrao_trio_evidencias_fraqueza",
+  "niveis_manuais_faixas_sem_zona",
 ]);
 
 const VAZIOS = new Set(["nenhum", "nenhuma", "nenhuma_mudanca", "--"]);
@@ -4347,6 +4355,13 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(`niveis_manuais_alinhamento: ${alinNiveis.situacao}`);
   L.push(
     `niveis_manuais_faixas_corroboradas: ${alinNiveis.corroboradas} de ${alinNiveis.total}`
+  );
+  // Sem zonas a pergunta nao tem resposta ("--"), o que e' diferente de
+  // todas corroboradas ("nenhuma").
+  L.push(
+    `niveis_manuais_faixas_sem_zona: ${
+      alinNiveis.situacao === "indefinido" ? "--" : alinNiveis.semZona.join(", ") || "nenhuma"
+    }`
   );
   // Conjunto INTEIRO de zonas vivas, nao o recorte publicado: ver o
   // comentario em calcularZonas.

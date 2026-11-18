@@ -146,6 +146,7 @@ Leia, quando disponíveis no relatório:
 - `niveis_manuais`;
 - `niveis_mudancas_nesta_vela`;
 - `niveis_manuais_alinhamento`;
+- `niveis_manuais_faixas_sem_zona`;
 - `confluencia_entrada`;
 - `confluencia_pullback`;
 - `riscos_tecnicos`;
@@ -1137,11 +1138,11 @@ Use o JSON como fonte de verdade da configuração atual.
 Dois campos diferentes medem coisas diferentes, e é fácil confundi-los:
 
 - `niveis_manuais_situacao` mede a distância do **preço** até a faixa mais próxima, em ATR. Diz se os níveis ainda cercam o preço;
-- `niveis_manuais_alinhamento` mede se as faixas ainda caem **onde o mercado de fato reage**, comparando cada uma com **todas** as zonas automáticas vivas do par — inclusive as que não cabem na lista publicada, que mostra no máximo três de cada lado. Sai como `alinhado`, `parcial`, `desalinhado` ou `indefinido`, com a contagem em `niveis_manuais_faixas_corroboradas`. Uma faixa de suporte profundo, longe do preço, só pode ser corroborada por zona longe do preço: se a contagem fosse feita sobre a lista publicada, essa faixa sairia como não corroborada para sempre.
+- `niveis_manuais_alinhamento` mede se as faixas ainda caem **onde o mercado de fato reage**, comparando cada uma com **todas** as zonas automáticas vivas do par — inclusive as que não cabem na lista publicada, que mostra no máximo três de cada lado. Sai como `alinhado`, `parcial`, `desalinhado` ou `indefinido`, com a contagem em `niveis_manuais_faixas_corroboradas` e os labels das faixas que ficaram sem zona em `niveis_manuais_faixas_sem_zona` (`nenhuma` quando todas têm; `--` quando não há zona para comparar). Uma faixa de suporte profundo, longe do preço, só pode ser corroborada por zona longe do preço: se a contagem fosse feita sobre a lista publicada, essa faixa sairia como não corroborada para sempre.
 
 Uma faixa pode estar `atual` e `desalinhado` ao mesmo tempo: perto do preço, mas deslocada da região que o mercado respeita. É justamente o caso que mais merece revisão, e o único dos dois campos que enxerga isso é o alinhamento.
 
-Zona `enfraquecida` conta para o alinhamento enquanto os pivôs dela continuarem desenhando a região: ela não expira pela carência nem troca de id. Quando os pivôs deixam de desenhá-la, ela vira órfã e só sai depois de 15 velas como órfã no diário (4 no semanal). Por isso a carência não faz a contagem de `niveis_manuais_faixas_corroboradas` oscilar. A contagem ainda muda por dois caminhos: uma zona mudou de verdade (saiu do desenho ou perdeu score), ou uma faixa estava no limite da sobreposição mínima. A sobreposição é medida contra a janela operacional da zona, o centro ± 0,25 ATR atual, e uma faixa no limite entra e sai da contagem quando o ATR sobe ou desce, sem nada mudar no mercado. O relatório publica a contagem, não o nome da faixa: uma queda de uma unidade, sozinha, não é motivo para sugerir revisão dos níveis.
+Zona `enfraquecida` conta para o alinhamento enquanto os pivôs dela continuarem desenhando a região: ela não expira pela carência nem troca de id. Quando os pivôs deixam de desenhá-la, ela vira órfã e só sai depois de 15 velas como órfã no diário (4 no semanal). Por isso a carência não faz a contagem de `niveis_manuais_faixas_corroboradas` oscilar. A contagem ainda muda por dois caminhos: uma zona mudou de verdade (saiu do desenho ou perdeu score), ou uma faixa estava no limite da sobreposição mínima. A sobreposição é medida contra a janela operacional da zona, o centro ± 0,25 ATR atual, e uma faixa no limite entra e sai da contagem quando o ATR sobe ou desce, sem nada mudar no mercado. Antes de sugerir revisão por alinhamento, leia `niveis_manuais_faixas_sem_zona` e compare com o preço: faixa funda, longe do preço, ou que entra e sai da lista não é motivo; faixa perto do preço que fica na lista por vários fechamentos é.
 
 Existe também um radar de promoção. `zonas_candidatas_a_faixa` lista, **só no bloco diário**, regiões que amadureceram e que nenhuma faixa manual já representa: zona com score 70 ou mais, pelo menos 5 toques e situação `ativa`, que nenhuma faixa cobre e que não está **colada** em faixa nenhuma. O lado entre parênteses (`acima do fechamento`, `abaixo do fechamento`, `no fechamento`) é medido contra o último fechamento diário, não contra `preco_atual`.
 
