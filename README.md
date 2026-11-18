@@ -53,7 +53,7 @@ Quando a cascata inteira cai, o bloco do par sai marcado com `FALHA:` citando o 
 
 Toda vela é ancorada na **meia-noite UTC do próprio dia**. O Yahoo carimba a vela no fuso da bolsa; sem a ancoragem, uma mudança de fuso jogaria velas para o dia seguinte e o estado persistido passaria a comparar velas que não são a mesma vela.
 
-Os timeframes são dois, diário e semanal, e desde 2026-09-26 **as velas do USD/BRL são montadas das velas de 1 hora** do Yahoo (`interval=1h&range=730d`), com a série longa (`1d` e `1wk`) só para o histórico mais antigo que as horas. A razão está na seção seguinte.
+Os timeframes são dois, diário e semanal, e desde 2026-09-26 **as velas do USD/BRL são montadas das velas de 1 hora** do Yahoo (`interval=1h&range=730d`), com a série longa (`1d` e `1wk`) só para o histórico mais antigo que as horas. A razão está na seção seguinte. Como a correção refez de uma vez indicadores, pivôs, estrutura e zonas do par, o prompt mandou o agente tratá-la como correção de dado, não como movimento, e esperar cinco pregões, até o fechamento de 2026-10-02, antes de comunicar candidatas do radar do USD/BRL.
 
 ### O fechamento do Yahoo estava errado
 
@@ -1356,7 +1356,7 @@ Um consumidor robusto deve, no mínimo:
 7. fundir sinais relacionados para reduzir spam;
 8. **não esperar campos de volume** — neste par eles não existem, e `volume_disponivel: nao` é a forma de descobrir isso sem adivinhar.
 
-O arquivo [`PROMPT_USD_TECHNICAL_WATCH.md`](./PROMPT_USD_TECHNICAL_WATCH.md) contém uma política pronta e mais completa para uma LLM/agente transformar o `relatorio.json` em alertas seletivos, incluindo hierarquia de sinais, regras anti-spam, interpretação de RSI/DMI/ADX e tratamento dos níveis e zonas automáticas.
+O arquivo [`PROMPT_USD_TECHNICAL_WATCH.md`](./PROMPT_USD_TECHNICAL_WATCH.md) contém uma política pronta e mais completa para uma LLM/agente transformar o `relatorio.json` em alertas seletivos, incluindo hierarquia de sinais, regras anti-spam, interpretação de RSI/DMI/ADX e tratamento dos níveis e zonas automáticas. Desde 2026-11-18 o prompt traz só o que o agente precisa para decidir: regras, campos, níveis atuais e avisos ainda válidos. O histórico das revisões de níveis, os casos que motivaram cada regra e as mudanças do painel ficam neste README, de onde saíram as notas datadas que o prompt acumulava (de 17 a 22 parágrafos por prompt, alguns já vencidos e enganando o agente).
 
 ## Relação entre o monitor e o prompt de alerta
 
