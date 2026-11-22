@@ -1106,6 +1106,7 @@ O USD/BRL não negocia continuamente, enquanto o USDT/BRL continua negociando.
 - As velas do USD/BRL são **montadas das velas de 1 hora** do Yahoo, porque o fechamento diário e semanal da própria fonte vem praticamente igual à abertura.
 - `dados_avisos` com `Yahoo 1h indisponivel` significa que as horas não vieram e a vela saiu da série longa com o fechamento reparado pela abertura seguinte. É aviso de qualidade de dado, não alerta; se persistir por vários dias, vale mencionar uma vez como manutenção.
 - `dados_avisos` com `Yahoo 1h: sessao reduzida (feriado provavel)` significa que um dia teve poucas horas de negócio e amplitude muito menor que a das sessões recentes, o padrão de feriado brasileiro no mercado offshore. A vela desse dia foi montada com as horas que existiam. Não é falha nem alerta, e não descreva a vela pequena desse dia como indecisão, compressão ou perda de força: é calendário, não mercado.
+- `dados_avisos` com `Yahoo 1h: hora sem cotacao entre horas paradas no mesmo preco` significa que uma hora esperada veio sem nenhuma cotação, entre duas horas sem negócio no mesmo preço, no mesmo dia. O preço não andou nesse intervalo e a vela não muda por isso. Não é falha nem alerta.
 
 ### USDT/BRL
 

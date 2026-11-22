@@ -44,6 +44,29 @@ try {
         `as mesmas horas faltando num dia de amplitude normal sao buraco no dado (${tf.key})`);
     }
   }
+  // HORA VAZIA ENTRE HORAS PARADAS (20/11/2026, feriado nacional). Negocio
+  // ate as 15h, cotacao parada no mesmo preco depois, uma hora sem linha no
+  // meio e amplitude normal na serie diaria, que barra a sessao reduzida:
+  // o diario caia por essa hora. Ela nao esconde movimento e a vela nao
+  // muda. Hora vazia logo depois de negocio (18/11/2026, 21h e 22h) ou
+  // entre precos diferentes continua sendo buraco no dado.
+  {
+    const P=5.175;
+    const parar=(hs,hora,preco)=>hs.map(h=>h.time===target+hora*H?{...h,open:preco,high:preco,low:preco,close:preco}:h);
+    const sem=(hs,...horas)=>hs.filter(h=>!horas.some(x=>h.time===target+x*H));
+    const parado=sem([16,17,18,20,21].reduce((hs,hora)=>parar(hs,hora,P),hours),19);
+    for(const tf of [diario,semanal]) {
+      let r;
+      assert.doesNotThrow(()=>{r=parse(parado,tf);},`hora vazia entre paradas no mesmo preco nao e buraco (${tf.key})`);
+      assert.match(r.avisosDados.join(' '),/hora sem cotacao entre horas paradas no mesmo preco, contada sem negocio: 2026-09-30 19h UTC/,`aviso da hora vazia (${tf.key})`);
+      assert.throws(()=>parse(parar(parado,20,P+0.01),tf),/cobertura incompleta em 2026-09-30 \(hora ausente\)/,
+        `paradas em precos diferentes dos dois lados (${tf.key})`);
+      assert.throws(()=>parse(sem(hours,20,21),tf),/cobertura incompleta em 2026-09-30 \(hora ausente\)/,
+        `horas vazias logo depois de negocio (${tf.key})`);
+    }
+    const vela=parse(parado,diario), i=vela.times.indexOf(target);
+    assert.deepEqual([vela.opens[i],vela.highs[i],vela.lows[i],vela.closes[i]].map(v=>+v.toFixed(4)),[5.1,5.18,5.09,5.175],'a vela sai so das horas negociadas');
+  }
   // Logo depois da meia-noite as ultimas horas do dia ainda nao chegaram:
   // o dia so e' conferido quando encerrado (negocio no dia seguinte ou 12h).
   {

@@ -1069,6 +1069,7 @@ function horasYahoo(texto) {
   const horas = [];
   const cobertura = new Map();
   const negociadas = new Map();
+  const planas = new Map();
   const invalidas = new Set();
   let descartadas = 0;
   for (let i = 0; i < r.timestamp.length; i++) {
@@ -1091,14 +1092,19 @@ function horasYahoo(texto) {
     if (!cobertura.has(dia)) cobertura.set(dia, new Set());
     cobertura.get(dia).add(Math.floor((t - dia) / 3600));
     // Hora sem amplitude e' cotacao repetida, nao negocio: fica fora,
-    // pelo mesmo motivo do filtro de amplitude zero de montarSerie.
-    if (high === low) continue;
+    // pelo mesmo motivo do filtro de amplitude zero de montarSerie. O
+    // preco dela fica guardado para a conferencia da hora vazia.
+    if (high === low) {
+      if (!planas.has(dia)) planas.set(dia, new Map());
+      planas.get(dia).set(Math.floor((t - dia) / 3600), close);
+      continue;
+    }
     if (!negociadas.has(dia)) negociadas.set(dia, new Set());
     negociadas.get(dia).add(Math.floor((t - dia) / 3600));
     horas.push({ t: Number(r.timestamp[i]), open, high, low, close });
   }
   if (!horas.length) throw new Error("Yahoo 1h: nenhuma vela valida");
-  return { horas: horas.sort((a, b) => a.t - b.t), descartadas, cobertura, negociadas, invalidas };
+  return { horas: horas.sort((a, b) => a.t - b.t), descartadas, cobertura, negociadas, planas, invalidas };
 }
 
 export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISADOS) {
@@ -1112,11 +1118,11 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
   // valida), a serie inteira sai da longa reparada. Continua muito melhor
   // que o fechamento quebrado, e o aviso diz que foi assim.
   let horas = [], horasFora = 0, semHoras = null;
-  let cobertura = new Map(), negociadas = new Map(), invalidas = new Set();
+  let cobertura = new Map(), negociadas = new Map(), planas = new Map(), invalidas = new Set();
   if (textoHorario === null || textoHorario === undefined) {
     semHoras = (textos.falhas && textos.falhas[0]) || "sem resposta";
   } else {
-    try { ({ horas, descartadas: horasFora, cobertura, negociadas, invalidas } = horasYahoo(textoHorario)); }
+    try { ({ horas, descartadas: horasFora, cobertura, negociadas, planas, invalidas } = horasYahoo(textoHorario)); }
     catch (err) { semHoras = err.message; }
   }
   const porPeriodo = new Map();
@@ -1136,7 +1142,7 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
   const corte = semHoras ? Infinity : montadas[1].time;
 
   const { linhas, descartadas } = linhasYahoo(textoLongo, { tolerante: !semHoras });
-  const reduzidas = [];
+  const reduzidas = [], paradas = [];
   if (!semHoras) {
     const agora = Date.now() / 1000;
     const ultimaFechada = montadas.filter(m => m.fim <= agora).at(-1)?.time;
@@ -1199,8 +1205,30 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
         reduzidas.push(`${fmtDia(dia)} (${comNegocio} de ${esperadas.length} horas com negocio)`);
         continue;
       }
-      if (!esperadas.length || esperadas.some(h => !cobertura.get(dia).has(h)))
+      // HORA VAZIA ENTRE HORAS PARADAS. Hora esperada sem nenhuma linha
+      // conta como sem negocio quando, no mesmo dia, a hora coberta antes
+      // e a coberta depois sao planas no MESMO preco: a fonte cotava dos
+      // dois lados e o preco nao andou. Em 20/11/2026, feriado nacional, o
+      // Yahoo cotou 5,9488 parado das 16h as 22h UTC, menos as 20h, que
+      // veio vazia, e o bloco diario caiu por essa hora. A sessao reduzida
+      // nao pegou: 4 das 9 horas esperadas tiveram negocio, mas a
+      // amplitude do dia (0,0402) nao ficou abaixo da metade da mediana
+      // (0,0577), porque o real andou de manha. Hora vazia logo depois de
+      // negocio, ou entre precos diferentes, continua derrubando o bloco:
+      // em 18/11/2026, pregao normal, as 21h e 22h vieram vazias depois
+      // da hora negociada das 20h.
+      const vazias = esperadas.filter((h) => !cobertura.get(dia).has(h));
+      const parada = (h) => {
+        const cobertas = [...cobertura.get(dia)];
+        const antes = Math.max(-1, ...cobertas.filter((x) => x < h));
+        const depois = Math.min(24, ...cobertas.filter((x) => x > h));
+        const p = planas.get(dia);
+        const plana = (x) => !!p?.has(x) && !negociadas.get(dia)?.has(x);
+        return plana(antes) && plana(depois) && p.get(antes) === p.get(depois);
+      };
+      if (!esperadas.length || vazias.some((h) => !parada(h)))
         throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
+      for (const h of vazias) paradas.push(`${fmtDia(dia)} ${h}h UTC`);
     }
     // Pregao sumido inteiro da resposta horaria. Feriado sem vela negociada
     // na fonte nao cria uma exigencia de horas artificiais.
@@ -1256,6 +1284,8 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
     avisos.push(`Yahoo 1h: ${horasFora} velas de 1 hora com OHLC incompleto ou inconsistente descartadas`);
   if (reduzidas.length)
     avisos.push(`Yahoo 1h: sessao reduzida (feriado provavel), vela montada com as horas disponiveis: ${reduzidas.join(", ")}`);
+  if (paradas.length)
+    avisos.push(`Yahoo 1h: hora sem cotacao entre horas paradas no mesmo preco, contada sem negocio: ${paradas.join(", ")}`);
   if (semHoras)
     avisos.push(`Yahoo 1h indisponivel (${semHoras}): velas montadas da serie ${semanal ? "semanal" : "diaria"} com o fechamento reparado pela abertura seguinte`);
   return { ...serie, degradada: !!semHoras, avisosDados: avisos };
