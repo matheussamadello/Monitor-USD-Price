@@ -67,6 +67,41 @@ try {
     const vela=parse(parado,diario), i=vela.times.indexOf(target);
     assert.deepEqual([vela.opens[i],vela.highs[i],vela.lows[i],vela.closes[i]].map(v=>+v.toFixed(4)),[5.1,5.18,5.09,5.175],'a vela sai so das horas negociadas');
   }
+  // FUSO DE CADA LINHA (2026-11-22). O Yahoo carimba a vela diaria e a
+  // semanal na meia-noite de Londres: 00h UTC no inverno, 23h UTC da
+  // vespera no horario de verao. Com o gmtoffset de agora (0 em novembro),
+  // as semanas de verao caiam num domingo e sumiam do semanal, e cada dia
+  // de verao virava o anterior. Cada linha usa o fuso do proprio instante.
+  {
+    const yahoo=(rows,meta)=>JSON.stringify({chart:{error:null,result:[{meta,timestamp:rows.map(r=>r.time),indicators:{quote:[{open:rows.map(r=>r.open),high:rows.map(r=>r.high),low:rows.map(r=>r.low),close:rows.map(r=>r.close)}]}}]}});
+    const londres=rows=>yahoo(rows,{gmtoffset:0,exchangeTimezoneName:'Europe/London'});
+    // Horario de verao britanico de 2024, 2025 e 2026.
+    const verao=t=>[['2024-03-31','2024-10-27'],['2025-03-30','2025-10-26'],['2026-03-29','2026-10-25']]
+      .some(([a,b])=>t>=epoch(`${a}T01:00:00Z`)&&t<epoch(`${b}T01:00:00Z`));
+    const carimbo=t=>verao(t)?t-H:t;
+    const linha=(t,i)=>({time:carimbo(t),open:5+i*.01,high:5.05+i*.01,low:4.95+i*.01,close:5.02+i*.01});
+    const segundas=[];
+    for(let t=epoch('2024-01-01T00:00:00Z');t<=epoch('2025-12-29T00:00:00Z');t+=7*DIA)segundas.push(t);
+    const sem=m.parseYahoo(londres(segundas.map(linha)),semanal);
+    assert.deepEqual(sem.times,segundas,'toda semana de 2024 e 2025, inclusive as de verao, ancorada na segunda');
+    // Marco e abril de 2025: atravessa a troca de horario de 30/03.
+    const uteis=days.filter(t=>t>=epoch('2025-03-03T00:00:00Z')&&t<=epoch('2025-04-30T00:00:00Z'));
+    const dia=m.parseYahoo(londres(uteis.map(linha)),diario);
+    assert.deepEqual(dia.times,uteis,'dia de verao no proprio dia, sem segunda perdida');
+    const seg=uteis.indexOf(epoch('2025-03-31T00:00:00Z'));
+    assert.equal(dia.opens[seg],linha(uteis[seg],seg).open,'a segunda traz a vela da segunda, nao a da terca');
+    // O caminho do semanal: antes das horas, a serie longa de 2026.
+    const semanas26=[];
+    for(let t=epoch('2026-01-05T00:00:00Z');t<=epoch('2026-09-28T00:00:00Z');t+=7*DIA)semanas26.push(t);
+    const w=m.parseYahooHibrido([resp(hours),londres(semanas26.map(linha)),resp(daily)],semanal);
+    for(const s of ['2026-01-05','2026-04-06','2026-05-04','2026-06-29'])
+      assert.ok(w.times.includes(epoch(`${s}T00:00:00Z`)),`semana de ${s} no semanal`);
+    assert.ok(w.times.every(t=>new Date(t*1000).getUTCDay()===1),'toda vela semanal comeca na segunda');
+    // Sem o nome do fuso, ou com um nome invalido, vale o gmtoffset, como antes.
+    const fixo=segundas.map((t,i)=>({...linha(t,i),time:t-H}));
+    for(const meta of [{gmtoffset:3600},{gmtoffset:3600,exchangeTimezoneName:'Fuso/Inexistente'}])
+      assert.deepEqual(m.parseYahoo(yahoo(fixo,meta),semanal).times,segundas,`gmtoffset sem fuso valido (${JSON.stringify(meta)})`);
+  }
   // Logo depois da meia-noite as ultimas horas do dia ainda nao chegaram:
   // o dia so e' conferido quando encerrado (negocio no dia seguinte ou 12h).
   {

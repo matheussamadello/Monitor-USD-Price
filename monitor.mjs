@@ -548,7 +548,17 @@ const AGENTE_HTTP = "usd-monitor/1.0";
 // em hora desde setembro de 2026, e um aviso que nunca muda ensina a nao
 // ler avisos. Uma data NOVA descartada continua avisando. Chave:
 // "timeframe|data da vela".
-export const DESCARTES_YAHOO_REVISADOS = new Set(["semanal|2023-11-20"]);
+//
+// As outras quatro sao semanas de horario de verao que so passaram a ser
+// lidas com a correcao do fuso de 2026-11-22 (ver linhasYahoo). Nos dois
+// hosts, o fechamento bruto cai fora da propria semana: 2019-08-19 fecha
+// em 4,1187 com maxima 4,1109; 2022-06-13, 5,1520 com maxima 5,1513;
+// 2023-05-08, 4,8777 com minima 4,9090; 2023-06-19, 4,7210 com minima
+// 4,7374. Mesmo defeito do fechamento semanal do Yahoo.
+export const DESCARTES_YAHOO_REVISADOS = new Set([
+  "semanal|2023-11-20",
+  "semanal|2019-08-19", "semanal|2022-06-13", "semanal|2023-05-08", "semanal|2023-06-19",
+]);
 
 // Duas consultas por host: as horas, de onde sai a vela, e a serie longa
 // do timeframe, para o historico anterior as horas. Ver parseYahooHibrido.
@@ -942,7 +952,32 @@ function linhasYahoo(texto, { tolerante = false } = {}) {
   const off = Number((r.meta && r.meta.gmtoffset) || 0);
   const linhas = [];
   const descartadas = [];
-  const dias = r.timestamp.map((t) => ancorarDia(Number(t), off));
+  // FUSO DE CADA LINHA, NAO O DE AGORA. O Yahoo carimba a vela diaria e a
+  // semanal na meia-noite da bolsa -- no cambio, Londres: 00h UTC no
+  // inverno, 23h UTC da vespera no horario de verao. O gmtoffset da
+  // resposta e' o de AGORA. Aplicado ao historico inteiro, ele jogava as
+  // linhas do outro regime para a vespera: no inverno, toda semana de
+  // final de marco a final de outubro caia num domingo e sumia, e cada dia
+  // virava o anterior. Em 2026-11-22 o semanal do USD/BRL tinha 306 velas
+  // desde 2016, com sete buracos de sete meses (2017 a 2023), e a vela
+  // antes de cada buraco tinha o fechamento "reparado" pela abertura de
+  // sete meses depois. Na troca de horario de 25/10/2026, sem codigo nem
+  // vela nova, as zonas semanais mudaram e a EMA89 semanal foi de 5,2652
+  // para 5,2598. Com o nome do fuso, cada linha usa o deslocamento do
+  // proprio instante; sem ele, fica o gmtoffset, como antes.
+  let fuso = null;
+  try {
+    if (r.meta && r.meta.exchangeTimezoneName)
+      fuso = new Intl.DateTimeFormat("en-US", { timeZone: r.meta.exchangeTimezoneName, hourCycle: "h23",
+        year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" });
+  } catch { fuso = null; }
+  const deslocamento = (t) => {
+    if (!fuso) return off;
+    const p = {};
+    for (const { type, value } of fuso.formatToParts(new Date(t * 1000))) p[type] = Number(value);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) / 1000 - t;
+  };
+  const dias = r.timestamp.map((t) => ancorarDia(Number(t), deslocamento(Number(t))));
   // O Yahoo pode trazer uma versao parcial e uma atualizada do mesmo
   // dia. Valida a ultima cotacao nao vazia, como a deduplicacao da serie.
   const ultimoPorDia = new Map();

@@ -924,7 +924,8 @@ if (typeof m.parseYahooHibrido === "function") await teste("USD/BRL montado das 
     assert.deepEqual(revisto.closes, tol.closes, "e a serie e' a mesma: a vela continua fora");
     const outroTf = m.parseYahooHibrido([resp(horas), resp(estragada)], diario, new Set(["semanal|2025-06-04"]));
     assert.match(outroTf.avisosDados.join(" "), /descartados \(1\): 2025-06-04/, "a chave inclui o timeframe");
-    assert.deepEqual([...m.DESCARTES_YAHOO_REVISADOS], ["semanal|2023-11-20"],
+    assert.deepEqual([...m.DESCARTES_YAHOO_REVISADOS], ["semanal|2023-11-20",
+      "semanal|2019-08-19", "semanal|2022-06-13", "semanal|2023-05-08", "semanal|2023-06-19"],
       "lista curta e explicada no README: cada entrada foi examinada");
     const semHorasRuim = [null, resp(estragada)]; semHorasRuim.falhas = ["HTTP 503"];
     assert.throws(() => m.parseYahooHibrido(semHorasRuim, diario), /mais recente|incompleto/,
