@@ -416,6 +416,40 @@ console.log("\n== radar: zona colada numa faixa ja esta representada ==");
   ok(longe.length === 2, "com vao acima de 0,2 ATR sao duas regioes");
 }
 
+{
+  // A representante de uma regiao e' a ELEGIVEL pelas verificacoes do
+  // painel e do prompt (motivoObservacaoRadar), nao so a de maior score.
+  // ATR 10, sem faixa manual, duas zonas ativas de 8 toques:
+  //   A 100-101, score 78: 0,10 ATR, pivo unico abaixo de 80 -> observacao;
+  //   B  99-103, score 75: 0,40 ATR, passa.
+  // Escolhendo so pelo score, saia A, e B nunca chegava ao painel.
+  const zr = (lo, hi, score) => ({ limites_estruturais: { inferior: lo, superior: hi }, score,
+    numero_toques: 8, status: "ativa" });
+  const A = zr(100, 101, 78), B = zr(99, 103, 75);
+  for (const [ordem, entrada] of [["A, B", [A, B]], ["B, A", [B, A]]]) {
+    const r = zonasCandidatas(entrada, { faixas: [] }, 110, "diario", 10);
+    ok(r.length === 1 && r[0].inferior === 99 && r[0].superior === 103 && r[0].score === 75,
+      `mesma regiao: representa a elegivel (B, 75), nao a bloqueada de score maior (entrada ${ordem}; saiu ${JSON.stringify(r.map((c) => c.score))})`);
+    ok(r.length === 1 && motivoObservacaoRadar(r[0], [], 10) === null,
+      `a representante passa nas verificacoes do painel (entrada ${ordem})`);
+  }
+  // Sem alternativa elegivel na regiao, a bloqueada continua visivel, em
+  // observacao.
+  const so = zonasCandidatas([A], { faixas: [] }, 110, "diario", 10);
+  ok(so.length === 1 && so[0].score === 78 && /pivô único/.test(motivoObservacaoRadar(so[0], [], 10) || ""),
+    "sem alternativa elegivel, a bloqueada fica visivel em observacao");
+  const bloqueadas = zonasCandidatas([zr(100.2, 101, 76), A], { faixas: [] }, 110, "diario", 10);
+  ok(bloqueadas.length === 1 && bloqueadas[0].score === 78,
+    "duas bloqueadas na mesma regiao: fica a de maior score, em observacao");
+  const elegiveis = zonasCandidatas([B, zr(98.5, 102.5, 77)], { faixas: [] }, 110, "diario", 10);
+  ok(elegiveis.length === 1 && elegiveis[0].score === 77, "duas elegiveis na mesma regiao: fica a de maior score");
+  // Entre regioes distintas, a ordem continua por score e o corte, de tres.
+  const varias = zonasCandidatas([A, B, zr(150, 154, 90), zr(200, 204, 72), zr(250, 254, 71), zr(300, 304, 70)],
+    { faixas: [] }, 110, "diario", 10);
+  ok(varias.map((c) => c.score).join() === "90,75,72",
+    `regioes distintas por score, no maximo tres (saiu ${varias.map((c) => c.score)})`);
+}
+
 console.log("\n== painel: as mesmas verificacoes do prompt sobre o radar ==");
 {
   const lidas = lerCandidatasRadar("78101.29-78336.71 score=71 toques=9 (abaixo do fechamento) | 5.0725-5.0896 score=94 toques=10 (abaixo do fechamento)");

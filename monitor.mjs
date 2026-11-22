@@ -5755,12 +5755,23 @@ export function zonasCandidatas(zonas, niveis, precoRef, tfKey, atr = null) {
   // Em 14/11/2026 o painel do USDT/BRL recomendava 5,5971-5,6339 e
   // 5,5848-5,6142 como duas regioes, com 58% de sobreposicao: promover as
   // duas criaria duas faixas para um mesmo nivel.
+  //
+  // A representante da regiao e' a ELEGIVEL pelas verificacoes que o
+  // painel e o prompt aplicam depois (motivoObservacaoRadar); entre iguais
+  // nisso, a de maior score. Escolher so pelo score deixava uma zona
+  // bloqueada esconder outra que passava: com ATR 10, A 100-101 de score
+  // 78 (pivo unico abaixo de 80, em observacao) e B 99-103 de score 75
+  // (passa), saia so A, e B nunca chegava ao painel. Sem nenhuma elegivel,
+  // fica a de maior score, que o painel mostra em observacao. Entre
+  // regioes distintas a ordem continua por score, e o corte, de tres.
+  const elegivel = (c) => motivoObservacaoRadar(c, faixas, atr) === null;
+  const ordem = out.map((c, i) => ({ c, i, ok: elegivel(c) }));
   const escolhidas = [];
-  for (const c of out.sort((a, b) => b.score - a.score)) {
-    if (escolhidas.some((e) => zonaJaRepresentadaPorFaixaParaRadar(c, [e.inferior, e.superior], atr))) continue;
-    escolhidas.push(c);
+  for (const x of [...ordem].sort((a, b) => (b.ok - a.ok) || (b.c.score - a.c.score) || (a.i - b.i))) {
+    if (escolhidas.some((e) => zonaJaRepresentadaPorFaixaParaRadar(x.c, [e.c.inferior, e.c.superior], atr))) continue;
+    escolhidas.push(x);
   }
-  return escolhidas.slice(0, 3);
+  return escolhidas.sort((a, b) => (b.c.score - a.c.score) || (a.i - b.i)).slice(0, 3).map((x) => x.c);
 }
 
 // Casas decimais suficientes para o valor, sem zeros a toa: 76000 sai
