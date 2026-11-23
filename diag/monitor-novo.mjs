@@ -1241,14 +1241,17 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
     const ruins = new Set();
     for (const dia of dias.filter(encerrado)) {
       const janela = dia >= inicio;
-      // REFERENCIA SO DE SESSAO BOA. Sessao reduzida nao serve de
+      // REFERENCIA SO DE SESSAO COM NEGOCIO. Sessao reduzida nao serve de
       // referencia: com ela, o nucleo comum encolhia para uma ou duas horas
-      // nas semanas seguintes. Desde 2026-11-23 tambem nao serve a que
-      // falhou nesta conferencia ou teve negocio em no maximo metade do
-      // nucleo. Sem isso, um dia ruim esvaziava o nucleo das sessoes
-      // seguintes: depois de 03/03/2025 (carnaval) e de 30/01 e 02/02/2026
-      // (buracos), oito pregoes normais, com todas as horas, cairam -- de
-      // 05 a 10/03/2025 e de 03 a 06/02/2026.
+      // nas semanas seguintes. Desde 2026-11-23 tambem nao serve a que teve
+      // negocio em no maximo metade do proprio nucleo, mesmo sem ser
+      // reconhecida como reduzida. Sem isso, um dia assim esvaziava o
+      // nucleo das sessoes seguintes: depois de 03/03/2025 (carnaval) e de
+      // 30/01 e 02/02/2026 (buracos), oito pregoes normais, com todas as
+      // horas, cairam -- de 05 a 10/03/2025 e de 03 a 06/02/2026. Sessao que
+      // falhou por uma hora ausente, mas negociou o resto, continua servindo:
+      // tirar essas tambem alargou o nucleo para horas de madrugada que so
+      // as vezes negociam e derrubou onze pregoes normais no historico.
       const referencias = dias.filter(t => t < dia && t >= dia - 14 * 86400 && negociadas.has(t) &&
         !ruins.has(t) && !sessaoReduzida(t)).slice(-5);
       if (referencias.length < 3) {
@@ -1297,7 +1300,6 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
       };
       if (!esperadas.length || vazias.some((h) => !parada(h))) {
         if (janela) throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
-        ruins.add(dia);
         continue;
       }
       if (janela) for (const h of vazias) paradas.push(`${fmtDia(dia)} ${h}h UTC`);
