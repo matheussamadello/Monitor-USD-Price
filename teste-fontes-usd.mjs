@@ -67,6 +67,29 @@ try {
     const vela=parse(parado,diario), i=vela.times.indexOf(target);
     assert.deepEqual([vela.opens[i],vela.highs[i],vela.lows[i],vela.closes[i]].map(v=>+v.toFixed(4)),[5.1,5.18,5.09,5.175],'a vela sai so das horas negociadas');
   }
+  // FERIADO PELAS HORAS E REFERENCIAS (2026-11-23).
+  {
+    const so=(hs,dia,horas)=>hs.filter(h=>h.time<dia||h.time>=dia+DIA||horas.includes((h.time-dia)/H));
+    // 1. Dia de pouco negocio nao serve de referencia. Dois dias quase sem
+    // horas antes da janela esvaziavam o nucleo e derrubavam o pregao
+    // normal seguinte (05 a 10/03/2025, 03 a 06/02/2026).
+    const d24=epoch('2026-09-24T00:00:00Z'), d25=epoch('2026-09-25T00:00:00Z');
+    const cascata=so(so(hours,d24,[11]),d25,[21]);
+    assert.doesNotThrow(()=>parse(cascata,diario),'pregao normal depois de dias quase vazios');
+    // 2. Dia sem linha na serie diaria (Natal, Sexta-feira Santa) e' sessao
+    // reduzida, mesmo com umas horas esparsas.
+    const esparso=so(hours,target,[12,18]);
+    for(const tf of [diario,semanal]) {
+      const r=parse(esparso,tf,daily.filter(l=>l.time!==target));
+      assert.match(r.avisosDados.join(' '),/sessao reduzida.*2026-09-30 \(2 de 11 horas com negocio\)/,`sem linha diaria e' feriado (${tf.key})`);
+      assert.throws(()=>parse(esparso,tf),/cobertura incompleta em 2026-09-30 \(hora ausente\)/,`com linha diaria normal continua buraco (${tf.key})`);
+    }
+    // 3. Metade exata das horas, com amplitude pequena: 24/12/2025.
+    const dez=hours.filter(h=>(h.time%DIA)/H!==11);
+    const metade=so(dez,target,[12,13,14,15,16]);
+    const r3=parse(metade,diario,daily.map(l=>l.time===target?{...l,high:5.104,low:5.1}:l));
+    assert.match(r3.avisosDados.join(' '),/sessao reduzida.*2026-09-30 \(5 de 10 horas com negocio\)/,'metade exata conta como pouco negocio');
+  }
   // FUSO DE CADA LINHA (2026-11-22). O Yahoo carimba a vela diaria e a
   // semanal na meia-noite de Londres: 00h UTC no inverno, 23h UTC da
   // vespera no horario de verao. Com o gmtoffset de agora (0 em novembro),

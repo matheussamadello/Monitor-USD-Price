@@ -1198,12 +1198,26 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
     // mes. Feriado e' dia de pouca negociacao E de amplitude pequena na
     // serie diaria. Buraco no dado e' hora faltando num dia de amplitude
     // normal, e esse continua derrubando o bloco.
+    //
+    // DIA SEM LINHA NA SERIE DIARIA (2026-11-23). Quando a propria serie
+    // diaria pula o dia e segue depois dele, a fonte nao teve pregao: e' o
+    // mesmo criterio da conferencia de sessao ausente, que ja nao exige
+    // horas de feriado assim. Mas umas poucas horas esparsas punham o dia
+    // na conferencia de horas, e sem amplitude para medir ele caia como
+    // buraco: 18/04/2025 (Sexta-feira Santa, 3 de 10 horas com negocio) e
+    // 25/12/2025 (Natal, nenhuma). Continua exigindo poucas horas com
+    // negocio no nucleo, como qualquer sessao reduzida.
+    const reduzidaMemo = new Map();
     const sessaoReduzida = (dia) => {
+      if (reduzidaMemo.has(dia)) return reduzidaMemo.get(dia);
       const a = amplitudeSessao.get(dia);
       const antes = sessoes.filter((l) => l.time < dia && l.time >= dia - 21 * 86400 && l.high > l.low)
         .map((l) => l.high - l.low);
-      if (!(a >= 0) || antes.length < 5) return false;
-      return a * 2 < medianaDe(antes);
+      const r = a === undefined
+        ? sessoes.length > 0 && sessoes.at(-1).time > dia
+        : a >= 0 && antes.length >= 5 && a * 2 < medianaDe(antes);
+      reduzidaMemo.set(dia, r);
+      return r;
     };
     // Dia ENCERRADO para a guarda: o mesmo criterio do fechamento da vela
     // (YAHOO_CARENCIA_FECHAMENTO). Logo depois da meia-noite as ultimas
@@ -1220,12 +1234,30 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
     // Nao exige 24 horas: a fonte tem observacoes esparsas de madrugada.
     // Uma hora plana recebida tambem satisfaz a cobertura, sem entrar no
     // OHLC. E' uma guarda de lacunas, nao um calendario oficial de sessoes.
-    for (const dia of dias.filter(t => t >= inicio && encerrado(t))) {
-      // Sessao reduzida tambem nao serve de referencia: com ela, o nucleo
-      // comum encolhia para uma ou duas horas nas semanas seguintes.
+    //
+    // Toda sessao encerrada e' avaliada, em ordem, inclusive as anteriores
+    // a janela, so para saber quais servem de referencia. So as da janela
+    // derrubam o bloco ou entram nos avisos.
+    const ruins = new Set();
+    for (const dia of dias.filter(encerrado)) {
+      const janela = dia >= inicio;
+      // REFERENCIA SO DE SESSAO COM NEGOCIO. Sessao reduzida nao serve de
+      // referencia: com ela, o nucleo comum encolhia para uma ou duas horas
+      // nas semanas seguintes. Desde 2026-11-23 tambem nao serve a que teve
+      // negocio em no maximo metade do proprio nucleo, mesmo sem ser
+      // reconhecida como reduzida. Sem isso, um dia assim esvaziava o
+      // nucleo das sessoes seguintes: depois de 03/03/2025 (carnaval) e de
+      // 30/01 e 02/02/2026 (buracos), oito pregoes normais, com todas as
+      // horas, cairam -- de 05 a 10/03/2025 e de 03 a 06/02/2026. Sessao que
+      // falhou por uma hora ausente, mas negociou o resto, continua servindo:
+      // tirar essas tambem alargou o nucleo para horas de madrugada que so
+      // as vezes negociam e derrubou onze pregoes normais no historico.
       const referencias = dias.filter(t => t < dia && t >= dia - 14 * 86400 && negociadas.has(t) &&
-        !sessaoReduzida(t)).slice(-5);
-      if (referencias.length < 3) throw new Error("Yahoo 1h: cobertura recente sem sessoes suficientes para conferir");
+        !ruins.has(t) && !sessaoReduzida(t)).slice(-5);
+      if (referencias.length < 3) {
+        if (janela) throw new Error("Yahoo 1h: cobertura recente sem sessoes suficientes para conferir");
+        continue;
+      }
       const comuns = [...negociadas.get(referencias[0])]
         .filter(h => referencias.every(t => negociadas.get(t).has(h))).sort((a, b) => a - b);
       const trechos = [];
@@ -1236,8 +1268,13 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
       const maior = Math.max(0, ...trechos.map(t => t.length));
       const esperadas = trechos.filter(t => t.length === maior).flat();
       const comNegocio = esperadas.filter((h) => negociadas.get(dia)?.has(h)).length;
-      if (esperadas.length && comNegocio * 2 < esperadas.length && sessaoReduzida(dia)) {
-        reduzidas.push(`${fmtDia(dia)} (${comNegocio} de ${esperadas.length} horas com negocio)`);
+      // "No maximo metade", e nao "menos da metade": 24/12/2025 teve
+      // negocio em 5 de 10 horas, com amplitude de 0,0100 contra mediana de
+      // 0,0682, e caia como buraco.
+      const poucoNegocio = esperadas.length > 0 && comNegocio * 2 <= esperadas.length;
+      if (poucoNegocio) ruins.add(dia);
+      if (poucoNegocio && sessaoReduzida(dia)) {
+        if (janela) reduzidas.push(`${fmtDia(dia)} (${comNegocio} de ${esperadas.length} horas com negocio)`);
         continue;
       }
       // HORA VAZIA ENTRE HORAS PARADAS. Hora esperada sem nenhuma linha
@@ -1261,9 +1298,11 @@ export function parseYahooHibrido(textos, tf, revisados = DESCARTES_YAHOO_REVISA
         const plana = (x) => !!p?.has(x) && !negociadas.get(dia)?.has(x);
         return plana(antes) && plana(depois) && p.get(antes) === p.get(depois);
       };
-      if (!esperadas.length || vazias.some((h) => !parada(h)))
-        throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
-      for (const h of vazias) paradas.push(`${fmtDia(dia)} ${h}h UTC`);
+      if (!esperadas.length || vazias.some((h) => !parada(h))) {
+        if (janela) throw new Error(`Yahoo 1h: cobertura incompleta em ${fmtDia(dia)} (hora ausente)`);
+        continue;
+      }
+      if (janela) for (const h of vazias) paradas.push(`${fmtDia(dia)} ${h}h UTC`);
     }
     // Pregao sumido inteiro da resposta horaria. Feriado sem vela negociada
     // na fonte nao cria uma exigencia de horas artificiais.
