@@ -961,6 +961,10 @@ Monitor-USD-Price/
 └── PROMPT_USD_TECHNICAL_WATCH.md
 ```
 
+**Disparo de hora em hora (2026-11-26).** O agendamento do próprio GitHub (`cron` no `monitor.yml`) deixou de ser confiável para estes repositórios: em novembro de 2026 ele disparava só 2 a 3 das 24 execuções por dia, com atraso de cerca de 10 horas. O workflow diário de paridade, marcado para 05h30, rodava por volta das 15h30. Nenhuma execução falhava; elas simplesmente não eram disparadas. Mudar o minuto não resolveria, porque os três monitores (minutos 00, 20 e 40) eram afetados igualmente.
+
+Desde 26/11/2026 um serviço externo, o cron-job.org, chama a API do GitHub de hora em hora pedindo uma execução manual (`workflow_dispatch`), que não passa pela fila do agendador: XMR no minuto 00, BTC no 20 e USD no 40, o mesmo escalonamento de antes. Ele usa um token de acesso granular com uma única permissão, *Actions: Read and write*, só nos três repositórios, que vence em 26/11/2027 e precisa ser renovado nos três jobs. O `cron` do workflow continua como reserva, e o grupo de concorrência põe uma execução atrás da outra se as duas chegarem juntas. O fallback do agente, que reexecuta o workflow quando o relatório passa de 90 minutos, continua valendo.
+
 ## Contexto: as duas linhas para quem não é trader
 
 O relatório tem mais de cem campos por bloco. Quase todos são refinamento, e refinamento serve para quem opera com frequência. Quem acumula ao longo do tempo e às vezes gasta precisa responder uma pergunta só: **é um momento melhor para comprar mais, para esperar ou para converter parte?**
