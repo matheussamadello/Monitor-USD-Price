@@ -2338,7 +2338,8 @@ export function atualizarEstadoNivel(anterior, ctx) {
   if (anterior && Number.isFinite(anterior.atualizado) && vela.time <= anterior.atualizado) {
     return { ...anterior, historico: [...(anterior.historico || [])],
       ...(anterior.transicoesNaVela ? { transicoesNaVela: [...anterior.transicoesNaVela] } : {}),
-      ...(anterior.mudancasNaVela ? { mudancasNaVela: [...anterior.mudancasNaVela] } : {}) };
+      ...(anterior.mudancasNaVela ? { mudancasNaVela: [...anterior.mudancasNaVela] } : {}),
+      ...(anterior.mudancasAtrasadas ? { mudancasAtrasadas: [...anterior.mudancasAtrasadas] } : {}) };
   }
   const temAtr = atr > 0;
   const tol = temAtr
@@ -2617,8 +2618,7 @@ export function situacaoNiveis(niveis, preco, atr) {
 // mede outra coisa -- se as faixas ainda cercam o fechamento, para a
 // manutencao --, e so olha faixas: a linha de 550, a 2% do preco, nao
 // entrava, e o cartao dizia "monitorar" apontando uma faixa a 7%.
-export function niveisProximos(niveis, preco) {
-  if (!niveis || !(preco > 0)) return null;
+function listaNiveisManuais(niveis) {
   const todos = (niveis.faixas || []).map(([inferior, superior, label]) =>
     ({ inferior, superior, label, pontual: false }));
   for (const [nivel, label] of [
@@ -2630,6 +2630,12 @@ export function niveisProximos(niveis, preco) {
   const mac = niveis.resistenciaMacro;
   if (mac && typeof mac.inferior === "number")
     todos.push({ inferior: mac.inferior, superior: mac.superior, label: mac.label, pontual: false });
+  return todos;
+}
+
+export function niveisProximos(niveis, preco) {
+  if (!niveis || !(preco > 0)) return null;
+  const todos = listaNiveisManuais(niveis);
   const maisPerto = (lista, dist) => lista.sort((a, b) => dist(a) - dist(b))[0] || null;
   return {
     suporte: maisPerto(todos.filter((n) => n.superior < preco), (n) => preco - n.superior),
@@ -2637,6 +2643,34 @@ export function niveisProximos(niveis, preco) {
     // Faixa com o preco dentro. Nivel pontual so "contem" o preco se for
     // exatamente igual, e ai tambem conta.
     dentro: todos.find((n) => n.inferior <= preco && preco <= n.superior) || null,
+  };
+}
+
+// POSICAO PROVISORIA DO PRECO NOS NIVEIS MANUAIS (2026-11-26). Os campos
+// niveis_manuais_situacao/faixa_mais_proxima/distancia_atr medem o
+// ULTIMO FECHAMENTO, de proposito: servem a revisao dos niveis, que e'
+// decisao confirmada. Num dia de queda forte eles ficam para tras do
+// preco: em 26/11/2026 o XMR/USD negociava a US$ 455, depois de tocar
+// US$ 436,68, e o relatorio dizia "faixa_517_520, distancia 0 ATR" -- o
+// fechamento da vespera, 517,21, caia dentro dela. Estes sao os mesmos
+// niveis lidos pela cotacao da vela em formacao, marcados como
+// provisorios: suporte e resistencia mais proximos do preco atual, a
+// distancia em ATR (da ultima vela fechada) e o nivel mais distante que a
+// minima e a maxima da vela alcancaram. Nao alimentam nenhum alerta.
+export function niveisProvisorios(niveis, live, atr) {
+  const p = live && live.close;
+  const prox = niveisProximos(niveis, p);
+  if (!prox) return null;
+  const todos = listaNiveisManuais(niveis);
+  const emAtr = (d) => (atr > 0 ? d / atr : null);
+  return {
+    ...prox,
+    distSuporteAtr: prox.suporte ? emAtr(p - prox.suporte.superior) : null,
+    distResistenciaAtr: prox.resistencia ? emAtr(prox.resistencia.inferior - p) : null,
+    suporteAlcancado: todos.filter((n) => n.superior < p && n.superior >= live.low)
+      .sort((a, b) => a.superior - b.superior)[0] || null,
+    resistenciaAlcancada: todos.filter((n) => n.inferior > p && n.inferior <= live.high)
+      .sort((a, b) => b.inferior - a.inferior)[0] || null,
   };
 }
 
@@ -2839,6 +2873,7 @@ const CAMPOS_LISTA = new Set([
   "divergencia_rsi",
   "divergencia_rsi_provisoria",
   "niveis_mudancas_nesta_vela",
+  "niveis_mudancas_atrasadas",
   "confluencia_entrada",
   "confluencia_pullback",
   "riscos_tecnicos",
@@ -4246,6 +4281,7 @@ export function readPair(cfg, d, tf, opts = {}) {
     time: times[i],
   };
   const mudancasNivel = [];
+  const mudancasAtrasadas = [];
   const linhasNivel = [];
   for (const nv of niveisDoPar(cfg)) {
     const chave = chaveNivel(cfg.key, tf.key, nv.nivel);
@@ -4264,6 +4300,18 @@ export function readPair(cfg, d, tf, opts = {}) {
     const primeiro = antes && Number.isFinite(antes.atualizado)
       ? times.findIndex((time) => time > antes.atualizado)
       : antes ? i : idxCarimbo >= 0 ? idxCarimbo + 1 : i;
+    // MUDANCAS EM VELAS QUE NENHUMA EXECUCAO PUBLICOU (2026-11-26). Quando
+    // o monitor fica mais de um fechamento sem rodar -- bloco em falha, ou
+    // o agendador do GitHub atrasado --, o replay abaixo aplica as velas
+    // intermediarias ao estado, mas so os eventos da ULTIMA eram
+    // publicados. Uma travessia numa vela do meio mudava o estado sem
+    // aparecer em lugar nenhum. Aconteceu cinco vezes no USD/BRL entre
+    // outubro e novembro (nenhum nivel mudou nessas velas, por sorte).
+    // Agora elas saem em niveis_mudancas_atrasadas, com a data da vela,
+    // durante toda a vela atual, para o consumidor deduplicar por
+    // par/timeframe/vela/nivel/tipo.
+    let processouNova = false;
+    const atrasadas = [];
     for (let idx = primeiro < 0 ? i : primeiro; idx <= i; idx++) {
       const anteriorVela = depois;
       depois = atualizarEstadoNivel(anteriorVela, {
@@ -4282,14 +4330,20 @@ export function readPair(cfg, d, tf, opts = {}) {
       if (depois && velaNova) {
         depois.mudancasNaVela = (depois.transicoesNaVela || [])
           .map((estado) => `${estado}_${nv.label}`);
+        processouNova = true;
+        if (idx < i)
+          for (const m of depois.mudancasNaVela) atrasadas.push(`${m}@${fmtDia(times[idx])}`);
       }
     }
+    if (depois && processouNova) depois.mudancasAtrasadas = atrasadas;
     if (depois) {
       estadoNovo[chave] = depois;
       // O evento pertence a esta VELA, nao apenas a primeira execucao.
       // O consumidor deduplica por par/timeframe/vela/nivel/tipo.
-      if (depois.atualizado === velaFechada.time)
+      if (depois.atualizado === velaFechada.time) {
         mudancasNivel.push(...(depois.mudancasNaVela || []));
+        mudancasAtrasadas.push(...(depois.mudancasAtrasadas || []));
+      }
     }
 
     linhasNivel.push(
@@ -4507,6 +4561,9 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(
     `niveis_mudancas_nesta_vela: ${mudancasNivel.length ? mudancasNivel.join(", ") : "nenhuma"}`
   );
+  L.push(
+    `niveis_mudancas_atrasadas: ${mudancasAtrasadas.length ? mudancasAtrasadas.join(", ") : "nenhuma"}`
+  );
   // Vigilancia da obsolescencia: transforma em dado o que antes dependia
   // de alguem reparar. "obsoleto" quer dizer que o preco esta a mais de
   // 3 ATR da faixa manual mais proxima -- os niveis descreveram outro
@@ -4526,6 +4583,16 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(`niveis_manuais_situacao: ${sitNiveis.situacao}`);
   L.push(`niveis_manuais_faixa_mais_proxima: ${sitNiveis.faixa || "--"}`);
   L.push(`niveis_manuais_distancia_atr: ${num(sitNiveis.distanciaAtr, 2)}`);
+  // Os mesmos niveis pela cotacao da vela em formacao. Ver niveisProvisorios.
+  const prov = niveisProvisorios(cfg.niveis, live, atr[i]);
+  const rotNivel = (n) => (!n ? "nenhuma" : n.pontual ? `nivel_${n.label}` : n.label);
+  L.push(`niveis_manuais_suporte_mais_proximo_provisorio: ${rotNivel(prov && prov.suporte)}`);
+  L.push(`niveis_manuais_suporte_distancia_atr_provisoria: ${num(prov && prov.distSuporteAtr, 2)}`);
+  L.push(`niveis_manuais_resistencia_mais_proxima_provisoria: ${rotNivel(prov && prov.resistencia)}`);
+  L.push(`niveis_manuais_resistencia_distancia_atr_provisoria: ${num(prov && prov.distResistenciaAtr, 2)}`);
+  L.push(`niveis_manuais_faixa_do_preco_provisoria: ${rotNivel(prov && prov.dentro)}`);
+  L.push(`niveis_manuais_suporte_alcancado_pela_minima_provisorio: ${rotNivel(prov && prov.suporteAlcancado)}`);
+  L.push(`niveis_manuais_resistencia_alcancada_pela_maxima_provisoria: ${rotNivel(prov && prov.resistenciaAlcancada)}`);
   // Conjunto INTEIRO de zonas vivas, pelo mesmo motivo do radar logo
   // abaixo. "As faixas manuais ainda caem onde o mercado reage?" nao
   // pode depender do corte de exibicao: a faixa de suporte profundo do

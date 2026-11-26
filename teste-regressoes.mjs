@@ -11,6 +11,13 @@ import * as m from "./monitor.mjs";
 const DIA = 86400;
 const epoch = (s) => Date.parse(s) / 1000;
 const clone = (x) => JSON.parse(JSON.stringify(x));
+// Estado dos niveis sem a lista de eventos atrasados: ela so existe quando
+// a execucao pulou velas, e e' justamente o que a rota vela a vela publicou
+// antes, em niveis_mudancas_nesta_vela.
+const semAtrasadas = (est) => Object.fromEntries(Object.entries(est)
+  .map(([k, { mudancasAtrasadas, ...r }]) => [k, r]));
+const diaDe = (t) => new Date(t * 1000).toISOString().slice(0, 10);
+const atrasadasDe = (texto) => (texto.match(/^niveis_mudancas_atrasadas: (.*)$/m) || [])[1];
 let falhas = 0;
 let grupos = 0;
 async function teste(nome, fn) {
@@ -613,12 +620,22 @@ await teste("retomada dos niveis equivale ao processamento vela a vela", () => {
     const recuperou = m.readPair(cfg, dados(152), tf, { estadoNiveis: falhou.estadoNiveis });
     const retomou = m.readPair(cfg, dados(152), tf, { estadoNiveis: inicial });
     assert.equal(retomou.estadoNiveis[chave].estado, "recuperado");
-    assert.deepEqual(retomou.estadoNiveis, recuperou.estadoNiveis, "mesmo ATR historico e mesmas transicoes");
+    assert.deepEqual(semAtrasadas(retomou.estadoNiveis), semAtrasadas(recuperou.estadoNiveis),
+      "mesmo ATR historico e mesmas transicoes");
+    // O evento da vela pulada nao some: sai em niveis_mudancas_atrasadas,
+    // com a data da vela, e nao em niveis_mudancas_nesta_vela.
+    const d151 = diaDe(1704067200 + 150 * tf.segundos), d152 = diaDe(1704067200 + 151 * tf.segundos);
+    assert.equal(atrasadasDe(retomou.texto), `rompimento_falhou_100@${d151}`, "evento da vela pulada, com a data");
+    assert.equal(atrasadasDe(recuperou.texto), "nenhuma", "vela a vela nao ha atraso");
     assert.deepEqual(m.readPair(cfg, dados(152), tf, { estadoNiveis: retomou.estadoNiveis }).estadoNiveis,
       retomou.estadoNiveis, "retry nao reaplica transicoes");
     const tarde = m.readPair(cfg, dados(153), tf, { estadoNiveis: inicial });
     assert.equal(tarde.estadoNiveis[chave].estado, "recuperado");
     assert.match(tarde.texto, /^niveis_mudancas_nesta_vela: nenhuma$/m, "recuperacao anterior nao vira evento atual");
+    assert.equal(atrasadasDe(tarde.texto), `rompimento_falhou_100@${d151}, recuperado_100@${d152}`,
+      "as duas velas puladas aparecem, em ordem");
+    assert.equal(atrasadasDe(m.readPair(cfg, dados(153), tf, { estadoNiveis: tarde.estadoNiveis }).texto),
+      atrasadasDe(tarde.texto), "o retry na mesma vela continua publicando os atrasados");
     assert.ok(tarde.estadoNiveis[chave].historico.some(x => x.startsWith("recuperado@")), "historico reconstruido");
   }
 });
@@ -701,6 +718,57 @@ await teste("falha de fonte nao avanca o carimbo de vela processada", async () =
   });
 });
 
+await teste("queda intradiaria abaixo do suporte: provisorio ate o fechamento, confirmado depois (XMR/USD 26/11/2026)", () => {
+  // Reproduz a forma de 26/11/2026: fechamento da vespera 517,21 dentro da
+  // faixa 517-520; a vela do dia vai a 528,56, cai a 436,68 (abaixo do
+  // suporte 500 e dentro da regiao 437-441) e esta em 455. Antes do
+  // fechamento nada pode virar perda confirmada; os campos provisorios
+  // dizem onde o preco esta. Fechada a vela em 455, a perda e' confirmada.
+  for (const tf of m.TIMEFRAMES_TESTE) {
+    const cfg = { ...m.PARES_TESTE[0], niveis: { resistencia: null, resistenciaLabel: "550",
+      suporte: 500, suporteLabel: "500",
+      faixas: [[517, 520, "faixa_517_520"], [463, 473, "faixa_463_473"], [437, 441, "regiao_suporte_437_441"]] } };
+    const n = 150;
+    const closes = Array.from({ length: n }, (_, i) => (i === n - 1 ? 517.21 : 510 + (i % 2) * 8));
+    const opens = closes.map((c, i) => (i === n - 1 ? 509.6 : c - 3));
+    const vela = (cl, op, lv) => ({ times: Array.from({ length: cl.length }, (_, i) => 1704067200 + i * tf.segundos),
+      opens: op, closes: cl, highs: cl.map((x, i) => Math.max(x, op[i]) + 8), lows: cl.map((x, i) => Math.min(x, op[i]) - 8),
+      volumes: Array(cl.length).fill(100), live: { time: 1704067200 + cl.length * tf.segundos, volume: 50, ...lv } });
+    const base = m.readPair(cfg, vela(closes.slice(0, -1), opens.slice(0, -1), { open: 509.6, high: 525, low: 494.38, close: 517.21 }), tf);
+    const queda = m.readPair(cfg, vela(closes, opens, { open: 516.95, high: 528.56, low: 436.68, close: 455 }), tf,
+      { estadoNiveis: clone(base.estadoNiveis), ultimaVelaProcessada: base.ultimaVelaFechada });
+    const campo = (t, k) => (t.match(new RegExp(`^${k}: (.*)$`, "m")) || [])[1];
+    const alertas = campo(queda.texto, "alertas_tecnicos");
+    assert.match(alertas, /toque_suporte_intradiario_500/, "perfuracao intradiaria do 500 aparece como provisoria");
+    assert.doesNotMatch(alertas, /perda_suporte_confirmada/, "sem fechamento, nunca perda confirmada");
+    assert.equal(campo(queda.texto, "niveis_mudancas_nesta_vela"), "nenhuma", "a vela em formacao nao muda a maquina");
+    assert.equal(campo(queda.texto, "niveis_manuais_faixa_mais_proxima"), "faixa_517_520", "referencia confirmada: o fechamento");
+    assert.equal(campo(queda.texto, "niveis_manuais_suporte_mais_proximo_provisorio"), "regiao_suporte_437_441");
+    assert.equal(campo(queda.texto, "niveis_manuais_resistencia_mais_proxima_provisoria"), "faixa_463_473");
+    assert.equal(campo(queda.texto, "niveis_manuais_suporte_alcancado_pela_minima_provisorio"), "regiao_suporte_437_441");
+    assert.equal(campo(queda.texto, "niveis_manuais_faixa_do_preco_provisoria"), "nenhuma");
+    // A vela fecha em 455. O corpo (516,95 -> 455) atravessa o 500: pela
+    // regra documentada e' a versao fraca, e a maquina abre candidato.
+    const fechou = m.readPair(cfg, vela([...closes, 455], [...opens, 516.95], { open: 455, high: 460, low: 450, close: 457 }), tf,
+      { estadoNiveis: clone(queda.estadoNiveis), ultimaVelaProcessada: queda.ultimaVelaFechada });
+    assert.match(campo(fechou.texto, "alertas_tecnicos"), /perda_suporte_confirmada_fraca_500/, "fechamento abaixo, corpo atravessando: versao fraca");
+    assert.doesNotMatch(campo(fechou.texto, "deterioracao_tendencia"), /perda_de_suporte_confirmada/, "a fraca nao alimenta deterioracao");
+    assert.equal(campo(fechou.texto, "nivel_500_estado"), "rompimento_candidato");
+    assert.equal(campo(fechou.texto, "niveis_mudancas_atrasadas"), "nenhuma", "nada atrasado quando nenhuma vela foi pulada");
+    // A vela seguinte fecha com o corpo inteiro abaixo: versao forte, nivel rompido.
+    const seguiu = m.readPair(cfg, vela([...closes, 455, 450], [...opens, 516.95, 455], { open: 450, high: 455, low: 445, close: 450 }), tf,
+      { estadoNiveis: clone(fechou.estadoNiveis), ultimaVelaProcessada: fechou.ultimaVelaFechada });
+    assert.match(campo(seguiu.texto, "alertas_tecnicos"), /perda_suporte_confirmada_500/, "corpo inteiro abaixo confirma a perda");
+    assert.equal(campo(seguiu.texto, "niveis_mudancas_nesta_vela"), "rompido_500", "a maquina registra a travessia nesta vela");
+    assert.match(campo(seguiu.texto, "deterioracao_tendencia"), /perda_de_suporte_confirmada/);
+    // As duas velas puladas de uma vez: o rompimento nao se perde.
+    const pulou = m.readPair(cfg, vela([...closes, 455, 450, 451], [...opens, 516.95, 455, 450], { open: 451, high: 455, low: 445, close: 450 }), tf,
+      { estadoNiveis: clone(queda.estadoNiveis), ultimaVelaProcessada: queda.ultimaVelaFechada });
+    assert.equal(campo(pulou.texto, "niveis_mudancas_nesta_vela"), "nenhuma");
+    assert.match(campo(pulou.texto, "niveis_mudancas_atrasadas"), /^rompido_500@\d{4}-\d\d-\d\d$/, "rompimento de vela pulada publicado com a data");
+  }
+});
+
 await teste("carimbo de vela processada retoma nivel que nunca abriu registro", () => {
   for (const tf of m.TIMEFRAMES_TESTE) {
     const cfg = { ...m.PARES_TESTE[0],
@@ -728,7 +796,19 @@ await teste("carimbo de vela processada retoma nivel que nunca abriu registro", 
     // Buraco de 4 velas, retomado pelo carimbo.
     const comCarimbo = m.readPair(cfg, dados(154), tf,
       { estadoNiveis: {}, ultimaVelaProcessada: base.ultimaVelaFechada });
-    assert.deepEqual(comCarimbo.estadoNiveis, verdade, "o carimbo reconstroi o ciclo inteiro");
+    assert.deepEqual(semAtrasadas(comCarimbo.estadoNiveis), semAtrasadas(verdade), "o carimbo reconstroi o ciclo inteiro");
+    // O que a rota vela a vela anunciou nas velas 151 a 153 e' exatamente
+    // o que a retomada publica como atrasado.
+    const publicados = [];
+    let passo = {};
+    for (let n = 151; n <= 153; n++) {
+      const r = m.readPair(cfg, dados(n), tf, { estadoNiveis: passo });
+      passo = r.estadoNiveis;
+      const ev = (r.texto.match(/^niveis_mudancas_nesta_vela: (.*)$/m) || [])[1];
+      if (ev && ev !== "nenhuma") for (const x of ev.split(", ")) publicados.push(`${x}@${diaDe(times(n).at(-1))}`);
+    }
+    assert.ok(publicados.length > 0, "a fixture tem eventos nas velas puladas");
+    assert.equal(atrasadasDe(comCarimbo.texto), publicados.join(", "), "nada se perde nem se inventa");
     assert.equal(comCarimbo.estadoNiveis[chave].estado, "reteste_confirmado");
     // A retomada anuncia EXATAMENTE o que a rota vela a vela anunciaria
     // nesta vela: nem a mais, nem a menos.
@@ -1068,7 +1148,8 @@ await teste("reteste e recuperacao sobrevivem ao reset na mesma vela, em ambos o
       const retry = m.readPair(cfg, dados(comReacao), tf, opcoes(agora));
       assert.deepEqual(retry.estadoNiveis, agora.estadoNiveis, "retry conserva o evento");
       const replay = m.readPair(cfg, dados(comReacao), tf, opcoes(base));
-      assert.deepEqual(replay.estadoNiveis, agora.estadoNiveis, "replay preserva a mesma transicao");
+      assert.deepEqual(semAtrasadas(replay.estadoNiveis), semAtrasadas(agora.estadoNiveis),
+        "replay preserva a mesma transicao");
       const seguinte = m.readPair(cfg, dados([...comReacao,
         espelho({ open: 108, high: 109, low: 107, close: 108 })]), tf, opcoes(agora));
       assert.deepEqual(seguinte.estadoNiveis[chave].mudancasNaVela, []);

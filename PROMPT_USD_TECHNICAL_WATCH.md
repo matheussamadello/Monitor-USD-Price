@@ -340,18 +340,32 @@ Na prática:
 1. Nunca trate a presença de um item em `alertas_tecnicos` como novidade. Compare com o que já foi comunicado.
 2. Um rompimento vira notícia **uma vez**, quando `niveis_mudancas_nesta_vela` o registra. Depois disso ele é contexto.
 3. O mesmo vale para faixas: `faixa_X` na lista só diz onde o preço está, não que ele acabou de chegar.
+4. `niveis_mudancas_atrasadas` traz mudanças da máquina de níveis em velas fechadas que **nenhuma execução publicou** — o monitor ficou mais de um fechamento sem rodar —, no formato `tipo_nivel@AAAA-MM-DD`. Não são eventos desta vela: nunca as descreva como acontecidas agora. Deduplique por par, timeframe, data da vela, nível e tipo. Um evento atrasado ainda não comunicado pode ser comunicado **uma única vez**, se continuar material (o nível segue no estado que ele criou) e se a regra correspondente for atendida, dizendo que ocorreu no fechamento daquela data e que o aviso chega atrasado. Se o estado já mudou depois dele, é só histórico.
 
 ### Obsolescência dos níveis manuais
 
 O relatório publica, por par e por timeframe:
 
 - `niveis_manuais_situacao` — `atual`, `monitorar` ou `obsoleto`;
-- `niveis_manuais_distancia_atr` — distância do preço até a faixa manual mais próxima, medida em ATR;
-- `niveis_manuais_faixa_mais_proxima` — qual faixa é essa.
+- `niveis_manuais_distancia_atr` — distância do **último fechamento confirmado** até a faixa manual mais próxima, medida em ATR. Não é o preço da vela em formação;
+- `niveis_manuais_faixa_mais_proxima` — qual faixa é essa, também pelo último fechamento.
 
 `obsoleto` significa que o preço está a mais de 3 ATR de qualquer faixa configurada, ou seja, os níveis descrevem um regime de mercado que ficou para trás. Nesse caso a política de alerta perde sua âncora principal, e o certo é enviar a `REVISÃO DOS NÍVEIS MANUAIS RECOMENDADA` descrita adiante — mesmo que nenhuma outra regra tenha disparado.
 
 `monitorar` é contexto, não motivo de mensagem. E a transição entre os três estados, sozinha, também não é alerta: o que importa é o estado `obsoleto` persistir.
+
+### Posição provisória do preço nos níveis manuais
+
+Num dia de movimento forte, os três campos acima ficam para trás do preço, porque medem o fechamento anterior. Para dizer **qual suporte ou resistência manual está mais perto do preço atual**, use estes, todos pela cotação da vela em formação:
+
+- `niveis_manuais_suporte_mais_proximo_provisorio` e `niveis_manuais_suporte_distancia_atr_provisoria` — o nível abaixo do preço mais próximo e a distância até a borda de cima dele, em ATR da última vela fechada;
+- `niveis_manuais_resistencia_mais_proxima_provisoria` e `niveis_manuais_resistencia_distancia_atr_provisoria` — o espelho, acima do preço;
+- `niveis_manuais_faixa_do_preco_provisoria` — a faixa em que o preço está, ou `nenhuma`;
+- `niveis_manuais_suporte_alcancado_pela_minima_provisorio` e `niveis_manuais_resistencia_alcancada_pela_maxima_provisoria` — o nível mais distante do preço que a mínima e a máxima da vela em formação alcançaram.
+
+Os níveis pontuais aparecem como `nivel_X`; faixas e a resistência macro, pelo label. Entram faixas, níveis pontuais e a resistência macro, pela posição, como no painel.
+
+São **provisórios**: mudam até o fechamento e não confirmam perda, rompimento, reteste nem recuperação. Servem para localizar o preço e para registrar que a vela chegou a um nível — a interação com suporte ou resistência das camadas agressivas —, mas a reação real e a confirmação de RSI ou DMI continuam exigidas como antes, e nada aqui substitui fechamento. Nenhum alerta do monitor usa estes campos.
 
 ---
 

@@ -15,7 +15,7 @@
 // e' como o relatorio as passa. O que se prende aqui e' a REGRA; a
 // calibragem de cada par fica na configuracao.
 // ------------------------------------------------------------
-import { atualizarEstadoNivel, chaveNivel, niveisProximos } from "./monitor.mjs";
+import { atualizarEstadoNivel, chaveNivel, niveisProximos, niveisProvisorios, situacaoNiveis } from "./monitor.mjs";
 
 let falhas = 0, checagens = 0;
 const ok = (c, m) => {
@@ -184,6 +184,47 @@ console.log("\n== painel: suporte e resistencia manuais mais proximos da cotacao
     "sem nivel abaixo, o suporte fica vazio em vez de inventar um");
   ok(niveisProximos(xmr, null) === null && niveisProximos(null, 500) === null,
     "sem preco ou sem configuracao, nao ha leitura");
+}
+
+// ------------------------------------------------------------
+// FECHAMENTO x PRECO DA VELA EM FORMACAO (XMR/USD, 26/11/2026)
+//
+// Ultimo fechamento 517,21; a vela do dia abriu em 516,95, foi a 528,56,
+// caiu ate 436,68 e estava em 455 as 15h58 UTC, com ATR diario de 38,84.
+// O relatorio dizia faixa_517_520 a 0 ATR: e' o fechamento, de proposito.
+// Os campos provisorios dizem onde o PRECO esta.
+// ------------------------------------------------------------
+console.log("\n== fechamento x preco da vela em formacao (XMR/USD 26/11/2026) ==");
+{
+  const xmr26 = {
+    faixas: [[558, 568, "faixa_558_568"], [540, 548, "faixa_540_548"], [517, 520, "faixa_517_520"],
+      [498, 503, "faixa_498_503"], [463, 473, "faixa_463_473"], [437, 441, "regiao_suporte_437_441"],
+      [410, 414, "faixa_410_414"]],
+    resistencia: 550, resistenciaLabel: "550", suporte: 500, suporteLabel: "500",
+    resistenciaMacro: { inferior: 797, superior: 803, label: "resistencia_macro_788_811" },
+  };
+  const ATR26 = 38.84;
+  const fechado = situacaoNiveis(xmr26, 517.21, ATR26);
+  ok(fechado.faixa === "faixa_517_520" && fechado.distanciaAtr === 0,
+    "pelo fechamento confirmado, a faixa mais proxima e' 517-520, a 0 ATR (nao muda)");
+  const vela = { close: 455, low: 436.68, high: 528.56 };
+  const prov = niveisProvisorios(xmr26, vela, ATR26);
+  ok(prov.suporte.label === "regiao_suporte_437_441", "pelo preco, o suporte mais proximo e' 437-441");
+  ok(Math.abs(prov.distSuporteAtr - (455 - 441) / ATR26) < 1e-9, "distancia ate o suporte em ATR: (455 - 441) / 38,84");
+  ok(prov.resistencia.label === "faixa_463_473", "pelo preco, a resistencia mais proxima e' 463-473");
+  ok(Math.abs(prov.distResistenciaAtr - (463 - 455) / ATR26) < 1e-9, "distancia ate a resistencia em ATR: (463 - 455) / 38,84");
+  ok(prov.dentro === null, "455 nao esta dentro de nenhuma faixa");
+  ok(prov.suporteAlcancado.label === "regiao_suporte_437_441",
+    "a minima de 436,68 alcancou a regiao 437-441 (o teste do suporte fica registrado)");
+  ok(prov.resistenciaAlcancada.label === "faixa_517_520",
+    "a maxima de 528,56 alcancou ate a faixa 517-520, abaixo do 550");
+  const parado = niveisProvisorios(xmr26, { close: 518, low: 517.5, high: 519 }, ATR26);
+  ok(parado.dentro.label === "faixa_517_520" && parado.suporteAlcancado === null && parado.resistenciaAlcancada === null,
+    "vela dentro de uma faixa, sem ir a outro nivel: nada alcancado alem dela");
+  ok(niveisProvisorios(xmr26, { close: 455, low: 436.68, high: 528.56 }, null).distSuporteAtr === null,
+    "sem ATR, a distancia fica vazia em vez de inventar escala");
+  ok(niveisProvisorios(null, vela, ATR26) === null && niveisProvisorios(xmr26, null, ATR26) === null,
+    "sem configuracao ou sem vela, nao ha leitura");
 }
 
 console.log(
