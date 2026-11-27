@@ -1381,6 +1381,8 @@ São duas camadas separadas:
 
 O prompt não é necessário para gerar `relatorio.json`; ele serve como camada externa de interpretação e notificação.
 
+**Decisão de envio (2026-11-27).** O prompt manda avaliar internamente todas as categorias de cada par e só depois aplicar hierarquia, deduplicação e o teto de mensagens: uma categoria que cumpre todos os requisitos sai, e o silêncio deixou de funcionar como um veto genérico por cima disso. O filtro tático de 1 ATR separa duas perguntas: se o preço está perto da referência **agora** (pelos campos provisórios, para sinais que dependem da proximidade atual) e se a reação recente aconteceu **na** referência (medida na vela que reagiu, entre as três últimas fechadas ou nos eventos datados da máquina de níveis). O afastamento posterior do preço não apaga um evento assim, mas a mensagem não oferece o preço original. A deduplicação distingue relatório processado, condição persistente e evento comunicado: uma observação que ainda não preenchia os critérios não bloqueia a confirmação que chega depois. O monitor não mudou; mudou a leitura do agente.
+
 ## Consistência entre execuções e regressões
 
 O monitor pode rodar várias vezes sobre a mesma vela fechada. As regras abaixo evitam que a frequência de execução altere a leitura:
