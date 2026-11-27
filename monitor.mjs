@@ -4544,6 +4544,14 @@ export function readPair(cfg, d, tf, opts = {}) {
   L.push(`di_minus_provisorio: ${num(dmiP.minusDI[k], 2)}`);
   L.push(`adx_provisorio: ${num(dmiP.adx[k], 2)}`);
   L.push("");
+  // Indicadores de cada vela fechada, na mesma linha. Sem eles, uma
+  // reacao de dois ou tres fechamentos atras so pode ter o RSI, o DMI
+  // e a EMA89 daquele dia conferidos por quem guardou os relatorios
+  // anteriores -- e o agente que falhou nesses dias fica sem prova.
+  // ult[0] e' a vela i; ult[idx] e' a vela i - idx.
+  const indicadoresVela = (iv) =>
+    ` ema89=${num(ema[iv], D)} rsi=${num(rsi[iv], 2)} di_plus=${num(plusDI[iv], 2)}` +
+    ` di_minus=${num(minusDI[iv], 2)} adx=${num(adx[iv], 2)}`;
   ult.forEach((v, idx) => {
     L.push(
       `candle_fechado_${idx + 1}: data=${fmtDia(v.time)} open=${num(v.open, D)} ` +
@@ -4551,7 +4559,8 @@ export function readPair(cfg, d, tf, opts = {}) {
         `direcao=${v.alta ? "alta" : v.baixa ? "baixa" : "neutra"} ` +
         `corpo=${num(v.corpo, D)} sombra_sup=${num(v.sombraSup, D)} ` +
         `sombra_inf=${num(v.sombraInf, D)}` +
-        (d.temVolume ? ` volume=${num(v.volume, 4)}` : "")
+        (d.temVolume ? ` volume=${num(v.volume, 4)}` : "") +
+        indicadoresVela(i - idx)
     );
   });
   L.push("");
